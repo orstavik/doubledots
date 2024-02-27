@@ -1,0 +1,25 @@
+
+<script>
+function hello(){
+  let latest = document.documentElement;
+  while (latest.lastElementChild)
+    latest = latest.lastElementChild;
+
+  console.log("sunshine", latest.tagName);
+}
+hello();
+</script>
+
+<script src="blockscript.js"></script>
+
+<h1>hello sunshine</h1>
+
+<script>console.log("sync1");debugger</script>
+<script src='data:text/javascript;base64,Y29uc29sZS5sb2coJ3N5bmMyJyk='>sync2</script>
+<script defer>console.log("defer1");</script>
+<script src='data:text/javascript;base64,Y29uc29sZS5sb2coJ2RlZmVyMicp'>defer2</script>
+<script async>console.log("async1");</script>
+<script src='data:text/javascript;base64,Y29uc29sZS5sb2coJ2FzeW5jMicp'>async2</script>
+
+<img onload="hello()" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Tiny transparent GIF" />
+<div>curious when this is visible</div>
