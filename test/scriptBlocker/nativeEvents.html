@@ -1,0 +1,78 @@
+<script src="nativeEvents.js"></script>
+<script>
+
+  for (t of ["domEvents", "documentEvents", "windowEvents"]) {
+    events = [...window[t]()];
+    console.log(t, events.length);
+    console.log(...events);
+  }
+
+  console.log([
+    ["NativeDCLEvent", "domcontentloaded"],
+    ["ShadowRootEvent", "touchstart"],
+    ["ShadowRootEvent", "touchmove"],
+    ["ShadowRootEvent", "touchend"],
+    ["ShadowRootEvent", "touchcancel"]
+  ]);
+
+  // const protos = {
+  //   window,
+  //   DocumentProto: Document.prototype,
+  //   ElementProto: Element.prototype,
+  //   HtmlElementProto: HTMLElement.prototype
+  // };
+  // //1. get all the on<event> for the different types of targets.
+  // for (let p in protos)
+  //   protos[p] = Object.keys(protos[p]).filter(k => k.startsWith("on")).map(str => str.substring(2));
+
+  // //2. merge HtmlElementProto and ElementProto (irrelevant distinction for us here)
+  // protos.ElementProto.push(...protos.HtmlElementProto);
+  // delete protos.HtmlElementProto;
+
+  // //3. invert the map, event=>[targetType, ...]
+  // const eventToType = {};
+  // for (let p in protos)
+  //   for (let eventName of protos[p])
+  //     (eventToType[eventName] ??= []).push(p);
+
+  // //4. rename targetType
+  // for (let [key, value] of Object.entries(eventToType)) {
+  //   if (value.length === 1)
+  //     eventToType[key] = value[0];
+  //   else if (value.length === 3)
+  //     eventToType[key] = "DOM";
+  //   else if (value.length === 2 && value.indexOf("window") < 0)
+  //     eventToType[key] = "DOM*";
+  //   else
+  //     eventToType[key] = "ERROR, haven't seen this before";
+  // }
+
+  // //5. invert the map back again.
+  // const typeToEvent = {};
+  // for (let event in eventToType)
+  //   (typeToEvent[eventToType[event]] ??= []).push(event);
+
+  // //6. print the results against definitions
+  // const allEvents = new Set(Object.values(typeToEvent).flat(Infinity));
+  // console.log(`native events (count: ${allEvents.size}).`);
+
+  // //7. add problem events
+  // typeToEvent["problems"] = [
+  //   "domcontentloaded",//weirdo. No window.onDOMContentLoaded & case sensitive. annoying.
+  //   "touchstart", "touchmove", "touchend", "touchcancel",  //no element.ontouchstart = handler. Annoying.
+  // ];
+
+  // for (let type in typeToEvent) {
+  //   console.log(type, typeToEvent[type].length);
+  //   for (let event of typeToEvent[type])
+  //     console.log(customAttributes.getDefinition("_" + event, ["_" + event]).name, event);
+  // }
+
+  // //conclusion (oct 2022, Chrome):
+  // //native events (128 / 125 inside iframe)
+  // //1. 21 windowOnly events (18 inside iframe: devicemotion, deviceorientation, deviceorientationabsolute are not listed in iframe.)
+  // //2. 6 documentOnly events
+  // //3. 101 DOM events. Of these DOM events, there are 10 events that do not have a `window.on___` property.
+  // //   But it works listening for at least some of these events using window.addEventListener.
+  // //   We call these DOM* events, but they are not really different from the other DOM events.
+</script>
