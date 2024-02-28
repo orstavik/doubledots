@@ -1,18 +1,18 @@
-import {domEvents, windowEvents, documentEvents} from "./test/scriptBlocker/nativeEvents.js";
+import { domEvents, windowEvents, documentEvents } from "./test/scriptBlocker/nativeEvents.js";
 
 const elEvents = [...domEvents()];
 const regx = elEvents.map(n => n + ":+").join("|");
 const docEvents = [...documentEvents()];
 const winEvents = [...windowEvents()];
 
-function doDispatch(elems){
+function doDispatch(elems) {
   const customReactions = getCustomReactionsFromElements(newElements);
   //todo this is the callback
   console.log(...customReactions);
 }
 
 (function () {
-  function monkeyPatch(proto, prop, valueOrSet, hoFun, 
+  function monkeyPatch(proto, prop, valueOrSet, hoFun,
     desc = Object.getOwnPropertyDescriptor(proto, prop)) {
     desc[valueOrSet] = hoFun(desc[valueOrSet]);
     Object.defineProperty(proto, prop, desc);
@@ -43,9 +43,9 @@ function doDispatch(elems){
       const length = root.children.length;
       og.call(this, position, ...args);
       const length2 = root.children.length;
-      const added = length2-length;
+      const added = length2 - length;
       const newRoots = root.children.slice(index, length);
-      doDispatch(newRoots.map(r => r.querySelectorAll("*")).flatten())
+      doDispatch(newRoots.map(r => r.querySelectorAll("*")).flatten());
     };
   });
 })();
@@ -63,20 +63,18 @@ function pauseScript(script) {
 }
 
 function newElementsFromMrs(mrs) {
-
+  throw "implement me, get all the added elements from all the mr in mrs. Please. Thank you)";
 }
 
-let mo;
-if ('onbeforescriptexecute' in document)
-  document.addEventListener("beforescriptexecute", e => (pauseScript(e.target), e.preventDefault()));
-else {
-  mo = new MutationObserver(function blockScripts(mrs) {
-    pauseScriptInMRS(mrs);
-    const newElements = newElementsFromMrs(mrs);
-    doDispatch(newElements);
-  });
-  mo.observe(document.documentElement, { childList: true, subtree: true });
-}
+document.addEventListener("beforescriptexecute", e => e.preventDefault());
+const mo = new MutationObserver(function(mrs) {
+  pauseScriptInMRS(mrs);
+  const newElements = newElementsFromMrs(mrs);
+  doDispatch(newElements);
+  if(document.readyState === "complete") //interactive??
+    mo.disconnect();
+});
+mo.observe(document.documentElement, { childList: true, subtree: true });
 
-document.addEventListener("readystateChange", e => mo.disconnect()); //bug
+// document.addEventListener("readystatechange", e => ); //bug
 //      b)  Turn DOMEvents into querySelector inputs!! is there no way? :(
