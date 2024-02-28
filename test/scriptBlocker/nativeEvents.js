@@ -3,7 +3,7 @@
   //   return !(this.chain.indexOf("prevent"));
   // }
 
-  function * domEvents() {
+  export function * domEvents() {
     yield "touchstart";
     yield "touchmove";
     yield "touchend";
@@ -17,7 +17,7 @@
           yield prop.substring(2);
   }
 
-  function * windowEvents() {
+  export function * windowEvents() {
     for (let prop in window)
       if (prop.startsWith("on"))
         if (!(prop in HTMLElement.prototype))
@@ -25,7 +25,7 @@
             yield prop.substring(2);
   }
 
-  function * documentEvents() {
+  export function * documentEvents() {
     for (let prop in Document.prototype)
       if (prop.startsWith("on"))
         if (!(prop in HTMLElement.prototype))

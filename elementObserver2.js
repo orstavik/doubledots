@@ -1,9 +1,9 @@
-import "./test/scriptBlocker/nativeEvents.js";
+import {domEvents, windowEvents, documentEvents} from "./test/scriptBlocker/nativeEvents.js";
 
-const elEvents = domEvents();
+const elEvents = [...domEvents()];
 const regx = elEvents.map(n => n + ":+").join("|");
-const docEvents = documentEvents();
-const winEvents = windowEvents();
+const docEvents = [...documentEvents()];
+const winEvents = [...windowEvents()];
 
 function doDispatch(elems){
   const customReactions = getCustomReactionsFromElements(newElements);
@@ -66,7 +66,7 @@ function newElementsFromMrs(mrs) {
 
 }
 
-let parserObserver;
+let mo;
 if ('onbeforescriptexecute' in document)
   document.addEventListener("beforescriptexecute", e => (pauseScript(e.target), e.preventDefault()));
 else {
@@ -78,5 +78,5 @@ else {
   mo.observe(document.documentElement, { childList: true, subtree: true });
 }
 
-document.addEventListener("DOMContentLoaded", e => mo.disconnect());
+document.addEventListener("readystateChange", e => mo.disconnect()); //bug
 //      b)  Turn DOMEvents into querySelector inputs!! is there no way? :(
