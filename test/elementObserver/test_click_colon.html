@@ -3,7 +3,28 @@
 <div click:bob></div>
 
 <script>
-  setTimeout(function(){
-    document.body.innerHTML = "<h1 mousemove:santa>hello</h1>";
+  document.body.insertAdjacentHTML("afterbegin", "<h3 offline:something>else</h3>");
+</script>
+
+<div online:hello>number 2</div>
+
+<script>
+  setTimeout(function () {
+    document.body.lastElementChild.innerHTML = "<h1 mousemove:santa>hello</h1>";
   }, 1000);
 </script>
+
+<web-comp web-comp:one>one</web-comp>
+
+<script>
+  class WebComp extends HTMLElement {
+    constructor() {
+      this.attachShadow({ mode: "open" });
+      this.shadowRoot.innerHTML = "<p :bob:bob>hello sunshine</p>";
+    }
+  }
+  customElements.define("web-comp", WebComp);
+
+  document.body.insertAdjacentHTML("beforeend", "<web-comp web-comp:two>two</web-comp>");
+</script>
+<div> last child </div>
