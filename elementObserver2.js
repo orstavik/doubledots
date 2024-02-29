@@ -8,10 +8,10 @@ const winEvents = [...windowEvents()];
 function getCustomReactionsFromElements(elementsArr) {
   let customReactions = [];
   console.log(elementsArr);
-  for (let element in elementsArr) {
-    console.log(element.getAttributeNames());
-    console.log(element.outerHTML);
-    console.log(element.nodeName);
+  for (let element of elementsArr) {
+    const attrs = element.attributes;
+    console.log(attrs);
+    debugger;
   }
   return customReactions;
 }
@@ -95,7 +95,7 @@ const mo = new MutationObserver(function (mrs) {
   if (document.readyState === "complete")
     //interactive??
     mo.disconnect();
-    
+
 });
 mo.observe(document.documentElement, { childList: true, subtree: true });
 
