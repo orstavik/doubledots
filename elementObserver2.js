@@ -6,12 +6,14 @@ const docEvents = [...documentEvents()];
 const winEvents = [...windowEvents()];
 
 function getCustomReactionsFromElements(elementsArr) {
-  let customReactions = [];
   console.log(elementsArr);
+  let customReactions = [];
   for (let element of elementsArr) {
     const attrs = element.attributes;
-    console.log(attrs);
-    debugger;
+    if (!attrs) return;
+    for (const att of attrs) {
+      console.log(att.name);
+    }
   }
   return customReactions;
 }
@@ -33,6 +35,7 @@ function doDispatch(elems) {
 
   function innerHTML_ho(og) {
     return function innerHTML_patch(val) {
+      debugger;
       og.call(this, val);
       doDispatch([...this.querySelectorAll("*")]);
     };
@@ -72,6 +75,7 @@ function pauseScript(script) {
 function newElementsFromMrs(mrs) {
   let response = [];
   mrs.map((mr) => {
+    console.log(mr);
     if (mr.addedNodes.length > 0) {
       mr.addedNodes.forEach((element) => {
         response = response.concat(element);
@@ -88,16 +92,19 @@ function newElementsFromMrs(mrs) {
 }
 
 document.addEventListener("beforescriptexecute", (e) => e.preventDefault());
-const mo = new MutationObserver(function (mrs) {
-  pauseScriptInMRS(mrs);
-  const newElements = newElementsFromMrs(mrs);
-  doDispatch(newElements);
-  if (document.readyState === "complete")
-    //interactive??
-    mo.disconnect();
 
+window.addEventListener("DOMContentLoaded", function () {
+  const mo = new MutationObserver(function (mrs) {
+    pauseScriptInMRS(mrs);
+    const newElements = newElementsFromMrs(mrs);
+    doDispatch(newElements);
+    // if (document.readyState === "complete") {
+    // debugger;
+    // interactive??
+    // mo.disconnect();
+    // }
+  });
+  mo.observe(document.documentElement, { childList: true, subtree: true });
 });
-mo.observe(document.documentElement, { childList: true, subtree: true });
-
 // document.addEventListener("readystatechange", e => ); //bug
 //      b)  Turn DOMEvents into querySelector inputs!! is there no way? :(
