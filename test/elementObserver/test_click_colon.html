@@ -1,4 +1,36 @@
-<script type="module" src="../../elementObserver2.js"></script>
+<script src="../../src/nativeEvents.js"></script>
+<script src="../../src/elementObserver2.js"></script>
+<script>
+  // framework stand-in, that also pauses the scripts during parsing.
+  document.addEventListener("beforescriptexecute", (e) => e.preventDefault());
+
+  function pauseScript(script) {
+    if (script.hasAttribute("src"))
+      script.setAttribute(":src", script.getAttribute("src"));
+    script.setAttributeNode(document.createAttribute("src"));
+  }
+
+  function activateScript(script) {
+    script.hasAttribute(":src") ?
+      script.setAttribute("src", script.getAttribute(":src")) :
+      script.removeAttribute("src");
+  }
+
+  observeElementsCreated(function checkForCustomReaction(elems) {
+    if (elems[-1].tagName === "SCRIPT")
+      pauseScript(elems[-1]);
+
+    for (let el of elems)
+      if (el.attributes)
+        for (const att of el.attributes)
+          console.log(att.name);
+  });
+
+  setTimeout(function () {
+    for (let script in document.querySelectorAll("script[src]"))
+      activateScript(script);
+  }, 0)
+</script>
 
 <div click:bob></div>
 
@@ -19,6 +51,7 @@
 <script>
   class WebComp extends HTMLElement {
     constructor() {
+      super();
       this.attachShadow({ mode: "open" });
       this.shadowRoot.innerHTML = "<p :bob:bob>hello sunshine</p>";
     }
