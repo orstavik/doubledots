@@ -17,3 +17,4 @@ C. What considerations are beeing taken for accessibility of disabled people? So
 D. How can I add eventlisteners to the window? such as scroll or keypresses.
 
 Currently only click events are defined.
+Math.js library is used for evaluations.
