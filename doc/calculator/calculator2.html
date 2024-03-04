@@ -13,7 +13,7 @@
     click:is_operator:do_operator 
     _keypress:is_operator:do_operator>
     <tr>
-      <td>.</td>
+      <td></td>
       <td id="result"></td>
       <td id="input"></td>
       <td class="operator">clear</td>
@@ -46,6 +46,11 @@
 
   <script>
     // filters
+    // 1. illustrate how we retrieve data from the event and from the target in the dom.
+    //    no need to add lots of attribute or elements, if we can read the state directly 
+    //    from either the event or the dom.
+    // 2. illustrate that we pass along the filtered output to the next reaction in the chain
+    //    and illustrate how we break the chain.
     customReactions.define("is_number", function (e) {
       if (e.type === "keypress" && e.key.matches(/0-9/))
         return e.key;
@@ -69,6 +74,9 @@
     });
   
     //reducers
+    //1. illustrate how we can get data from previous reactions using the `i` argument.
+    //2. illustrate how we can get dom nodes we can change. 
+    //   Important tip: 1. add the reactions around both the trigger elements and the to-be-changed elements. This way, you can likely catch many triggers with the same custom reaction, and it is safe to find the right dom element with less chance of it being confused with another part of your dom. Add custom reactions to the shared ancestor.
     customReactions.define("do_operator", function (e, i) {
       const input = this.ownerElement.querySelector("#input");
       const result = this.ownerElement.querySelector("#result");
