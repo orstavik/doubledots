@@ -12,6 +12,13 @@ example click:get_type:question:exclaim
 
 ## 3a. 'this' in customReactions
 
+inside the customReactions, the 'this' is always the 'Attr' object that is the customReaction. 
+
+This can be a little confusing, because in normal eventListeners 'this' is the element. In a doubledot reaction definition you must write `this.ownerElement` to get the element.
+
+The reason 'this' is the attribute is essentially to be able to get the attribute value as 'this.value'. if 'this' is the attribute, everything can be reached without any special syntax; if this was the element a special global property for '.value' would have had to be made (ref the '.index" and the global 'event' property in JS).
+
+example reactions that gets this.ownerElement.innerText, this.name, this.value, this.ownerElement.parentNode.
 
 ## 3. break the chain
 
