@@ -28,8 +28,12 @@ D. How can I add eventlisteners to the window? such as scroll or keypresses.
 
 E. Is it .parentElement or .ownerElement? When should each be made?
 
+>> the `this` is the attribute, *not* the element. And thus the `this.ownerElement` is from the custom reaction attribute => element. (todo should we implement `.element` and `.parent`..)
 
 F. How does the chaining of operators work? What are the connectors available? Is there a template to follow when using events conditionally?
+
+>> See a chapter on chaining and the (`e`, `i`) and `i` input (and the third argument position. No, this we implement as a .getter on the `Attr` prototype!! 
+`function(){ return this.ownerElement.attributes.indexOf(this)});`
 
 Currently only click events are defined.
 
