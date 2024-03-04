@@ -26,6 +26,11 @@ D. How can I add eventlisteners to the window? such as scroll or keypresses.
 
 >> global event listeners: `_scroll`, and `_keypress`.
 
+E. Is it .parentElement or .ownerElement? When should each be made?
+
+
+F. How does the chaining of operators work? What are the connectors available? Is there a template to follow when using events conditionally?
+
 Currently only click events are defined.
 
 Part 1: simple calculator
