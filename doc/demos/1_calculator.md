@@ -34,3 +34,19 @@ First, we implement using small functions we write directly.
 Part 2: scientific calculator
 For scientific calculator, we import the Math.js lib and a couple of functions from there to illustrate how external libraries can be used in the system.
 Math.js library is used for evaluations.
+
+
+### Strategy: development
+
+1. made the template. and that wasn't hard, it was nice to see the code, and you got the buttons and screen visible in the browser.
+
+2. and then, we have buttons. press the button with a `click` and then add the value to the screen.
+
+3. but we added the calculation also as string. js allows this, but it is a little `eval()`-ish. and so, we want to do it the calculator way. add numbers to the end of input, and when press a operator button, do the operator on the result, input and set the new value in the result only. 
+
+3b. Lesson learned. Don't be too afraid of making a new customReaction. They are like little kittens. One is not enough, and you don't want to swarm your appartment with them, but having a handful in one basket is nice and cosy.
+
+4. what about keypresses? yes! we do keypresses, and here we can do them globally. Or on a wrapping `<form>` if our calculator doesn't have the entire web page to itself. Yes, global listeners are nice, and then we use a single reaction to execute the functions.
+>> redundancy? Yes, maybe. If we want, we can convert the keypresses into button presses. That would follow the logic of our development process. But! We can also convert the button presses to keypresses. That would be nicer.
+
+5. And we are learning as we go. We actually want the custom reactions to listen on a `<form>` element around the table. And then we want the clicks to be transferred so that it can work against the children with particular `id` values. That will be a nice and clean loopkup structure, not accidentally mixing itself up with the dom.
