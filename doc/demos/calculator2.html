@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Simple Calculator</title>
+  <link rel="stylesheet" href="calc.style" type="text/css" />
+</head>
+
+<body>
+  <table id="calculator" 
+    click:is_number:add_number 
+    _keypress:is_number:add_number
+    click:is_operator:do_operator 
+    _keypress:is_operator:do_operator>
+    <tr>
+      <td>.</td>
+      <td id="result"></td>
+      <td id="input"></td>
+      <td class="operator">clear</td>
+    </tr>
+    <tr>
+      <td class="number">1</td>
+      <td class="number">2</td>
+      <td class="number">3</td>
+      <td class="operator">/</td>
+    </tr>
+    <tr>
+      <td class="number">4</td>
+      <td class="number">5</td>
+      <td class="number">6</td>
+      <td class="operator">*</td>
+    </tr>
+    <tr>
+      <td class="number">7</td>
+      <td class="number">8</td>
+      <td class="number">9</td>
+      <td class="operator">-</td>
+    </tr>
+    <tr>
+      <td class="number">0</td>
+      <td class="number">.</td>
+      <td class="operator">=</td>
+      <td class="operator">+</td>
+    </tr>
+  </table>
+
+  <script>
+    // filters
+    customReactions.define("is_number", function (e) {
+      if (e.type === "keypress" && e.key.matches(/0-9/))
+        return e.key;
+      if (e.type === "click" && e.target.innerText.matches(/0-9/))
+        return e.target.innerText;
+      throw customReactions.break;
+    });
+    customReactions.define("is_operator", function (e) {
+      if (e.type === "keypress") {
+        if (e.key === "Esc")
+          return "clear";
+        if (["=", "+", "-", "/", "*"].indexOf(e.key) >= 0)
+          return e.key;
+      }
+      if (e.type === "click") {
+        const targetTxt = e.target.innerText;
+        if (["=", "+", "-", "/", "*", "clear"].indexOf(targetTxt) >= 0)
+          return targetTxt;
+      }
+      throw customReactions.break;
+    });
+  
+    //reducers
+    customReactions.define("do_operator", function (e, i) {
+      const input = this.ownerElement.querySelector("#input");
+      const result = this.ownerElement.querySelector("#result");
+      if (i === "=") {
+        result.innerText = input.innerText;
+        input.innerText = "";
+      } else if (i === "+") {
+        result.innerText = parseFloat(result.innerText) + parseFloat(input.innerText);
+        input.innerText = "";
+      } else if (i === "-") {
+        result.innerText = parseFloat(result.innerText) - parseFloat(input.innerText);
+        input.innerText = "";
+      } else if (i === "/") {
+        result.innerText = parseFloat(result.innerText) / parseFloat(input.innerText);
+        input.innerText = "";
+      } else if (i === "*") {
+        result.innerText = parseFloat(result.innerText) * parseFloat(input.innerText);
+        input.innerText = "";
+      } else if (i === "clear") {
+        result.innerText = "";
+        input.innerText = "";
+      }
+    });
+    customReactions.define("add_number", function (e, i) {
+      const input = this.ownerElement.querySelector("#input");
+      if (i === "." && input.innerText.indexOf(".") >= 0)
+        return;
+      input.innerText += i;
+    });
+  </script>
+</body>
+
+</html>
