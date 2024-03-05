@@ -33,30 +33,94 @@ Custom reaction functions that sometimes break the reaction chain are called fil
 If some state conditions are (not) met, then the filter will `.break` the custom reaction, otherwise it will let the chain reaction continue.
 
 
-## 3. Filters and parsers and extractors
+## 3. Filters, parsers, extractors, etc.
 
-It is common to let the filter extract, parse, and purify the state for subsequent reactions. this is the  returned from the filter reaction and will be available for the next reaction as it's second 'i' argument.
+A filter is not limited to `.break`-ing the reaction chain. If you want, and you often do, you can let the filter extract and parse and reduce state data the way you need. The ready-made state view can then be passed to the next reaction to work with (as it's second `oi` argument).
 
-example
+```html
+<p 
+  click:words_with_o:log
+  click:words_with_x:log
+  click:words_with_e:log
+>hello sunshine</p>
+<script>
+  function words_with(str, c){
+    return str.split(" ").filter(w => w.indexOf(c) >= 0);
+  }
+  customReactions.define("words_with_o", function(){
+    const o_words = words_with(this.ownerElement.innerText,"o");
+    if(!o_words.length)
+      return customReactions.break;  
+    return o_words;
+  });
+  customReactions.define("words_with_x", function(){
+    const x_words = words_with(this.ownerElement.innerText,"x");
+    if(!x_words.length)
+      return customReactions.break;  
+    return x_words;
+  });
+  customReactions.define("words_with_e", function(){
+    const e_words =  words_with(this.ownerElement.innerText,"e");
+    if(!e_words.length)
+      return customReactions.break;  
+    return e_words;
+  });
+</script>
+```
 
-## 5. what about errors
+## 4. `customReactions.index`
 
-Errors also break the reaction chain. if the Error is not caught and handled within the reaction function itself, it will break the chain. In addition, errors will also spawn an error event (not unlike uncaughterror) that will be added in the event loop. with a reference to the customReaction.
+In addition to `.define` the `customReactions` object has another special property: `.index`. The `.index` is the current position of the execution of the current custom reaction within the custom reaction chain/attribute.
 
-## 7. 'customReactions.index'
+```html
+<div click:one:two:three:one>hello sunshine</div>
+```
 
-the customReactions has another special property: '.index'. The '.index' is simply a shortcut for the position of the execution of the current custom reaction in the chain. For example, if you have a custom reaction 'click:one:two:three:one', then customReaction.index == 1 for the reaction ':one' runs the first time, the 2 when ':two: runs, 3 for ';three', and finally 4 when ':four' runs.
+1. During the first run of reaction `:one`, then `customReactions.index == 1`.
+2. During reaction `:two`, then `customReactions.index` is `2`.
+3. During reaciton `:three`, then `3`.
+4. During the second run of reaction `:one`, then finally `4`.
 
-You likely will not use this property all that much. But it can be handy if you want to implement control structures such as wait for definitions to be ready, an if-else reaction pair, etc. And yes, you are right, it is kinda like the old, deprecate global 'event' property.
+The `customReactions.index` is not a property you will use all that much. But it can be handy when you need to implement semi control structures and other reflexive or code-oriented functionality. And yes, you are right, it is kinda like the old, deprecate global `event` property.
 
-## 9. nesten functions in a monadic chain?
+## 5. What about `error`s?
 
-a chain reaction is just a sequence of custom reaction functions called one after another. simple.
+Like when you return a `customReaction.break`, any uncaught `Error`s that occur inside a reaction function will also breaks the reaction chain. But, unlike the `customReaction.break`s, these uncaught `Error`s will also spawn a `error` event that will be dispatched to the virtual event loop. This `error` event will have several properties that might be useful when debugging:
+1. `.reaction`: the custom reaction attribute from where the `Error` occured,
+2. `.index`: the reaction function that `throw` the `Error`,
+3. `.oi`: the input to that reaction function,
+4. `.triggerEvent`: the `event` passed into the custom reaction, and
+5. `.error`: the JS `Error` object thrown.
 
-some might have encountered similar structures as function chaining and monads. JS arrays and jQuery. 
+```html
+<body error:log_error>
+<div click:one:error:two>hello sunshine</div>
+<script>
+  function logName(e){
+    const reactionName = this.name.split(":")[customReaction.index];
+    console.log(reactionName);
+    return reactionName;
+  }
+customReactions.define("one", logName);
+customReactions.define("error", function()=>{throw new Error("omg");});
+customReactions.define("two", logName);
+customReactions.define("log_error", function(e){
+  console.error(e.reaction.name); 
+  console.error(e.reaction.index); 
+  console.error(e.reaction.event); 
+  console.error(e.reaction.oi); 
+  console.error(e.reaction.error); 
+});
+</script>
+</body>
+```
+
+## 6. Chains, monads, nested functions, or what?
+
+A chain reaction is just a sequence of custom reaction functions called one after another. Simple. And some of you might have encountered similar structures as function chaining and monads. For example in JS arrays and jQuery. Or you might recognize them as a series of linearly nested functions.
  
-it is possible to argue that the custom reactions work on a state object (ie. the attribute object) and that as a reaction might change the state that this Attr object frames and that the custom reactions always run from the same state, that it is like a monad. Sure.
+It is possible to argue that the custom reactions are monadic. The monad would be the attribute itself, and the custom reactions are then mapped against this attribute. The attribute (with the `oi` property) gives a viewpoint/pin-hole-frame of the DOM, and each reaction alters the underlying state. Not unlike a monad. Sure.
 
-But. As for me personally. I think that the conceptual model trigger-event => filter reaction => state reaction, is a more useful perspective. This is what you will make 95% of the time. This is what will make your code concise, readable and super effective.
+But. Personally. I think that the conceptual model `trigger => filter => effect` is a more useful perspective. This perspective readily describe what you will be making 95% of the time. And this structure will make your code concise, readable and super effective.
 
-In addition to such normal custom reaction chains, you have a second type 'attr-change:state-machine' reaction. we will describe them later. And these two types reaction chains is all you really need, and will write.
+In addition to such normal custom reaction chains, you have a second type `attr-change:machine="state"` reaction. These statemachines we will return to shortly.
