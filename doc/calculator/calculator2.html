@@ -13,8 +13,8 @@
     click:is_operator:do_operator 
     _keypress:is_operator:do_operator>
     <tr>
-      <td></td>
-      <td id="result"></td>
+      <td hidden id="result"></td>
+      <td hidden id="operation"></td>
       <td id="input"></td>
       <td class="operator">clear</td>
     </tr>
@@ -80,6 +80,9 @@
     customReactions.define("do_operator", function (e, i) {
       const input = this.ownerElement.querySelector("#input");
       const result = this.ownerElement.querySelector("#result");
+      // if there is no result, then add the input to the result and the operator to the id=operator. and then return
+
+      // if there is a 
       if (i === "=") {
         result.innerText = input.innerText;
         input.innerText = "";
