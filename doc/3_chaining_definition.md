@@ -1,14 +1,24 @@
+# Chain reactions and custom reaction definitions (part 1)
+
 ## 1. chain reactions
 
-you can list many reactions after each other: event:reaction1:reaction2:... If nothing breaks the chain, each trigger event will call reaction1 and then reaction2.
+In doubledots you can list as many reactions within a single entry as you like: `event:reaction1:reaction2:...`. When the `event` triggers, it is passed to `:reaction1` as the first `e`  argument. Then, when `:reaction1` completes, the event is then passed to `:reaction2`, etc.etc.
 
-example
+```html
+<div click:get_date:plus_2:plus_6>hello</div>
+```
 
 ## 2. define custom reactions
 
 each custom reaction has two input parameters: '(e, i)'. The 'e' is the event that triggers the reaction. The 'i' is the output of the previous reaction ('undefined' for the first reaction after the event). 
 
 example click:get_type:question:exclaim
+
+## 2b. using existing functions as custom reactions?
+
+can i do it? and if so, how? and what might be the problems?
+yes. You can do it. When a customReaction function is invoked inside the doubledots' virtual event loop, then the function used will be called using the attribute as `this` and passed 2 arguments `(e, i)`. If your function is doesn't use `this`, and your functions parameters can fit with the `(e, i)` arguments being passed it, then that is super. 
+
 
 ## 3a. 'this' in customReactions
 
