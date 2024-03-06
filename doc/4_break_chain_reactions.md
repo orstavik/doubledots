@@ -1,7 +1,7 @@
 # Breaking chain reactions
 
 There are two ways a chain reaction can be broken:
-1. if the custom reaction function returns a special object `customReaction.break`, or
+1. if the custom reaction function `return` a special object `customReaction.break`, or
 2. if the custom reaction function `throws` an `Error`.
 
 ## 1. `customReactions.break`
@@ -11,9 +11,9 @@ By returning `customReactions.break`, the custom reaction chain will simply stop
 ```html
 <div click:one:stop:two>hello sunshine</div>
 <script>
-customReactions.define("one", ()=>console.log("one"));
-customReactions.define("stop", ()=>customReactions.break);
-customReactions.define("two", ()=>console.log("two"));
+customReactions.define("one", ()=> console.log("one"));
+customReactions.define("stop", ()=> customReactions.break);
+customReactions.define("two", ()=> console.log("two"));
 </script>
 ```
 
@@ -21,6 +21,8 @@ When somebody `click` on the `<div>`, then:
 1. the `:one` reaction will run and print `one` in the console,
 2. the `:stop` reaction will run and return `customReactions.break`, which
 3. will halt the execution of the reaction chain blocking the `:two` reaction from ever being invoked.
+
+>> Note! Remember to `return customReactions.break` (DON'T `throw`).
 
 ## 2. Filters
 
