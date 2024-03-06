@@ -1,131 +1,148 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>JavaScript Calculator</title>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.js"
-      integrity="sha512-BbVEDjbqdN3Eow8+empLMrJlxXRj5nEitiCAK5A1pUr66+jLVejo3PmjIaucRnjlB0P9R3rBUs3g5jXc8ti+fQ=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/10.6.4/math.min.js"
-      integrity="sha512-iphNRh6dPbeuPGIrQbCdbBF/qcqadKWLa35YPVfMZMHBSI6PLJh1om2xCTWhpVpmUyb4IvVS9iYnnYMkleVXLA=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
-
-    <!-- For styling -->
-    <style>
-      table {
-        border: 1px solid black;
-        margin-left: auto;
-        margin-right: auto;
-      }
-
-      input[type="button"] {
-        width: 100%;
-        padding: 20px 40px;
-        background-color: green;
-        color: white;
-        font-size: 24px;
-        font-weight: bold;
-        border: none;
-        border-radius: 5px;
-      }
-
-      input[type="text"] {
-        padding: 20px 30px;
-        font-size: 24px;
-        font-weight: bold;
-        border: none;
-        border-radius: 5px;
-        border: 2px solid black;
-      }
-    </style>
+    <title>Simple Calculator</title>
+    <link rel="stylesheet" href="./calc.css" type="text/css" />
   </head>
 
   <body>
-    <!-- Use Table to Create Calculator Structure Design -->
-    <table id="calcu">
+    <table id="calculator" click:is_number:add_number _keypress:is_number:add_number click:is_operator:do_operator _keypress:is_operator:do_operator>
       <tr>
-        <td colspan="3"><input type="text" id="result" /></td>
-        <td><input type="button" value="c" click:clr /></td>
+        <td id="result"></td>
+        <td id="operation"> x </td>
       </tr>
       <tr>
-        <td><input type="button" value="1" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="2" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="3" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="/" click:dis onkeydown="myFunction(event)" /></td>
+        <td id="input"></td>
+        <td class="operator">C</td>
       </tr>
       <tr>
-        <td><input type="button" value="4" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="5" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="6" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="*" click:dis onkeydown="myFunction(event)" /></td>
+        <td class="number">1</td>
+        <td class="number">2</td>
+        <td class="number">3</td>
+        <td class="operator">/</td>
       </tr>
       <tr>
-        <td><input type="button" value="7" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="8" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="9" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="-" click:dis onkeydown="myFunction(event)" /></td>
+        <td class="number">4</td>
+        <td class="number">5</td>
+        <td class="number">6</td>
+        <td class="operator">*</td>
       </tr>
       <tr>
-        <td><input type="button" value="0" click:dis onkeydown="myFunction(event)" /></td>
-        <td><input type="button" value="." click:dis onkeydown="myFunction(event)" /></td>
-
-        <!-- solve function call function solve to evaluate value -->
-        <td><input type="button" value="=" click:solve /></td>
-
-        <td><input type="button" value="+" onclick="dis('+')" onkeydown="myFunction(event)" /></td>
+        <td class="number">7</td>
+        <td class="number">8</td>
+        <td class="number">9</td>
+        <td class="operator">-</td>
+      </tr>
+      <tr>
+        <td class="number">0</td>
+        <td class="number">.</td>
+        <td class="operator">=</td>
+        <td class="operator">+</td>
       </tr>
     </table>
 
     <script>
-      // Function that display value
-      customReactions.define("dis", (e) => {
-        document.getElementById("result").value += val;
+      // filters
+      // 1. illustrate how we retrieve data from the event and from the target in the dom.
+      //    no need to add lots of attribute or elements, if we can read the state directly
+      //    from either the event or the dom.
+      // 2. illustrate that we pass along the filtered output to the next reaction in the chain
+      //    and illustrate how we break the chain.
+      customReactions.define("is_number", function (e) {
+        //TODO MAKE BETTER CHECK
+        //TODO MAKE BETTER CHECK
+        if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
+        if (e.type === "keypress" && e.key.matches(/0-9/)) return e.key;
+        if (e.type === "click" && e.target.innerText.matches(/0-9/)) return e.target.innerText;
+        throw customReactions.break;
+      });
+      customReactions.define("is_operator", function (e) {
+        //TODO MAKE BETTER CHECK
+        //TODO MAKE BETTER CHECK
+        if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
+        if (e.type === "keypress") {
+          if (e.key === "Esc") return "clear";
+          if (["=", "+", "-", "/", "*"].indexOf(e.key) >= 0) return e.key;
+        }
+        if (e.type === "click") {
+          const targetTxt = e.target.innerText;
+          if (["=", "+", "-", "/", "*", "clear"].indexOf(targetTxt) >= 0) return targetTxt;
+        }
+        throw customReactions.break;
       });
 
-//      get the pressed key and add the proper value to the input
-//      function myFunction(event) {
-//        if (
-//          event.key == "0" ||
-//          event.key == "1" ||
-//          event.key == "2" ||
-//          event.key == "3" ||
-//          event.key == "4" ||
-//          event.key == "5" ||
-//          event.key == "6" ||
-//          event.key == "7" ||
-//          event.key == "8" ||
-//          event.key == "9" ||
-//          event.key == "+" ||
-//          event.key == "-" ||
-//          event.key == "*" ||
-//          event.key == "/"
-//        )
-//          document.getElementById("result").value += event.key;
-//      }
-//
-//      var cal = document.getElementById("calcu");
-//      cal.onkeyup = function (event) {
-//        if (event.keyCode === 13) {
-//          console.log("Enter");
-//          let x = document.getElementById("result").value;
-//          console.log(x);
-//          solve();
-//        }
-//      };
+      //reducers
+      //1. illustrate how we can get data from previous reactions using the `i` argument.
+      //2. illustrate how we can get dom nodes we can change.
+      //   Important tip: 1. add the reactions around both the trigger elements and the to-be-changed elements. This way, you can likely catch many triggers with the same custom reaction, and it is safe to find the right dom element with less chance of it being confused with another part of your dom. Add custom reactions to the shared ancestor.
+      customReactions.define("do_operator", function (e, i) {
+        const input = this.ownerElement.querySelector("#input");
+        const result = this.ownerElement.querySelector("#result");
+        const operation = this.ownerElement.querySelector("#operation");
+        // we queue operations to display the previous value and the next to be computed
+        // on each operation, we check if the is no input, only the queued operation is changed
 
-      customReactions.define("solve", () =>{
-          let x = document.getElementById("result").value;
-          let y = math.evaluate(x);
-          document.getElementById("result").value = y;
-      })
+        function solve() {
+          const a = parseFloat(result.innerText);
+          const b = parseFloat(input.innerText);
+          if (operation.innerText === "+") {
+            result.innerText = a + b;
+          } else if (operation.innerText === "-") {
+            result.innerText = a - b;
+          } else if (operation.innerText === "/") {
+            result.innerText = a / b;
+          } else if (operation.innerText === "*") {
+            result.innerText = a * b;
+          }
+          input.innerText = "";
+          operation.innerText = "";
+        }
 
-      customReactions.define("clr", () => {
-        document.getElementById("result").value = "";
+        if (i === "clear") {
+          result.innerText = "";
+          input.innerText = "";
+          operation.innerText = "";
+          return;
+        }
+
+        // if neither value nor input available, do nothing.
+        if (input.innerText === "" && result.innerText === "") return;
+
+        // if there is no result, we set the result to the input and clear the input, also set the operation later.
+        if (result.innerText === "" && input.innerText !== "") {
+          result.innerText = input.innerText;
+          input.innerText = "";
+        }
+
+        // if there is a result, an input, and a queued operation, we compute the result and set the next operation later.'
+        if (result.innerText !== "" && input.innerText !== "" && operation.innerText !== "") {
+          solve();
+        }
+        
+        // CHECK IF SOLVING IS NEEDED
+        if (i === "=") {
+          solve();
+          return;
+        }
+
+        //if there is a result but not an input only change the operation to be computed next.
+
+        //By this point, we can be sure that the result is set, and the input is clear, and the operation can be changed.
+        if (i === "+") {
+          operation.innerText = "+";
+        } else if (i === "-") {
+          operation.innerText = "-";
+        } else if (i === "/") {
+          operation.innerText = "/";
+        } else if (i === "*") {
+          operation.innerText = "*";
+        }
+      });
+
+      customReactions.define("add_number", function (e, i) {
+        const input = this.ownerElement.querySelector("#input");
+        if (i === "." && input.innerText.indexOf(".") >= 0) return;
+        input.innerText += i;
       });
     </script>
   </body>
