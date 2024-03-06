@@ -1,46 +1,16 @@
 <script src="../../src/nativeEvents.js"></script>
 <script src="../../src/elementObserver2.js"></script>
-<script>
-  // framework stand-in, that also pauses the scripts during parsing.
-  document.addEventListener("beforescriptexecute", (e) => e.preventDefault());
-
-  function pauseScript(script) {
-    if (script.hasAttribute("src"))
-      script.setAttribute(":src", script.getAttribute("src"));
-    script.setAttributeNode(document.createAttribute("src"));
-  }
-
-  function activateScript(script) {
-    script.hasAttribute(":src") ?
-      script.setAttribute("src", script.getAttribute(":src")) :
-      script.removeAttribute("src");
-  }
-
-  observeElementsCreated(function checkForCustomReaction(elems) {
-    if (elems[-1].tagName === "SCRIPT")
-      pauseScript(elems[-1]);
-
-    for (let el of elems)
-      if (el.attributes)
-        for (const att of el.attributes)
-          console.log(att.name);
-  });
-
-  setTimeout(function () {
-    for (let script in document.querySelectorAll("script[src]"))
-      activateScript(script);
-  }, 0)
-</script>
+<script src="../../src/test-framework.js"></script>
 
 <div click:bob></div>
 
-<script>
+<script id=one>
   document.body.insertAdjacentHTML("afterbegin", "<h3 offline:something>else</h3>");
 </script>
 
 <div online:hello>number 2</div>
 
-<script>
+<script id=two>
   setTimeout(function () {
     document.body.lastElementChild.innerHTML = "<h1 mousemove:santa>hello</h1>";
   }, 1000);
@@ -48,7 +18,7 @@
 
 <web-comp web-comp:one>one</web-comp>
 
-<script>
+<script id=three>
   class WebComp extends HTMLElement {
     constructor() {
       super();

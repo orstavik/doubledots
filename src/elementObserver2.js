@@ -4,15 +4,19 @@ const docEvents = [...window.documentEvents()];
 const winEvents = [...window.windowEvents()];
 // todo we also need the _click: events!
 
-const cbs = [];
+let CB, cache = [...document.querySelectorAll("*")];
 
 window.observeElementsCreated = function (cb) {
-  cbs.push(cb);
+  if (CB)
+    throw "Only a single callback can be added to observeElementsCreated";
+  CB = cb;
+  const ar = cache;
+  cache = [];
+  return ar;
 };
 
 function doDispatch(elems) {
-  for (let cb of cbs)
-    cb(elems);
+  CB?.(elems) || cache.push(...elems);
 }
 
 (function () {
