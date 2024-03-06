@@ -20,7 +20,7 @@ can i do it? and if so, how? and what might be the problems?
 yes. You can do it. When a customReaction function is invoked inside the doubledots' virtual event loop, then the function used will be called using the attribute as `this` and passed 2 arguments `(e, i)`. If your function is doesn't use `this`, and your functions parameters can fit with the `(e, i)` arguments being passed it, then that is super. 
 
 
-## 3a. 'this' in customReactions
+## 2c. 'this' in customReactions
 
 inside the customReactions, the 'this' is always the 'Attr' object that is the customReaction. 
 

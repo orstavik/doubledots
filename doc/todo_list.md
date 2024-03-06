@@ -10,3 +10,7 @@ B. Stateful gestures
 C. Stateful functions
 D. Chained reactions where more than one reaction needs the attr value.
 
+Questions
+
+
+A. Can we combine filters ?
