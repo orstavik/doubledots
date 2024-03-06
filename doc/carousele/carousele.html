@@ -74,20 +74,16 @@
         }
       }
 
-      window.onload = function () {
-        let leftButton = document.getElementById("Left");
-        let rightButton = document.getElementById("Right");
+      customReactions.define('rightBtn', moveRight);
+      customReactions.define('leftBtn', moveLeft);
 
-        leftButton.addEventListener("click", moveLeft);
-        rightButton.addEventListener("click", moveRight);
-      };
     </script>
   </head>
   <body>
     <h2>Carousele Example</h2>
 
     <div class="carousele">
-      <button id="Left"><</button>
+      <button id="Left" click:leftBtn><</button>
       <div class="carouseleCont">
         <div class="cItem cItem1" >
           <img src="https://via.placeholder.com/200" alt="" style="border: green solid 1px;"/>
@@ -99,7 +95,7 @@
           <img src="https://via.placeholder.com/200" alt="" style="border: red solid 1px;"/>
         </div>
       </div>
-      <button id="Right">></button>
+      <button id="Right" click:rightBtn>></button>
     </div>
   </body>
 </html>
