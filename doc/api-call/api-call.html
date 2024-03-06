@@ -30,7 +30,7 @@
       }
       if (profile.filetype !== "image/png") {
         // throw new Error("wrong file type");
-        throw customReactions.break;
+        return customReactions.break;
       }
     });
 
@@ -50,7 +50,8 @@
 
       // 3. composeability. It is easier to maintain and further develop the submit reaction with the server requirements, if kept alone and when it doesn't involve html template requirements. Similarly, it is easier to maintain the html template and the template oriented filters, if we do not have to think about server communication and requirements at the same time.
 
-      if (e.target.id !== "submit") throw customReactions.break;
+      if (e.target.id !== "submit") 
+        return customReactions.break;
 
       const response = await fetch("/api/register", {
         method: "POST",
