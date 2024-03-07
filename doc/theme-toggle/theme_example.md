@@ -1,8 +1,8 @@
-## Demo: Build a theme toggle.
+# Demo: Build a theme toggle.
 
 In this basic demo we will implement a theme toggle for our html with doubledots.
 
-# 1. Template
+## 1. Template
 
 We set up a basic html to see the results from our toggle. 
 
@@ -14,7 +14,7 @@ We set up a basic html to see the results from our toggle.
 </body>
 ```
 
-# 2. Define reaction
+## 2. Define reaction
 
 We manage the toggle by defining a reaction that when triggered, will toggle the 'dark' class.
 
