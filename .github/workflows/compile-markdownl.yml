@@ -9,31 +9,31 @@ jobs:
   compile-files:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Compile Markdown Files
-        run: |
+    - uses: actions/checkout@v3
+    - name: Compile Markdown Files
+      run: |
+        mkdir compiled
+        concat_files() {
+          for file in "$@"
+          do
+            cat "$file" >> compiled/output.md
+            echo "" >> compiled/output.md
+          done
+        }
+        concat_files *.md  # Note the quote around *.md
+    - name: Compile HTML Files
+      run: |
+        if [ ! -d "compiled" ]; then
           mkdir compiled
-          concat_files() {
-            for file in "$@"
-            do
-              cat "$file" >> compiled/output.md
-              echo "" >> compiled/output.md
-            done
-          }
-          concat_files *.md
-          - name: Compile HTML Files
-          run: |
-            if [ ! -d "compiled" ]; then
-              mkdir compiled
-            fi
-            concat_files() {
-              find . -type f -name "*.html" -print0 | sort -z | xargs -0 cat >> compiled/output.html
-            }
-            concat_files
-      - name: Commit Compiled Files
-        run: |
-          git config --global user.name 'GitHub Actions Bot'
-          git config --global user.email 'actions@github.com'
-          git add compiled/output.md compiled/output.html
-          git commit -m "Compile Markdown and HTML Files" || echo "No changes to commit"
-          git push origin main
+        fi
+        concat_files() {
+          find . -type f -name "*.html" -print0 | sort -z | xargs -0 cat >> compiled/output.html
+        }
+        concat_files
+    - name: Commit Compiled Files
+      run: |
+        git config --global user.name 'GitHub Actions Bot'
+        git config --global user.email 'actions@github.com'
+        git add compiled/output.md compiled/output.html
+        git commit -m "Compile Markdown and HTML Files" || echo "No changes to commit"
+        git push origin main
