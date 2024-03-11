@@ -23,13 +23,11 @@ jobs:
         concat_files *.md
     - name: Compile HTML Files
       run: |
+        mkdir compiled
         concat_files() {
-          for file in "$@"
-          do
-            cat "$file" >> compiled/output.html
-          done
+          find . -type f -name "*.html" -print0 | sort -z | xargs -0 cat >> compiled/output.html
         }
-        concat_files *.html
+        concat_files
     - name: Commit Compiled Files
       run: |
         git config --global user.name 'GitHub Actions Bot'
