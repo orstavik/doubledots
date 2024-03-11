@@ -42,10 +42,8 @@ But for the element events (both the single document and all documents events), 
 
 
 
-## `onclick` and other native handlers are treated like `click:on`
 
-we need to implement the `:on` attribute. and then we can match against onclick and `startswith("click:")`
- 
+
 1. the normal event loop, propagation as bubbling.
 2. the _global reactions as pre-propagation.
 3. postPropagation() actions, cancellable and non-cancellable
