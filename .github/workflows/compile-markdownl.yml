@@ -12,8 +12,12 @@ jobs:
     - uses: actions/checkout@v3
     - name: Compile Markdown Files
       run: |
-        mkdir compiled
         concat_files() {
+          if [ -d "compiled" ]; then
+            rm -f compiled/output.md
+          else
+            mkdir compiled
+          fi
           find . -type f -name "*.md" -print0 | sort -z | while read -d $'\0' file; do
             echo "<!-- $file -->" >> compiled/output.md
             cat "$file" >> compiled/output.md
@@ -23,10 +27,12 @@ jobs:
         concat_files
     - name: Compile HTML Files
       run: |
-        if [ ! -d "compiled" ]; then
-          mkdir compiled
-        fi
         concat_files() {
+          if [ -d "compiled" ]; then
+            rm -f compiled/output.html
+          else
+            mkdir compiled
+          fi
           find . -type f -name "*.html" -print0 | sort -z | while read -d $'\0' file; do
             echo "<!-- $file -->" >> compiled/output.html
             cat "$file" >> compiled/output.html
