@@ -14,20 +14,23 @@ jobs:
       run: |
         mkdir compiled
         concat_files() {
-          for file in "$@"
-          do
+          find . -type f -name "*.md" -print0 | sort -z | while read -d $'\0' file; do
+            echo "<!-- $file -->" >> compiled/output.md
             cat "$file" >> compiled/output.md
             echo "" >> compiled/output.md
           done
         }
-        concat_files *.md  # Note the quote around *.md
+        concat_files
     - name: Compile HTML Files
       run: |
         if [ ! -d "compiled" ]; then
           mkdir compiled
         fi
         concat_files() {
-          find . -type f -name "*.html" -print0 | sort -z | xargs -0 cat >> compiled/output.html
+          find . -type f -name "*.html" -print0 | sort -z | while read -d $'\0' file; do
+            echo "<!-- $file -->" >> compiled/output.html
+            cat "$file" >> compiled/output.html
+          done
         }
         concat_files
     - name: Commit Compiled Files
