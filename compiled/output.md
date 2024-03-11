@@ -1,8 +1,18 @@
+
+
 <!-- ./README.md -->
+
+
 # doubledots
 The re-discovery of HTML
 
+
+
+
+
 <!-- ./doc/1_intro.md -->
+
+
 ## Basic concept of _HTML doubledots_ (or `HTML:` or just "doubledots")
 
 This framework enables you to write a full web application using only html. It does so by extending html attributes, so that they can represent event listeners.
@@ -79,7 +89,13 @@ Some technical details:
 2. To break the chain reaction, you need to `throw` the special `customReactions.break` error. This might seem a little cumbersome, agree, but you will come to like it a little later on. Trust me. But the essence of the special break is that it frees your code to _freely_ `return` and `throw` _anything you want_.
 
 >> this example 'click:open' is doing the same thing as the 'a href' would do. It is not doing something new.
+
+
+
+
 <!-- ./doc/2_dynamic_html.md -->
+
+
 ## HTML changing HTML
 
 The primary usecase for HTML doubledots is to add simple reactions that change the HTML document dynamically. Here are a few examples:
@@ -164,7 +180,13 @@ To illustrate how we can change the DOM, we will make a TODO list. If  you `clic
 ```
 
 
+
+
+
+
 <!-- ./doc/3_chaining_definition.md -->
+
+
 # Chain reactions and custom reaction definitions (part 1)
 
 ## 1. chain reactions
@@ -239,7 +261,13 @@ When the virtual event loop inside doubledots invoke the reaction, it does so by
 
 In practice, this excludes all methods (ie. functions that rely on and use `this` inside). But if the function doesn't use `this` and has an argument structure that fits with the `(e, oi)` argument list, then it is no problem just defining that function as a custom reaction.
 
+
+
+
+
 <!-- ./doc/4_break_chain_reactions.md -->
+
+
 # Breaking chain reactions
 
 There are two ways a chain reaction can be broken:
@@ -368,7 +396,13 @@ It is possible to argue that the custom reactions are monadic. The monad would b
 But. Personally. I think that the conceptual model `trigger => filter => effect` is a more useful perspective. This perspective readily describe what you will be making 95% of the time. And this structure will make your code concise, readable and super effective.
 
 In addition to such normal custom reaction chains, you have a second type `attr-change:machine="state"` reaction. These statemachines we will return to shortly.
+
+
+
+
 <!-- ./doc/4_event_loop_globals.md -->
+
+
 # The virtual event loop
 
 >> See the chapter of native event loop problems if you are uncertain as to why the native event loop is *ripe* for simplification and what issues we are trying to solve with a virtual event 
@@ -426,7 +460,13 @@ we need to implement the `:on` attribute. and then we can match against onclick 
 ### `stopPropagation()` and `preventDefault()` and `setDefault()`  and `hasDefault()` and `postPropagation(cb)`
 this is a much more advanced set of properties for the event loop.
 also. `stopPropagation()` is not allowed. And `e.preventDefault()` should still work.
+
+
+
+
 <!-- ./doc/5_load_times.md -->
+
+
 # How to trigger custom reactions when the document loads?
 
 Two main issues:
@@ -434,9 +474,21 @@ Two main issues:
 2. most often actually associated with waiting for definitions to be ready, not waiting for style and/or dom.
 
 
+
+
+
+
 <!-- ./doc/6_create_custom_events.md -->
 
+
+
+
+
+
+
 <!-- ./doc/7_native_default_actions.md -->
+
+
 ## native default actions?
 
 No native default actions run by default, iff the event has been added to the virtual event loop. This means that in html doubledots, you activate all native default actions that you want to use by adding a special customReaction called `:nda`. `:nda` stands for "native default action", but it is also a reminder that the inner workings of the native default actions are as hidden and magical to us  regular developers as if they were sealed behind an Non-Disclosure Agreement.
@@ -463,7 +515,13 @@ In the example above, you can imagine the flow of control in this way.
 
 This is backwards. In normal HTML, the native default actions *run by default* and you must actively *disable* them by calling `e.preventDefault()`; in doubledots, the native default actions are *inactive by default*, so instead you must actively *enable* them by calling `:nda`.
 
+
+
+
+
 <!-- ./doc/api-call/api-call_example.md -->
+
+
 # Demo: How to handle forms
 
 ## 1. Template
@@ -584,7 +642,13 @@ We make the complete attribute `click:passVal:fileVal:submit:log` on the form el
 </form>
 ```
 
+
+
+
+
 <!-- ./doc/calculator/1_calculator.md -->
+
+
 Known steps:
 
 1. make the layout of a calculator. This can likely be stolen from template on the web, just find one with a simple template. Use the two lines variant, 1 = state, 2 = input. That is the simplest to make.
@@ -647,7 +711,13 @@ Math.js library is used for evaluations.
 
 5. And we are learning as we go. We actually want the custom reactions to listen on a `<form>` element around the table. And then we want the clicks to be transferred so that it can work against the children with particular `id` values. That will be a nice and clean loopkup structure, not accidentally mixing itself up with the dom.
 
+
+
+
+
 <!-- ./doc/calculator/calculator_example.md -->
+
+
 # Demo: How to build a calculator
 
 ## 1. Template first
@@ -799,7 +869,13 @@ With a calculator you want multiple events. Add reactions for keypress too.
 </script>
 ```
 
+
+
+
+
 <!-- ./doc/carousele/carousele_example.md -->
+
+
 # Demo: Building an Image carousele.
 
 ## 1. Template
@@ -809,7 +885,13 @@ With a calculator you want multiple events. Add reactions for keypress too.
 
 <!-- Leaving this undone untill gestures -->
 
+
+
+
+
 <!-- ./doc/infinite-scroll/scroll_example.md -->
+
+
 # Demo: building infinite scroll with doubledots.
 
 In this demo we will build an infinite scroll functionality that relies on observing a loader element.
@@ -826,7 +908,13 @@ We make a basic template for the functionality.
   <div inView:loadmore>Loading</div>
 </body>
 ```
+
+
+
+
 <!-- ./doc/theme-toggle/theme_example.md -->
+
+
 # Demo: Build a theme toggle.
 
 In this basic demo we will implement a theme toggle for our html with doubledots.
@@ -859,7 +947,13 @@ And done! The themeTogle reaction can be assigned to other events aswell.
 
 
 <!-- Should this example be continued? We could add a window event that when on load, checks cache for a preference stored previously, or browser preferences. -->
+
+
+
+
 <!-- ./doc/todo_list.md -->
+
+
 Assumed easy:
 A. Calculator
 
@@ -887,7 +981,13 @@ Questions
 
 A. Can we combine filters ?
 
+
+
+
+
 <!-- ./doc/x_native_event_loop_problems.md -->
+
+
 # Problems with the native event loop
 
 The main flow of control an HTML application is the event loop. The event loop is a queue. An event occurs, and it is added to the queue. The browser then executes each event, one by one.
@@ -920,7 +1020,13 @@ function setTimeout0(cb){
 8. When the propagation path is calculated, you cannot later add new elements to the path (such as by inserting a new ancestor), nor remove elements from the propagation path (such as by moving the current target to another branch of the dom). This makes sense, this kind of move-during-event-propagation would be super confusing and could easily turn into infinite loops. But, at the same time, it causes the path to sometimes become a "stale" representation of the DOM, somewhat dynamic (updated anew for each event), but still static (if the DOM changes during propagation, this change doesn't affect which elements' listeners will be invoked).
 
 9. The same problem with semi-stale dynamic ability applies to listeners per element. If you add another event listener to the currentTarget of an event, then that listener will not run on the same event. However, if you remove a later event listener on the same element for the same event, then that event listener will *not* run. This makes sense in practice, and rarely cause any problems, but it is still small-print-details that specify a series of special points in time, ie. when-path-is-calculated and when-listeners-on-an-element-is-gotten, that the developer should take into account when adding and removing event listeners during propagation, or (re)moving elements in the current propagation path.
+
+
+
+
 <!-- ./for-ai/compiledMD.md -->
+
+
 # Intro.md
 
 ## Basic concept of _HTML doubledots_ (or `HTML:` or just "doubledots")
@@ -1319,4 +1425,6 @@ In the example above, you can imagine the flow of control in this way.
 2. But then, the `click:is_active:nda` checks that a certain condition `:is_active` is met, and if so, it re-adds the native default action of the `click` event.
 
 This is backwards. In normal HTML, the native default actions *run by default* and you must actively *disable* them by calling `e.preventDefault()`; in doubledots, the native default actions are *inactive by default*, so instead you must actively *enable* them by calling `:nda`.
+
+
 
