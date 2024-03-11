@@ -34,22 +34,37 @@ Single attribute events do not propagate. They only trigger the *one* custom rea
 
 But for the element events (both the single document and all documents events), the custom reactions are executed in the following sequence:
 
-1. _global reactions. Each reaction is run in the sequence it was added. _global reactions only run on elements and custom reaction attributes that are connected to the DOM.
-2. bubble the path, target and up. The path is calculated at the beginning of the bubble propagation. This means that if you insert an ancestor element in an event reaction, then this element will not be included in the propagation path. However, if you remove an ancestor element, then this change will be registered, and any event reactions on it will not be triggered. And the final note: if an ancestor is added in the _global reaction stage, then those ancestors will trigger the propagation. Also, if a _global reaction removes the target element of the event from the DOM, then that will remove the entire path.
-3. For each element, the custom reaction attributes are triggered left to right. As with elements in the path, the list of custom reactions are calculated at the beginning of propagation, and then custom reaction attributes can be removed from the list, but not added. 
-4. After the event has finished bubbling, the default action will be triggered. 
+**Pre-propagation:** _global reactions. Each reaction is run in the sequence it was added. _global reactions only run on elements and custom reaction attributes that are connected to the DOM.
+
+**Propagation:** bubble the path, target and up. The path is calculated at the beginning of the bubble propagation. This means that if you insert an ancestor element in an event reaction, then this element will not be included in the propagation path. However, if you remove an ancestor element, then this change will be registered, and any event reactions on it will not be triggered. And the final note: if an ancestor is added in the _global reaction stage, then those ancestors will trigger the propagation. Also, if a _global reaction removes the target element of the event from the DOM, then that will remove the entire path.
+
+For each element, the custom reaction attributes are triggered left to right. As with elements in the path, the list of custom reactions are calculated at the beginning of propagation, and then custom reaction attributes can be removed from the list, but not added. 
+
+**Post-propagation:** After the event has finished bubbling, the default action will be triggered. Default actions are cancellable, ie. if the `e.preventDefault()` has been called on a default action, then no default action reactions will be triggered.
+
+## Default actions
+
+`.preventDefault()` can no longer be called from javascript. This is because the method enables developers inside the shadowDom of web components to affect change in the lightDom. The benefits of such behavior do not outweigh their problems. Hence, calling `.preventDefault()` or an equivalent method, should only be allowed to affect the scope of the current document. And therefore, the native `.preventDefault()` is no longer available.
+
+The virtual event loop enables a set of actions to set the default action. You can add a default action by using the `::da` custom reaction. You should always use `::` before the `da` reaction, because the reaction chain after the default action is by definition async.
+
+To stop the default action, you can use the `:prevent-da` custom reaction. You can also call `e.preventDefault()` inside one of your own custom reactions.
+
+To check if the event has already been given a default action, you can use `:has-da`. This method will `return true` if the event has been given a default action.
+
+The native default action has to be *enabled* in doubledots. This means that you must add `:nda` meaning "native default action" to an event reaction for the event to regain its native reaction.
+
+The virtual event loop implements the default actions as an immutable list where `:da`, `:nda`, and `:prevent-da` are pushed to a list as they are encountered. Then, post propagation, when the default action is to be read, this list is then read (backwards) to identify what actions are to be performed. This enables the developer to read the event loop at different times and recognize what default actions commands where given for any event. This also enables the developer to re-add a default action after `:prevent-da` has been called.
 
 
 
+>> There is a problem with timing of native default actions. If a native event has native default actions, then a macro-task break should occur in the virtual event loop *before* the next event is processed. This break will enable the browser to correctly time the native default action. This break can be achieved by adding a `nextTick` (using ratechange) at the end of the event loop cycle when `:nda` is encountered.
 
+## No more `.stopPropagation()` 
 
+`.stopPropagation()` and `.stopImmediatePropagation()` is not part of the virtual event loop. The reason for this is that it is a problematic concept when different developers are supposed to collaborate across shadowDom boundaries. Here is why:
 
-1. the normal event loop, propagation as bubbling.
-2. the _global reactions as pre-propagation.
-3. postPropagation() actions, cancellable and non-cancellable
-4. events on a custom reaction only
-4. adding your own default actions.
+Imagine that you use another web component around some of the elements in your lightDom. Now inside the web component, there is an event listener that calls `.stopPropagation()` on some of your events, some of the time. This is not clearly specified in the web components docs. And you didn't anticipate this behavior. Will this behavior likely cause more or less problems in your code than not having `.stopPropagation()`?
 
-### `stopPropagation()` and `preventDefault()` and `setDefault()`  and `hasDefault()` and `postPropagation(cb)`
-this is a much more advanced set of properties for the event loop.
-also. `stopPropagation()` is not allowed. And `e.preventDefault()` should still work.
+There are use-cases where you need functionality similar to `.stopPropagation()`. However, this is most likely something that can better be achieved using flags on the `Event` object itself. These flags should only be added below, and then read above. Or counted in a linear direction. You should not remove or overwrite the value of such flags. If you follow these principles, your code will be more immutable and easier to manage over time.
+
