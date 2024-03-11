@@ -19,9 +19,9 @@ jobs:
             mkdir compiled
           fi
           find . -type f -name "*.md" -print0 | sort -z | while read -d $'\0' file; do
-            echo "<!-- $file -->" >> compiled/output.md
+            echo -e "\n\n<!-- $file -->\n\n" >> compiled/output.md
             cat "$file" >> compiled/output.md
-            echo "" >> compiled/output.md
+            echo -e "\n\n" >> compiled/output.md
           done
         }
         concat_files
@@ -34,8 +34,9 @@ jobs:
             mkdir compiled
           fi
           find . -type f -name "*.html" -print0 | sort -z | while read -d $'\0' file; do
-            echo "<!-- $file -->" >> compiled/output.html
+            echo -e "\n\n<!-- $file -->\n\n" >> compiled/output.html
             cat "$file" >> compiled/output.html
+            echo -e "\n\n" >> compiled/output.html
           done
         }
         concat_files
