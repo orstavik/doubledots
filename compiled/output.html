@@ -1,3 +1,4 @@
+<!-- ./doc/api-call/api-call.html -->
 <body>
   <h1>Registry example</h1>
   <form click:passVal:fileVal:submit:log>
@@ -65,7 +66,8 @@
 
     customReactions.define("log", console.log);
   </script>
-</body><!DOCTYPE html>
+</body><!-- ./doc/calculator/calculator.html -->
+<!DOCTYPE html>
 <html>
   <head>
     <title>Simple Calculator</title>
@@ -214,6 +216,7 @@
     </script>
   </body>
 </html>
+<!-- ./doc/carousele/carousele.html -->
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -315,6 +318,7 @@
     </div>
   </body>
 </html>
+<!-- ./doc/infinite-scroll/scroll.html -->
 <body>
   <h1>Infinite Scroll Example</h1>
 
@@ -345,7 +349,8 @@
       alert(`Modal Opened for ${number}`)
     })
   </script>
-</body><body>
+</body><!-- ./doc/theme-toggle/theme.html -->
+<body>
   <h1>Theme Toggle Example</h1>
 
   <button click:themeTogle>Toggle Theme</button>
@@ -354,7 +359,8 @@
       document.body.classList.toggle('dark')
     })
   </script>
-</body><!-- API CALL EXAMPLE -->
+</body><!-- ./for-ai/compiledHTML.html -->
+<!-- API CALL EXAMPLE -->
 
 <body>
   <h1>Registry example</h1>
@@ -628,6 +634,7 @@
 
   </script>
 </body>
+<!-- ./test/elementObserver/test1.html -->
 <test-html test="test_click_colon.html">
   <script expected>[
     ["click:bob", "DIV"],
@@ -641,7 +648,8 @@
   </script>
 </test-html>
 
-<script src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.3/TestHTML.js"></script><script src="../../src/nativeEvents.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.3/TestHTML.js"></script><!-- ./test/elementObserver/test_click_colon.html -->
+<script src="../../src/nativeEvents.js"></script>
 <script src="../../src/elementObserver2.js"></script>
 <script src="../../src/test-framework.js"></script>
 
@@ -673,7 +681,8 @@
 
   document.body.insertAdjacentHTML("beforeend", "<web-comp web-comp:two>two</web-comp>");
 </script>
-<div> last child </div>
+<div> last child </div><!-- ./test/scriptBlocker/block_script_test.html -->
+
 <script>
 function hello(){
   let latest = document.documentElement;
@@ -698,6 +707,7 @@ hello();
 
 <img onload="hello()" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Tiny transparent GIF" />
 <div>curious when this is visible</div>
+<!-- ./test/scriptBlocker/nativeEvents.html -->
 <script src="nativeEvents.js"></script>
 <script>
 
@@ -775,7 +785,8 @@ hello();
   // //3. 101 DOM events. Of these DOM events, there are 10 events that do not have a `window.on___` property.
   // //   But it works listening for at least some of these events using window.addEventListener.
   // //   We call these DOM* events, but they are not really different from the other DOM events.
-</script><test-html test="block_script_test.html">
+</script><!-- ./test/scriptBlocker/test1.html -->
+<test-html test="block_script_test.html">
   <script expected>[
     ["sunshine", "SCRIPT"],
     ["sunshine", "DIV"]
@@ -927,4 +938,4 @@ hello();
   ]</script>
 </test-html>
 
-<script src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.3/TestHTML.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.3/TestHTML.js"></script><!-- ./test/test.html -->
