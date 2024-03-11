@@ -30,14 +30,14 @@ In terms of native events, this can be thought of as `{bubbling: true, composed:
 
 ## Propagation sequence
 
-Single attribute events do not propagate. They only trigger the *one* custom reaction. That's that for those.
+Single attribute events do not propagate. They only trigger the *one* custom reaction attribute. That's that for those.
 
 But for the element events (both the single document and all documents events), the custom reactions are executed in the following sequence:
 
 1. _global reactions. Each reaction is run in the sequence it was added. _global reactions only run on elements and custom reaction attributes that are connected to the DOM.
-2. bubble the path, target and up. The path is calculated at the beginning of the bubble propagation, and cannot add any elements during propagation, (but elements can be removed from the propgation path).
+2. bubble the path, target and up. The path is calculated at the beginning of the bubble propagation. This means that if you insert an ancestor element in an event reaction, then this element will not be included in the propagation path. However, if you remove an ancestor element, then this change will be registered, and any event reactions on it will not be triggered. And the final note: if an ancestor is added in the _global reaction stage, then those ancestors will trigger the propagation. Also, if a _global reaction removes the target element of the event from the DOM, then that will remove the entire path.
 3. For each element, the custom reaction attributes are triggered left to right. As with elements in the path, the list of custom reactions are calculated at the beginning of propagation, and then custom reaction attributes can be removed from the list, but not added. 
-4. After the event has finished bubbling, the default action will be run. 
+4. After the event has finished bubbling, the default action will be triggered. 
 
 
 
