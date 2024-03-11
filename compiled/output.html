@@ -1,4 +1,8 @@
 
+
+<!-- ./doc/api-call/api-call.html -->
+
+
 <body>
   <h1>Registry example</h1>
   <form click:passVal:fileVal:submit:log>
@@ -39,6 +43,17 @@
     // 
 
     customReactions.define("submit", async function(e) {
+      // e.preventDefault(); not needed
+
+      // if not in the submit button, break the chain
+      // this should be a filter, even in the simplest method
+      // why? why have it separate, and not just in a single reaction.
+      
+      // 1. readability in the dom. event:filter:effect, this is what people expect.
+
+      // 2. reusability. There are ready made filters and effects for this kind of use-case. So if you do the normal filter and normal effect, you can reuse code.
+
+      // 3. composeability. It is easier to maintain and further develop the submit reaction with the server requirements, if kept alone and when it doesn't involve html template requirements. Similarly, it is easier to maintain the html template and the template oriented filters, if we do not have to think about server communication and requirements at the same time.
 
       if (e.target.id !== "submit") 
         return customReactions.break;
@@ -213,8 +228,94 @@
   </body>
 </html>
 
+
+
+
+
 <!-- ./doc/carousele/carousele.html -->
 
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .carousele, .carouseleCont {
+        display: flex;
+        gap: 20px;
+      }
+
+      .carouseleCont {
+        overflow: hidden;
+        width: 400px;
+        height: 300px;
+        position: relative;
+      }
+      .cItem {
+        width: 210px;
+        height: 210px;
+        overflow: hidden;
+        position: absolute;
+        flex-shrink: 0;
+        top: 50px;
+        transition: all 0.5s;
+      }
+      .cItem1 {
+        left: 40%;
+        transform: translateX(-50%);
+        z-index: -1;
+      }
+      .cItem2 {
+        left: 50%;
+        transform: translateX(-50%);
+      }
+      .cItem3 {
+        left: 60%;
+        transform: translateX(-50%);
+        z-index: -1;
+      }
+    </style>
+
+    <script>
+      function moveLeft() {
+        let items = document.getElementsByClassName("cItem");
+        for (let i = 0; i < items.length; i++) {
+          let item = items[i];
+          let className = item.className;
+          let number = className.charAt(className.length - 1);
+          number = parseInt(number);
+          if (number === 3) {
+            number = 1;
+          } else {
+            number = number + 1;
+          }
+          item.className = "cItem " + "cItem" + number;
+        }
+      }
+
+      function moveRight() {
+        let items = document.getElementsByClassName("cItem");
+        for (let i = 0; i < items.length; i++) {
+          let item = items[i];
+          let className = item.className;
+          let number = className.charAt(className.length - 1);
+          number = parseInt(number);
+          if (number === 1) {
+            number = 3;
+          } else {
+            number = number - 1;
+          }
+          item.className = "cItem " + "cItem" + number;
+        }
+      }
+
+      customReactions.define('rightBtn', moveRight);
+      customReactions.define('leftBtn', moveLeft);
+
+    </script>
+  </head>
   <body>
     <h2>Carousele Example</h2>
 
@@ -234,8 +335,14 @@
       <button id="Right" click:rightBtn>></button>
     </div>
   </body>
+</html>
+
+
+
+
 
 <!-- ./doc/infinite-scroll/scroll.html -->
+
 
 <body>
   <h1>Infinite Scroll Example</h1>
@@ -269,7 +376,11 @@
   </script>
 </body>
 
+
+
+
 <!-- ./doc/theme-toggle/theme.html -->
+
 
 <body>
   <h1>Theme Toggle Example</h1>
@@ -282,282 +393,7 @@
   </script>
 </body>
 
-<!-- ./for-ai/compiledHTML.html -->
 
-<!-- API CALL EXAMPLE -->
-
-<body>
-  <h1>Registry example</h1>
-  <form click:passVal:fileVal:submit:log>
-    <input type="text" id="user" placeholder="user">
-    <input type="text" id="password" placeholder="password" change:passVal>
-    <!-- <input type="text" id="passwordconf" placeholder="passwordconf" change:passVal> -->
-    <!-- <input type="file" id="profile" name="profile" change:fileVal> -->
-    <button type="submit" id="submit">Submit</button>
-  </form>
-
-  <script>
-    customReactions.define("passVal", function(e) {
-      const password = document.getElementById("password").value;
-      const passwordconf = document.getElementById("passwordconf").value;
-
-      //builtin regex for input type=text form validation
-      if (password.length <= 8) { 
-        this.ownerElement.addClass("invalid");
-        return customReactions.break;
-      }
-      if (password !== passwordconf) 
-        return customReactions.break;
-    });
-
-    customReactions.define("fileVal", function(e) {
-      let profile = document.getElementById("profile").files[0];
-      if (profile.size > 1000000) {
-        this.ownerElement.addClass("tooBig")
-        return customReactions.break;
-      }
-      if (profile.filetype !== "image/png") {
-        // throw new Error("wrong file type");
-        return customReactions.break;
-      }
-    });
-
-    // async effect, so we should have click:button_filter::submit:log
-    // 
-
-    customReactions.define("submit", async function(e) {
-      // e.preventDefault(); not needed
-
-      // if not in the submit button, break the chain
-      // this should be a filter, even in the simplest method
-      // why? why have it separate, and not just in a single reaction.
-      
-      // 1. readability in the dom. event:filter:effect, this is what people expect.
-
-      // 2. reusability. There are ready made filters and effects for this kind of use-case. So if you do the normal filter and normal effect, you can reuse code.
-
-      // 3. composeability. It is easier to maintain and further develop the submit reaction with the server requirements, if kept alone and when it doesn't involve html template requirements. Similarly, it is easier to maintain the html template and the template oriented filters, if we do not have to think about server communication and requirements at the same time.
-
-      if (e.target.id !== "submit") 
-        return customReactions.break;
-
-      const response = await fetch("/api/register", {
-        method: "POST",
-        body: new FormData(this.ownerElement)
-      });
-      const data = await response.json();
-      if (data.error)  //is the .error an Error instance??
-        throw new NetworkError(data.error); //todo research what type of error object to be thrown 
-      return data;
-    });
-
-    customReactions.define("log", console.log);
-  </script>
-</body>
-
-<!-- CALCULATOR EXAMPLE -->
-
-<body>
-  <table id="calculator" click:is_number:add_number _keypress:is_number:add_number click:is_operator:do_operator _keypress:is_operator:do_operator>
-    <tr>
-      <td id="result"></td>
-      <td id="operation"> x </td>
-    </tr>
-    <tr>
-      <td id="input"></td>
-      <td class="operator">C</td>
-    </tr>
-    <tr>
-      <td class="number">1</td>
-      <td class="number">2</td>
-      <td class="number">3</td>
-      <td class="operator">/</td>
-    </tr>
-    <tr>
-      <td class="number">4</td>
-      <td class="number">5</td>
-      <td class="number">6</td>
-      <td class="operator">*</td>
-    </tr>
-    <tr>
-      <td class="number">7</td>
-      <td class="number">8</td>
-      <td class="number">9</td>
-      <td class="operator">-</td>
-    </tr>
-    <tr>
-      <td class="number">0</td>
-      <td class="number">.</td>
-      <td class="operator">=</td>
-      <td class="operator">+</td>
-    </tr>
-  </table>
-
-  <script>
-    // filters
-    // 1. illustrate how we retrieve data from the event and from the target in the dom.
-    //    no need to add lots of attribute or elements, if we can read the state directly
-    //    from either the event or the dom.
-    // 2. illustrate that we pass along the filtered output to the next reaction in the chain
-    //    and illustrate how we break the chain.
-    customReactions.define("is_number", function (e) {
-      //TODO MAKE BETTER CHECK
-      //TODO MAKE BETTER CHECK
-      if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
-      if (e.type === "keypress" && e.key.matches(/0-9/)) return e.key;
-      if (e.type === "click" && e.target.innerText.matches(/0-9/)) return e.target.innerText;
-      throw customReactions.break;
-    });
-    customReactions.define("is_operator", function (e) {
-      //TODO MAKE BETTER CHECK
-      //TODO MAKE BETTER CHECK
-      if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
-      if (e.type === "keypress") {
-        if (e.key === "Esc") return "clear";
-        if (["=", "+", "-", "/", "*"].indexOf(e.key) >= 0) return e.key;
-      }
-      if (e.type === "click") {
-        const targetTxt = e.target.innerText;
-        if (["=", "+", "-", "/", "*", "clear"].indexOf(targetTxt) >= 0) return targetTxt;
-      }
-      throw customReactions.break;
-    });
-
-    //reducers
-    //1. illustrate how we can get data from previous reactions using the `i` argument.
-    //2. illustrate how we can get dom nodes we can change.
-    //   Important tip: 1. add the reactions around both the trigger elements and the to-be-changed elements. This way, you can likely catch many triggers with the same custom reaction, and it is safe to find the right dom element with less chance of it being confused with another part of your dom. Add custom reactions to the shared ancestor.
-    customReactions.define("do_operator", function (e, i) {
-      const input = this.ownerElement.querySelector("#input");
-      const result = this.ownerElement.querySelector("#result");
-      const operation = this.ownerElement.querySelector("#operation");
-      // we queue operations to display the previous value and the next to be computed
-      // on each operation, we check if the is no input, only the queued operation is changed
-
-      function solve() {
-        const a = parseFloat(result.innerText);
-        const b = parseFloat(input.innerText);
-        if (operation.innerText === "+") {
-          result.innerText = a + b;
-        } else if (operation.innerText === "-") {
-          result.innerText = a - b;
-        } else if (operation.innerText === "/") {
-          result.innerText = a / b;
-        } else if (operation.innerText === "*") {
-          result.innerText = a * b;
-        }
-        input.innerText = "";
-        operation.innerText = "";
-      }
-
-      if (i === "clear") {
-        result.innerText = "";
-        input.innerText = "";
-        operation.innerText = "";
-        return;
-      }
-
-      // if neither value nor input available, do nothing.
-      if (input.innerText === "" && result.innerText === "") return;
-
-      // if there is no result, we set the result to the input and clear the input, also set the operation later.
-      if (result.innerText === "" && input.innerText !== "") {
-        result.innerText = input.innerText;
-        input.innerText = "";
-      }
-
-      // if there is a result, an input, and a queued operation, we compute the result and set the next operation later.'
-      if (result.innerText !== "" && input.innerText !== "" && operation.innerText !== "") {
-        solve();
-      }
-      
-      // CHECK IF SOLVING IS NEEDED
-      if (i === "=") {
-        solve();
-        return;
-      }
-
-      //if there is a result but not an input only change the operation to be computed next.
-
-      //By this point, we can be sure that the result is set, and the input is clear, and the operation can be changed.
-      if (i === "+") {
-        operation.innerText = "+";
-      } else if (i === "-") {
-        operation.innerText = "-";
-      } else if (i === "/") {
-        operation.innerText = "/";
-      } else if (i === "*") {
-        operation.innerText = "*";
-      }
-    });
-
-    customReactions.define("add_number", function (e, i) {
-      const input = this.ownerElement.querySelector("#input");
-      if (i === "." && input.innerText.indexOf(".") >= 0) return;
-      input.innerText += i;
-    });
-  </script>
-</body>
-
-<!-- CAROUSELE EXAMPLE -->
-
-<body>
-  <h2>Carousele Example</h2>
-
-  <div class="carousele">
-    <button id="Left" click:leftBtn><</button>
-    <div class="carouseleCont">
-      <div class="cItem cItem1" >
-        <img src="https://via.placeholder.com/200" alt="" style="border: green solid 1px;"/>
-      </div>
-      <div class="cItem cItem2">
-        <img src="https://via.placeholder.com/200" alt="" style="border: blue solid 1px;"/>
-      </div>
-      <div class="cItem cItem3">
-        <img src="https://via.placeholder.com/200" alt="" style="border: red solid 1px;"/>
-      </div>
-    </div>
-    <button id="Right" click:rightBtn>></button>
-  </div>
-
-  <script>
-    function moveLeft() {
-      let items = document.getElementsByClassName("cItem");
-      for (let i = 0; i < items.length; i++) {
-        let item = items[i];
-        let className = item.className;
-        let number = className.charAt(className.length - 1);
-        number = parseInt(number);
-        if (number === 3) {
-          number = 1;
-        } else {
-          number = number + 1;
-        }
-        item.className = "cItem " + "cItem" + number;
-      }
-    }
-
-    function moveRight() {
-      let items = document.getElementsByClassName("cItem");
-      for (let i = 0; i < items.length; i++) {
-        let item = items[i];
-        let className = item.className;
-        let number = className.charAt(className.length - 1);
-        number = parseInt(number);
-        if (number === 1) {
-          number = 3;
-        } else {
-          number = number - 1;
-        }
-        item.className = "cItem " + "cItem" + number;
-      }
-    }
-
-    customReactions.define('rightBtn', moveRight);
-    customReactions.define('leftBtn', moveLeft);
-
-  </script>
-</body>
 
 
 <!-- ./test/elementObserver/test1.html -->
