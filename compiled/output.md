@@ -238,10 +238,12 @@ The use and combination of dash and dot reactions was originally built to suppor
 
 ## `:debounce_` rule
 
+## `:throttle_` rule
+
 ```js
-//regular reaction implementation of debounce, delay = 1000ms
+//regular reaction implementation of throttle, cap = 1000ms
 const active = new WeakSet();
-customReactions.define("debounce", async function (e, oi) {
+customReactions.define("throttle", async function (e, oi) {
   const key = e.currentAttribute;
   if (active.has(key)) return customReactions.break;
   active.add(key);
@@ -250,8 +252,8 @@ customReactions.define("debounce", async function (e, oi) {
   return oi;
 });
 
-// custom reaction rule implementation of debounce, debounce_delay = 1000ms
-customReactions.defineRule("debounce_", function (name) {
+// custom reaction rule implementation of throttle, throttle_cap = 1000ms
+customReactions.defineRule("throttle_", function (name) {
   const active = new WeakSet();
   const delay = name.split("_")[1];
   return function (e, oi) {
