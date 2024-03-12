@@ -392,3 +392,352 @@
     })
   </script>
 </body>
+
+
+
+
+<!-- ./test/elementObserver/test1.html -->
+
+
+<test-html test="test_click_colon.html">
+  <script expected>[
+    ["click:bob", "DIV"],
+    ["offline:something", "H3"],
+    ["online:hello", "DIV"],
+    ["mousemove:santa", "H1"],
+    [":bob:bob", "P"],
+    ["web-comp:one", "WEB-COMP"],
+    ["web-comp:two", "WEB-COMP"]
+  ]
+  </script>
+</test-html>
+
+<script src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.3/TestHTML.js"></script>
+
+
+
+
+<!-- ./test/elementObserver/test_click_colon.html -->
+
+
+<script src="../../src/nativeEvents.js"></script>
+<script src="../../src/elementObserver2.js"></script>
+<script src="../../src/test-framework.js"></script>
+
+<div click:bob></div>
+
+<script id=one>
+  document.body.insertAdjacentHTML("afterbegin", "<h3 offline:something>else</h3>");
+</script>
+
+<div online:hello>number 2</div>
+
+<script id=two>
+  setTimeout(function () {
+    document.body.lastElementChild.innerHTML = "<h1 mousemove:santa>hello</h1>";
+  }, 1000);
+</script>
+
+<web-comp web-comp:one>one</web-comp>
+
+<script id=three>
+  class WebComp extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: "open" });
+      this.shadowRoot.innerHTML = "<p :bob:bob>hello sunshine</p>";
+    }
+  }
+  customElements.define("web-comp", WebComp);
+
+  document.body.insertAdjacentHTML("beforeend", "<web-comp web-comp:two>two</web-comp>");
+</script>
+<div> last child </div>
+
+
+
+
+<!-- ./test/scriptBlocker/block_script_test.html -->
+
+
+
+<script>
+function hello(){
+  let latest = document.documentElement;
+  while (latest.lastElementChild)
+    latest = latest.lastElementChild;
+
+  console.log("sunshine", latest.tagName);
+}
+hello();
+</script>
+
+<script src="blockscript.js"></script>
+
+<h1>hello sunshine</h1>
+
+<script>console.log("sync1");debugger</script>
+<script src='data:text/javascript;base64,Y29uc29sZS5sb2coJ3N5bmMyJyk='>sync2</script>
+<script defer>console.log("defer1");</script>
+<script src='data:text/javascript;base64,Y29uc29sZS5sb2coJ2RlZmVyMicp'>defer2</script>
+<script async>console.log("async1");</script>
+<script src='data:text/javascript;base64,Y29uc29sZS5sb2coJ2FzeW5jMicp'>async2</script>
+
+<img onload="hello()" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Tiny transparent GIF" />
+<div>curious when this is visible</div>
+
+
+
+
+
+<!-- ./test/scriptBlocker/nativeEvents.html -->
+
+
+<script src="nativeEvents.js"></script>
+<script>
+
+  for (t of ["domEvents", "documentEvents", "windowEvents"]) {
+    events = [...window[t]()];
+    console.log(t, events.length);
+    console.log(...events);
+  }
+
+  console.log([
+    ["NativeDCLEvent", "domcontentloaded"],
+    ["ShadowRootEvent", "touchstart"],
+    ["ShadowRootEvent", "touchmove"],
+    ["ShadowRootEvent", "touchend"],
+    ["ShadowRootEvent", "touchcancel"]
+  ]);
+
+  // const protos = {
+  //   window,
+  //   DocumentProto: Document.prototype,
+  //   ElementProto: Element.prototype,
+  //   HtmlElementProto: HTMLElement.prototype
+  // };
+  // //1. get all the on<event> for the different types of targets.
+  // for (let p in protos)
+  //   protos[p] = Object.keys(protos[p]).filter(k => k.startsWith("on")).map(str => str.substring(2));
+
+  // //2. merge HtmlElementProto and ElementProto (irrelevant distinction for us here)
+  // protos.ElementProto.push(...protos.HtmlElementProto);
+  // delete protos.HtmlElementProto;
+
+  // //3. invert the map, event=>[targetType, ...]
+  // const eventToType = {};
+  // for (let p in protos)
+  //   for (let eventName of protos[p])
+  //     (eventToType[eventName] ??= []).push(p);
+
+  // //4. rename targetType
+  // for (let [key, value] of Object.entries(eventToType)) {
+  //   if (value.length === 1)
+  //     eventToType[key] = value[0];
+  //   else if (value.length === 3)
+  //     eventToType[key] = "DOM";
+  //   else if (value.length === 2 && value.indexOf("window") < 0)
+  //     eventToType[key] = "DOM*";
+  //   else
+  //     eventToType[key] = "ERROR, haven't seen this before";
+  // }
+
+  // //5. invert the map back again.
+  // const typeToEvent = {};
+  // for (let event in eventToType)
+  //   (typeToEvent[eventToType[event]] ??= []).push(event);
+
+  // //6. print the results against definitions
+  // const allEvents = new Set(Object.values(typeToEvent).flat(Infinity));
+  // console.log(`native events (count: ${allEvents.size}).`);
+
+  // //7. add problem events
+  // typeToEvent["problems"] = [
+  //   "domcontentloaded",//weirdo. No window.onDOMContentLoaded & case sensitive. annoying.
+  //   "touchstart", "touchmove", "touchend", "touchcancel",  //no element.ontouchstart = handler. Annoying.
+  // ];
+
+  // for (let type in typeToEvent) {
+  //   console.log(type, typeToEvent[type].length);
+  //   for (let event of typeToEvent[type])
+  //     console.log(customAttributes.getDefinition("_" + event, ["_" + event]).name, event);
+  // }
+
+  // //conclusion (oct 2022, Chrome):
+  // //native events (128 / 125 inside iframe)
+  // //1. 21 windowOnly events (18 inside iframe: devicemotion, deviceorientation, deviceorientationabsolute are not listed in iframe.)
+  // //2. 6 documentOnly events
+  // //3. 101 DOM events. Of these DOM events, there are 10 events that do not have a `window.on___` property.
+  // //   But it works listening for at least some of these events using window.addEventListener.
+  // //   We call these DOM* events, but they are not really different from the other DOM events.
+</script>
+
+
+
+
+<!-- ./test/scriptBlocker/test1.html -->
+
+
+<test-html test="block_script_test.html">
+  <script expected>[
+    ["sunshine", "SCRIPT"],
+    ["sunshine", "DIV"]
+  ]</script>
+</test-html>
+
+<test-html test="nativeEvents.html">
+  <script expected>[
+    "native events (count: 129).",
+    ["DOM", 94],
+    ["ShadowRootEvent", "search"],
+    ["ShadowRootEvent", "beforexrselect"],
+    ["ShadowRootEvent", "abort"],
+    ["ShadowRootEvent", "beforeinput"],
+    ["ShadowRootEvent", "blur"],
+    ["ShadowRootEvent", "cancel"],
+    ["ShadowRootEvent", "canplay"],
+    ["ShadowRootEvent", "canplaythrough"],
+    ["ShadowRootEvent", "change"],
+    ["ShadowRootEvent", "click"],
+    ["ShadowRootEvent", "close"],
+    ["ShadowRootEvent", "contextlost"],
+    ["ShadowRootEvent", "contextmenu"],
+    ["ShadowRootEvent", "contextrestored"],
+    ["ShadowRootEvent", "cuechange"],
+    ["ShadowRootEvent", "dblclick"],
+    ["ShadowRootEvent", "drag"],
+    ["ShadowRootEvent", "dragend"],
+    ["ShadowRootEvent", "dragenter"],
+    ["ShadowRootEvent", "dragleave"],
+    ["ShadowRootEvent", "dragover"],
+    ["ShadowRootEvent", "dragstart"],
+    ["ShadowRootEvent", "drop"],
+    ["ShadowRootEvent", "durationchange"],
+    ["ShadowRootEvent", "emptied"],
+    ["ShadowRootEvent", "ended"],
+    ["ShadowRootEvent", "error"],
+    ["ShadowRootEvent", "focus"],
+    ["ShadowRootEvent", "formdata"],
+    ["ShadowRootEvent", "input"],
+    ["ShadowRootEvent", "invalid"],
+    ["ShadowRootEvent", "keydown"],
+    ["ShadowRootEvent", "keypress"],
+    ["ShadowRootEvent", "keyup"],
+    ["ShadowRootEvent", "load"],
+    ["ShadowRootEvent", "loadeddata"],
+    ["ShadowRootEvent", "loadedmetadata"],
+    ["ShadowRootEvent", "loadstart"],
+    ["ShadowRootEvent", "mousedown"],
+    ["ShadowRootEvent", "mouseenter"],
+    ["ShadowRootEvent", "mouseleave"],
+    ["ShadowRootEvent", "mousemove"],
+    ["ShadowRootEvent", "mouseout"],
+    ["ShadowRootEvent", "mouseover"],
+    ["ShadowRootEvent", "mouseup"],
+    ["ShadowRootEvent", "mousewheel"],
+    ["ShadowRootEvent", "pause"],
+    ["ShadowRootEvent", "play"],
+    ["ShadowRootEvent", "playing"],
+    ["ShadowRootEvent", "progress"],
+    ["ShadowRootEvent", "ratechange"],
+    ["ShadowRootEvent", "reset"],
+    ["ShadowRootEvent", "resize"],
+    ["ShadowRootEvent", "scroll"],
+    ["ShadowRootEvent", "securitypolicyviolation"],
+    ["ShadowRootEvent", "seeked"],
+    ["ShadowRootEvent", "seeking"],
+    ["ShadowRootEvent", "select"],
+    ["ShadowRootEvent", "slotchange"],
+    ["ShadowRootEvent", "stalled"],
+    ["ShadowRootEvent", "submit"],
+    ["ShadowRootEvent", "suspend"],
+    ["ShadowRootEvent", "timeupdate"],
+    ["ShadowRootEvent", "toggle"],
+    ["ShadowRootEvent", "volumechange"],
+    ["ShadowRootEvent", "waiting"],
+    ["ShadowRootEvent", "webkitanimationend"],
+    ["ShadowRootEvent", "webkitanimationiteration"],
+    ["ShadowRootEvent", "webkitanimationstart"],
+    ["ShadowRootEvent", "webkittransitionend"],
+    ["ShadowRootEvent", "wheel"],
+    ["ShadowRootEvent", "auxclick"],
+    ["ShadowRootEvent", "gotpointercapture"],
+    ["ShadowRootEvent", "lostpointercapture"],
+    ["ShadowRootEvent", "pointerdown"],
+    ["ShadowRootEvent", "pointermove"],
+    ["ShadowRootEvent", "pointerrawupdate"],
+    ["ShadowRootEvent", "pointerup"],
+    ["ShadowRootEvent", "pointercancel"],
+    ["ShadowRootEvent", "pointerover"],
+    ["ShadowRootEvent", "pointerout"],
+    ["ShadowRootEvent", "pointerenter"],
+    ["ShadowRootEvent", "pointerleave"],
+    ["ShadowRootEvent", "selectstart"],
+    ["ShadowRootEvent", "selectionchange"],
+    ["ShadowRootEvent", "animationend"],
+    ["ShadowRootEvent", "animationiteration"],
+    ["ShadowRootEvent", "animationstart"],
+    ["ShadowRootEvent", "transitionrun"],
+    ["ShadowRootEvent", "transitionstart"],
+    ["ShadowRootEvent", "transitionend"],
+    ["ShadowRootEvent", "transitioncancel"],
+    ["ShadowRootEvent", "beforematch"],
+    ["ShadowRootEvent", "contentvisibilityautostatechange"],
+    ["window", 18],
+    ["NativeWindowEvent", "appinstalled"],
+    ["NativeWindowEvent", "beforeinstallprompt"],
+    ["NativeWindowEvent", "afterprint"],
+    ["NativeWindowEvent", "beforeprint"],
+    ["NativeWindowEvent", "beforeunload"],
+    ["NativeWindowEvent", "hashchange"],
+    ["NativeWindowEvent", "languagechange"],
+    ["NativeWindowEvent", "message"],
+    ["NativeWindowEvent", "messageerror"],
+    ["NativeWindowEvent", "offline"],
+    ["NativeWindowEvent", "online"],
+    ["NativeWindowEvent", "pagehide"],
+    ["NativeWindowEvent", "pageshow"],
+    ["NativeWindowEvent", "popstate"],
+    ["NativeWindowEvent", "rejectionhandled"],
+    ["NativeWindowEvent", "storage"],
+    ["NativeWindowEvent", "unhandledrejection"],
+    ["NativeWindowEvent", "unload"],
+    ["DocumentProto", 7],
+    ["NativeDocumentEvent", "readystatechange"],
+    ["NativeDocumentEvent", "pointerlockchange"],
+    ["NativeDocumentEvent", "pointerlockerror"],
+    ["NativeDocumentEvent", "freeze"],
+    ["NativeDocumentEvent", "resume"],
+    ["NativeDocumentEvent", "visibilitychange"],
+    ["NativeDocumentEvent", "prerenderingchange"],
+    ["DOM*", 10],
+    ["ShadowRootEvent", "beforecopy"],
+    ["ShadowRootEvent", "beforecut"],
+    ["ShadowRootEvent", "beforepaste"],
+    ["ShadowRootEvent", "fullscreenchange"],
+    ["ShadowRootEvent", "fullscreenerror"],
+    ["ShadowRootEvent", "webkitfullscreenchange"],
+    ["ShadowRootEvent", "webkitfullscreenerror"],
+    ["ShadowRootEvent", "copy"],
+    ["ShadowRootEvent", "cut"],
+    ["ShadowRootEvent", "paste"],
+    ["problems", 5],
+    ["NativeDCLEvent", "domcontentloaded"],
+    ["ShadowRootEvent", "touchstart"],
+    ["ShadowRootEvent", "touchmove"],
+    ["ShadowRootEvent", "touchend"],
+    ["ShadowRootEvent", "touchcancel"]
+  ]</script>
+</test-html>
+
+<script src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@v1.0.3/TestHTML.js"></script>
+
+
+
+
+<!-- ./test/test.html -->
+
+
+
+
+
