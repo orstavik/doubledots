@@ -758,12 +758,83 @@ There are use-cases where you need functionality similar to `.stopPropagation()`
 <!-- ./doc/6_threads_async_mode.md -->
 
 
-# `::`: the async/thread marker
+# Threads and async mode `::`
 
-Sync event loop.
+The ability to run functions such as network requests in the background without causing the entire functionality of the browser to freeze, is great. In JS anno 2024, this is done via `async function` s. `async functions` essentially start a thread that it will run in, so that the browser can continue performing other tasks.
 
-And the threading. when functions are allowed to run in parallell. This can be thought of as async mode, or threads.
+## Async race condition
 
+To illustrate the problem with the threaded nature of JS, let us take a look at an example. 
+
+```html
+<web-comp click:call_web-comp_method>
+  <div click:load:define_web-comp="WebComp.js">hello race</div>
+</web-comp>
+```
+//todo convert the :reaction into `onclick`.
+
+We imagine that we have a `<web-comp>` that we only load and define the definition of when we `click` on one of its child nodes. Also, when the `<web-comp>` is `click`ed, there will be a reaction run that rely on one of the methods of that web component. Now:
+
+1. We *know* that the event listener that loads and defines the web component inside the web component is run *before* the event listener on the event listener that rely on this definition.
+2. We also *know* that the event listener that loads the WebComp runs inside an async event listener function, so there will be no problem with the loading and defining function causing the browser to freeze.
+3. So. Everything should be fine. The `:call_web-comp_method` is triggered after the `:define_web-comp` listener, ensuring that the definition is loaded before it is used. And the `async`ability will ensure that the browser doesn't freeze while loading the network resource.
+
+Not quite. Many of you will probably have already seen the problem. Because the `:load:define_web-comp` listener is async, it will be threaded. This happens as soon as the browser encounters its first `await` (even when that `await` does not need to wait for a `Promise`). And this means that the event loop will spawn a micro task for the first event listener `:load:define_web-comp`, and hurry onwards to the next event listener *before* the resource has been loaded and defined. So. When the second listener is started, the definition of the `<web-comp>` has not yet been loaded, and `:call_web-comp_method` will fail. It is a race condition. Caused by a misunderstanding of the threaded nature of async event listeners. So. The event loop only fains single-threadedness. It isn't really.
+
+## The *sync* virtual event loop
+
+At its core, the virtual event loop is *sync*. This means that any custom reaction will be completed *before* the any other custom reaction is run. Yes, you heard right! You *can* halt *all* execution of custom reactions if you need to wait for a `Promise` inside a custom reaction. You can force the browser to freeze and wait for something, when and if you really want.
+
+```html
+<web-comp click:call_web-comp_method>
+  <div click:load:define_web-comp="WebComp.js">hello race</div>
+</web-comp>
+```
+
+If you did this, then the event loop would essentially *halt* all its other operations while waiting for `:load` to complete, thus ensuring that `:call_web-comp_method` would not be triggered until the definition was ready.
+
+## The *async*, threaded virtual event loop `::`
+
+But, at its fringes, the virtual event loop is also *async*. If you add the empty reaction `":"` in your reaction chain, then the event loop will *not* pause and wait for any `Promise`s in the rest of that reaction chain, but allow the rest of that reaction chain to be run in a thread.
+
+The empty reaction looks like a double colon prefix: `::load`. Essentially the double colon says that if the virtual event loop encounters a `Promise` *after* the `::`, then it will not halt the progression of the event loop, but instead create a thread that the rest of this reaction chain can run in. Between events, the virtual event loop will process and complete these loose threads.
+
+This means that we in Doubledots would do the following:
+
+```html
+<web-comp click::known-element:call_web-comp_method>
+  <div click::load:define_web-comp="WebComp.js">hello race</div>
+</web-comp>
+```
+
+Here we are add `::` before `::load` and a new `::known-element` reaction. This means that the `::load:define_web-comp` reaction will run in parallel with the event loop. At the same time, the `::known-element:call_web-comp_method` will also run in a thread. This second thread will for example poll to check if the `<web-comp>` has been given a definition yet, or not.
+
+## Why `::`?
+
+The ability to see *when* event listeners run in sync and async mode is *extremely* beneficial.
+
+The ability to *force* the event loop and execution to wait for a system critical resource is also *very nice*, when you need it.
+
+Furthermore, having the event loop work this way enables tooling to with great clarity illustrate what threads are active when and why. And when these threads resolve. You can imagine it as follows:
+1. the event loop as a stack of cards. 
+2. Each event is a card. Everything that happens is an event. And each event has finished propagating before the next one runs.
+3. For each event, you have a numbered list of reactionchains.
+4. Each reactionchain is divided into `:`-separated reactions.
+
+Furthermore, to make it easier to read:
+5. Every completed reaction that has completed is highlighted in green.
+6. Every failing reaction that throws an `Error` is highlighted in red.
+7. Every post-fail reaction in the same reaction chain as a failed reaction is highlighted in orange.
+8. Every non-run reaction that is not run because a previous reaction returned `customReactions.break` is highlighted in grey.
+
+And then, the really good stuff:
+9. Every reaction that is started as a thread, ie. a reaction after `::` that returns a promise and that the browser has spawned into a thread is marked darkblue.
+10. Once the darkblue reaction resolves, the reaction is marked with light blue.
+
+This means that at any time, you can look at all the cards in the loop and see:
+* what threads are currently active? all the lightblue reactions.
+* what are the reactions that will follow these reactions? All the non-highlighted reactions that follow the reaction.
+* Race condition? Yes, please, 'cause I want to see(!!) them:D
 
 
 
@@ -853,7 +924,19 @@ Even if a custom reaction inside `<web-comp>` called `.preventDefault()`, the br
 
 >> There is a problem with timing of native default actions. If a native event has native default actions, then a macro-task break should occur in the virtual event loop *before* the next event is processed. This break will enable the browser to correctly time the native default action. This break can be achieved by adding a `nextTick` (using ratechange) at the end of the event loop cycle when `:nda` is encountered.
 
-## `Event` implementation
+## Note on implementation
+
+```js
+customReactions.define("da", function(e,i){
+  const daDelayer = new Promise();
+  e.customDefault(daDelayer);
+  return daDelayer;
+});
+```
+
+When the virtual event loop processes the default action list, it will `promis.resolve(oi)` on the chosen default action, and `promise.resolve(customReactions.break)` on all the default actions that were prevented or not resolved.
+
+### `Event` implementation
 
 The below code illustrates how the virtual event loop manages the 
 
@@ -868,9 +951,9 @@ class Event {
   nativeDefault(){
     this.defaultActionList.push({action: Event.nda, document: this.currentElement.getRoot()});
   }
-  customDefault(){
+  customDefault(promise, oi){
     //outside check that the attribute is preceeded by `::`
-    this.defaultActionList.push({action: this.currentAttribute, document: this.currentElement.getRoot()});
+    this.defaultActionList.push({action: this.currentAttribute, document: this.currentElement.getRoot(), promise, oi});
   }
 
   processDefaultActions(){
@@ -894,7 +977,220 @@ class Event {
 <!-- ./doc/8_custom_triggers.md -->
 
 
+# custom `trigger:`
 
+## Undefined event triggers: `click:` and `_click:`
+
+When an event propagates, it will trigger reaction chain that contain the 
+
+## Define a `trigger:`
+
+In Doubledots you can also define your own `trigger:`. Triggers are event factories, sort of. Some are atomic and simple, like `set-timeout_10:` or `attr-change_style:` for example. Others are complex state machines like `swipeable` and `drag-n-drop`. In this chapter we start with the simple ones.
+
+To define a trigger is very similar to defining a reaction rule, except that the definition is not a function, but a `class` that `extends Attr`. This is what it looks like:
+
+```js
+customReactions.defineTrigger("prefix", class MyTrigger extends Attr{
+  this;//=> the attribute node
+});
+```
+
+Inside the trigger `class` you must implement *one* function called `upgrade(fullname)`. The `upgrade(fullname){...}` function is the constructor of the trigger (and if it wasn't impossible to invoke constructors using reflection in JS, it would have been called the `constructor(...)` too). 
+
+The `"prefix"` is the start of the trigger names that this definition will be applied to. No trigger prefix can overlap with another trigger prefix, but the reaction names and rule prefixes are completely separate from the trigger prefixes. 
+
+The `prefix` *cannot* startsWith `_`, `-`, or `.`. This will cause conflict with `_global` triggers, or come into conflict with HTML parsing of attributes. 
+
+The `prefix` *should* endsWith either `_` (if it parses name string arguments) or `able` (common for gestures). If the `prefix` does not endsWith the above, it should include either a `_`, or `.` so that it will not overlap with event names.
+
+The `upgrade(fullname)` callback is called immediately/asap when the trigger is created. Inside the `upgrade(){...}` the `this` is the attribute node that the custom trigger is part of. (In a previous version of Doubledots, custom triggers were named custom attributes, but we have changed this to make it clearer that the trigger is not the full attribute, but only part of it.) The argument `fullname` is the full name of the trigger. So, as with reaction rules, it is possible to pass arguments to your triggers as the tail of the trigger name.
+
+## `this.dispatchEvent()` and `this.ownerElement.dispatchEvent()`
+
+The purpose of triggers is to `dispatchEvent()`. There are two targets that the trigger *should* dispatch events too:
+1. `this` (the attribute)
+2. `this.ownerElement` (the element)
+
+> It is possible to dispatch events on other targets too, but you should try to avoid this if you can. The golden rule is that triggers dispatch events on either the attribute or element they are attached to.
+
+Events that are dispatched to an attribute only trigger the reactionchain on that particular attribute. No bubbling. No _global reactions. Triggers that dispatch single attribute only events are therefore "simpler" and "atomic". Technically, the event type name and the trigger name do not have to match, but in practice it is common to give the custom attribute event the same name as the trigger prefix.
+
+Events that are dispatched on the element will trigger all reactionchains for _global reactions and for trigger names matching its type name on other elements that it bubbles to. For such triggers you should therefore *not* give their custom event's the same type name as the prefix or full name of the trigger. For example, `swipeable` will dispatch `swipe` and `swipe-end` events.
+
+Triggers that dispatch full, normal, propagating element events are commonly more complex and stateful than triggers that dispatch simple, atomic attribute events. We will therefore discuss these triggers in subsequent chapters and here only focus on simple, atomic, stateless triggers.
+
+Event type names *cannot* startsWith `_`. Event type names *should not* contain `.` nor `_` and endsWith `able`.
+
+## Simple, atomic, (almost) stateless triggers
+
+### `attr_xyz:`
+
+Custom triggers replace all the native Observers in JS. In this example we use the Doubledots implementation of the attribute-change-trigger called `attr_xyz:`. This trigger essentially maps the behavior of `MutationObserver.observe(el, {attribute: true, attributeList: [x,y,z]})` into Doubledots:
+
+```html
+<script>
+  class AttrTrigger extends Attr{
+
+    async upgrade(attr_xyz) {
+      const [_, ...list] = attr_xyz.split("_");
+      const mo = new MutationObserver(mrs=>{
+        if (!this.isConnected)
+          return mo.disconnect();
+        for (let mr of mrs) {
+          const e = new Event("attr");
+          //e.changedAttributes = {name: oldValue,...};
+          this.dispatchEvent(e);
+        }
+      });
+      const settings = list.length? 
+        {attribute: true, attributeList: list} :
+        {attribute: true};
+      mo.observe(this.ownerElement, settings);
+    }
+  }
+  customReactions.defineTrigger("attr_", IntervalAttr);
+  customReactions.defineReaction("log", console.log);
+</script>
+
+<h1 attr_class:log class="sun shine">hello</h1>
+```
+
+### `inview:`
+
+In this example we use the `IntersectionObserver` to create a custom `inview:` trigger. `inview:` dispatches a new attribute event and triggers the reaction chain on the custom attribute every time the element it is attached to switches from out-of-view to in-view:
+
+```html
+<script>
+  class InviewTrigger extends Attr{
+
+    async upgrade(inview_thresholdPerc) {
+      const threshold = parseInt(inview_thresholdPerc.split("_")[1]) / 100;
+      const iso = new IntersectionObserver(_ => {
+        if (!this.isConnected)
+          return iso.disconnect();
+        this.dispatchEvent(new Event("inview"));
+      });
+      const options = { threshold, root: null, rootMargin: '0px' };
+      iso.observe(this.ownerElement, options);
+    }
+  }
+  customReactions.defineTrigger("inview_", IntervalAttr);
+  customReactions.defineReaction("hello", _ => console.log("sunshine"));
+</script>
+
+<div style="height: 130vh">scroll for it</div>
+<h1 inview_1:hello>hello sunshine</h1>
+```
+
+### `timeout_x:` 
+
+The atomic `timeout_x:` trigger dispatches an attribute event type `timeout` that will run its reaction chain once after delay of x ms.
+
+```html
+<script>
+  class TimeoutTrigger extends Attr{
+    async upgrade(timeout_time) {
+      const delay = timeout_time.split("_")[1];
+      await sleep(delay);
+      if(this.isConnected) //Doubledots adds this method to Attr too
+        this.dispatchEvent(new Event("timeout"));
+    }
+  }
+  customReactions.defineTrigger("timeout_", TimeoutAttr);
+  customReactions.defineReaction("log", console.log);
+</script>
+
+<h1 timeout_1000:log>hello sunshine</h1>
+```
+
+The `timeout_x:` does not use `setTimeout`, but `await sleep()` instead. The reason for this is that Doubledots deprecates `setTimeout()` and instead provides an `await sleep()` instead. There are two reasons why `setTimeout()` is deprecated:
+1. It enables a new event to be added from JS without any trace in the HTML template,
+2. To use `await sleep()` inside `async function`s yield easier to read code.
+
+However. In Doubledots, it is recommended to use `::sleep_x:` reaction rule instead:
+
+```html
+<script>
+  customReactions.defineReactionRule(":sleep_", function(sleep_x){
+    const delay = parseInt(sleep_x.split("_")[1]);
+    return async function(e, oi){
+      await sleep(delay);
+      return oi;
+    }
+  });
+  customReactions.defineReaction("log", console.log);
+</script>
+
+<h1 ::sleep_1000:log>hello sunshine</h1>
+```
+
+The benefits of using the `::sleep_x` instead of a `timeout_x:` are:
+1. The reaction chain will be added to the event loop. This means that any tooling that illustrate the event loop, will also illustrate when the reaction chain is awaiting the `setTimeout`.
+2. The `::sleep_x` is more versatile. You can add other reactions infront of it, and with one reaction rule you can solve more use-cases than with the `timeout_x:`.
+
+### `interval_x:`
+
+```html
+<script>
+  class IntervalTrigger extends Attr{
+    async upgrade(timeout_time) {
+      const delay = timeout_time.split("_")[1];
+      while (true) {
+        await sleep(delay);
+        if (!this.isConnected)
+          return;
+        this.dispatchEvent(new Event("interval"));
+      }
+    }
+  }
+  customReactions.defineTrigger("interval_", IntervalAttr);
+  customReactions.defineReaction("log", console.log);
+</script>
+
+<h1 timeout_1000:log>hello sunshine</h1>
+```
+
+The `interval_x:` works better than `timeout_x:` as a trigger. But, we can also implement `interval_x:` using `::sleep_x` and `:..-x`:
+
+```html
+<script>
+  //customReactions.defineReactionRule(".", dotReactionRule) //see later chapter
+  customReactions.defineReactionRule(":sleep_", function(sleep_x){
+    const delay = parseInt(sleep_x.split("_")[1]);
+    return async function(e, oi){
+      await sleep(delay);
+      return oi;
+    }
+  });
+  customReactions.defineReaction("log", console.log);
+</script>
+
+<h1 ::sleep_1000:log:..-2>hello sunshine</h1>
+```
+
+This implementation is using the `.` reaction rule to step -2 positions in the reaction rule, ie. back to the `:sleep_1000` reaction. This is more difficult to read, and it is easy to make a typo using the `:..-2` loop/goto mechanism. However, the benefit is still:
+1. The reaction chain will be added to the event loop. And it is visible to any tooling that show the state of the event loop.
+2. Again, we only use `:sleep_x` and `:.`, two reaction rules that are part of the Doubledots core (as opposed to `timeout_x:` and `interval_x:` that are not).
+
+## Trigger destruction and cleanup
+
+In Doubledots, neither attribute nor element nodes can be put back into the DOM once they have been disconnected. In Doubledots, the concept is that if an HTML node is no longer in the DOM, it should be considered garbage.
+
+This means that:
+1. if an internal callback in a trigger is triggered, and
+2. the trigger attribute is either has no `.ownerElement` or that `.ownerElement.isConnected === false`, then
+3. the trigger should be considered garbage, and
+4. that any active stop, cleanup, or other garbage collection tasks can and should be performed.
+
+
+
+## We skip `destructor()`
+
+>> todo: can we skip this? Will MutationObserver work as a WeakSet allowing elements to be gc'ed? or is the 
+
+In addition, you *can* implement another function called `destructor()`. The `destructor()` is as the name implies the method called when the trigger is removed.
+
+The `destructor()` is necessary in *some* custom triggers. No, I think when we can't take attributes and elements in and out of the DOM, this is no longer necessary.
 
 
 
@@ -1574,5 +1870,68 @@ customReactions.define("on", function(e) {
 
 Here, the reaction function(s) will not encounter or work with a `Promise` when the specific version of the function has not been changed. It is not likely that you will encounter many such situations, but if you do, the goal of this description of `:on` is that you will have a point of reference that is easy to understand as to how you can implement a caching function call that avoids creating `Promise`s when they are not needed.
 
+
+
+
+
+<!-- ./doc/z_event_priority.md -->
+
+
+# Event priority
+
+## Is life too boring? Nuke the moon!
+
+Over time, the native event loop has become stratified. At the beginning there was a single planet (the planet being the DOM) and a single moon orbiting that planet (the moon being event(s) and the orbit the event loop). Then. Somebody decided that it might be a good idea to nuke the moon. Twice! Boom! Boom! And what was before a very tidy thing: one moon in orbit around a planet, became something completely different: one broken-ass moon orbiting that same planet, but now with a myriad of smaller fragments orbit the moon, in different tempo and bumping into each other. Each of these small fragments of course being micro tasks, `Promise` async threadbits, and custom events being run nestedly.
+
+Ok. So the picture isn't as orderly as it once was. The event loop, which before was this nice single threaded single moon orbiting that planet, is now like a clusterf..k of shrapnel hurtling around the earth and each other just waiting to perforate anything that is sent their way. Isj.. Not good.
+
+But. Why? Why on earth would somebody do that? Nuke the moon, what were they thinking?! Why?? 
+
+There were not *one* reason, but *two*. Or, most people say it was one reason. But from the viewpoint of the virtual event loop, I think there are two good reasons for it, and so I list those.
+
+1. asyncability: letting the main application function while waiting for async operations such as network requests run in the background.
+2. event priority: letting some events get higher priority while pausing less frequent events.
+
+Asyncability has been talked about before. Enough. So I will just say that the ability to "step into async, thread mode" is good. Doubledots support it, both in a literal and principal sense. But event priority is less understood. Another one of the "domain of the browser developers". So we need to talk a little bit about it here.
+
+## Event priority
+
+1. Custom events.
+
+When the ability to dispatch your own custom events arose in the browser, they decided that such events should be given top priority. If the web developer decided that something was worth being dispatched as an event, then that event should come first in line. Actually, it was given such priority that it would run even before the current event was finished. Nestedly. 
+
+Personally, I think that was the wrong choice. Custom, developer made events could have been added first in the event loop. If you during a `click` event `.dispatchEvent(myCustomAlert)`, you could let the all the `click` event listeners finish first, and then process the `myCustomAlert` listeners. But ok. Nuke it!
+
+2. Micro tasks.
+
+A `MutationObserver` registers callback functions that are to run after a change in the DOM occurs. `MutationObserver` callbacks are *intended* to be "micro tasks": small automatic operations such as adding or removing a css class to an element depending on a certain DOM make up.
+
+If these functions lag, then small changes that only update the view to make it align with the state of the application will lag. And so, it was decided that these changes should all be updated before the next event "macro macro task" be let loose. Can we build it? Yes! Yes we can!
+
+It is important to note, that the micro tasks essentially are non-propagating tasks that instead of being put in a different queue (micro task queue), could have been just considered top-priority events, where each event only triggers a single callback (no propagation). But. That would have been plain vanilla. Too easy to spec and build.
+
+3. `setTimeout(callback, 0is4)`
+
+In the other end of the scale, we find events that should be deprioritized. `setTimeout` is one of them. Since these callbacks are functions that the developers actively mark as "something that can wait", the browser should let other events sneak past it in the event loop. Sure. That is nice.
+
+But. Due to the wild wild nature of the web, the moon nuking engineers also found that the web at a certain point in time worked better if `setTimeout(.., 0)` actually meant `setTimeout(.., 4)`. This is just another example of how the browsers control the priority of events behind the scenes.
+
+### Virtual event loop priority
+
+So. When we now create a virtual event loop, we can control now explicitly control the priority of events. Wee can say that we want events to be processed in the following tiers. Thus, even though mutation observers are added to the virtual event loop, we can still specify that we want them to sneak before some other events, but not others.
+
+And, we also need to specify that started, threaded reactions that are ready to continue, should continue before the next event is dispatched in the virtual event loop.
+
+The event loop tiers should look something like this:
+1. targetedMutationObservers
+1. low level, high priority system events (element-created, most likely targeting a framework/foundational code.)
+2. errors (`error` to be handled early) (ok, you are just going to log it, and that you could do dead last, but you might have done some correcting actions, and those would have been good to do early.)
+2. custom events (`my-data-update`)
+3. ui events (`click` etc.)
+3. system events (`readystatechange`)
+4. rafs (you can wait just a little)
+4. timeouts (you can wait for a long time)
+
+There are other problems too. Some events run as a single macro task (less important ones, todo find an example again); some events run each event listener as a macro task (`click`). This means that some events process micro tasks such as MutationObservers in between event listeners, and some don't. We can think of these `click` event listeners as... a meso task? Something in between a micro and macro task. But this level, I believe is folly. No one (in the sense of faaar below 1% of developers) will either know or intuit such behavior. But. If you are still bored, it is fireworks to be had watching that nuke do its thing on the moon.
 
 
