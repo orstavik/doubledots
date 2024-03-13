@@ -42,23 +42,6 @@ For each element, the custom reaction attributes are triggered left to right. As
 
 **Post-propagation:** After the event has finished bubbling, the default action will be triggered. Default actions are cancellable, ie. if the `e.preventDefault()` has been called on a default action, then no default action reactions will be triggered.
 
-## Default actions
-
-`.preventDefault()` can no longer be called from javascript. This is because the method enables developers inside the shadowDom of web components to affect change in the lightDom. The benefits of such behavior do not outweigh their problems. Hence, calling `.preventDefault()` or an equivalent method, should only be allowed to affect the scope of the current document. And therefore, the native `.preventDefault()` is no longer available.
-
-The virtual event loop enables a set of actions to set the default action. You can add a default action by using the `::da` custom reaction. You should always use `::` before the `da` reaction, because the reaction chain after the default action is by definition async.
-
-To stop the default action, you can use the `:prevent-da` custom reaction. You can also call `e.preventDefault()` inside one of your own custom reactions.
-
-To check if the event has already been given a default action, you can use `:has-da`. This method will `return true` if the event has been given a default action.
-
-The native default action has to be *enabled* in doubledots. This means that you must add `:nda` meaning "native default action" to an event reaction for the event to regain its native reaction.
-
-The virtual event loop implements the default actions as an immutable list where `:da`, `:nda`, and `:prevent-da` are pushed to a list as they are encountered. Then, post propagation, when the default action is to be read, this list is then read (backwards) to identify what actions are to be performed. This enables the developer to read the event loop at different times and recognize what default actions commands where given for any event. This also enables the developer to re-add a default action after `:prevent-da` has been called.
-
-
-
->> There is a problem with timing of native default actions. If a native event has native default actions, then a macro-task break should occur in the virtual event loop *before* the next event is processed. This break will enable the browser to correctly time the native default action. This break can be achieved by adding a `nextTick` (using ratechange) at the end of the event loop cycle when `:nda` is encountered.
 
 ## No more `.stopPropagation()` 
 
