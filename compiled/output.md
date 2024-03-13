@@ -274,6 +274,20 @@ Look more at RxJS
 
 
 
+<!-- ./doc/14_load_times.md -->
+
+
+# How to trigger custom reactions when the document loads?
+
+Two main issues:
+1. document loading and parsing and waiting for initial resources
+2. most often actually associated with waiting for definitions to be ready, not waiting for style and/or dom.
+
+
+
+
+
+
 <!-- ./doc/14_state_machine.md -->
 
 
@@ -741,7 +755,7 @@ There are use-cases where you need functionality similar to `.stopPropagation()`
 
 
 
-<!-- ./doc/6_::_async_thread_mode.md -->
+<!-- ./doc/6_threads_async_mode.md -->
 
 
 # `::`: the async/thread marker
@@ -749,20 +763,6 @@ There are use-cases where you need functionality similar to `.stopPropagation()`
 Sync event loop.
 
 And the threading. when functions are allowed to run in parallell. This can be thought of as async mode, or threads.
-
-
-
-
-
-<!-- ./doc/6_load_times.md -->
-
-
-# How to trigger custom reactions when the document loads?
-
-Two main issues:
-1. document loading and parsing and waiting for initial resources
-2. most often actually associated with waiting for definitions to be ready, not waiting for style and/or dom.
-
 
 
 
