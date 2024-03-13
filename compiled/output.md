@@ -727,23 +727,6 @@ For each element, the custom reaction attributes are triggered left to right. As
 
 **Post-propagation:** After the event has finished bubbling, the default action will be triggered. Default actions are cancellable, ie. if the `e.preventDefault()` has been called on a default action, then no default action reactions will be triggered.
 
-## Default actions
-
-`.preventDefault()` can no longer be called from javascript. This is because the method enables developers inside the shadowDom of web components to affect change in the lightDom. The benefits of such behavior do not outweigh their problems. Hence, calling `.preventDefault()` or an equivalent method, should only be allowed to affect the scope of the current document. And therefore, the native `.preventDefault()` is no longer available.
-
-The virtual event loop enables a set of actions to set the default action. You can add a default action by using the `::da` custom reaction. You should always use `::` before the `da` reaction, because the reaction chain after the default action is by definition async.
-
-To stop the default action, you can use the `:prevent-da` custom reaction. You can also call `e.preventDefault()` inside one of your own custom reactions.
-
-To check if the event has already been given a default action, you can use `:has-da`. This method will `return true` if the event has been given a default action.
-
-The native default action has to be *enabled* in doubledots. This means that you must add `:nda` meaning "native default action" to an event reaction for the event to regain its native reaction.
-
-The virtual event loop implements the default actions as an immutable list where `:da`, `:nda`, and `:prevent-da` are pushed to a list as they are encountered. Then, post propagation, when the default action is to be read, this list is then read (backwards) to identify what actions are to be performed. This enables the developer to read the event loop at different times and recognize what default actions commands where given for any event. This also enables the developer to re-add a default action after `:prevent-da` has been called.
-
-
-
->> There is a problem with timing of native default actions. If a native event has native default actions, then a macro-task break should occur in the virtual event loop *before* the next event is processed. This break will enable the browser to correctly time the native default action. This break can be achieved by adding a `nextTick` (using ratechange) at the end of the event loop cycle when `:nda` is encountered.
 
 ## No more `.stopPropagation()` 
 
@@ -753,6 +736,19 @@ Imagine that you use another web component around some of the elements in your l
 
 There are use-cases where you need functionality similar to `.stopPropagation()`. However, this is most likely something that can better be achieved using flags on the `Event` object itself. These flags should only be added below, and then read above. Or counted in a linear direction. You should not remove or overwrite the value of such flags. If you follow these principles, your code will be more immutable and easier to manage over time.
 
+
+
+
+
+
+<!-- ./doc/6_::_async_thread_mode.md -->
+
+
+# `::`: the async/thread marker
+
+Sync event loop.
+
+And the threading. when functions are allowed to run in parallell. This can be thought of as async mode, or threads.
 
 
 
@@ -772,34 +768,124 @@ Two main issues:
 
 
 
-<!-- ./doc/7_native_default_actions.md -->
+<!-- ./doc/7_default_actions.md -->
 
 
-## native default actions?
+# Default actions
 
-No native default actions run by default, iff the event has been added to the virtual event loop. This means that in html doubledots, you activate all native default actions that you want to use by adding a special customReaction called `:nda`. `:nda` stands for "native default action", but it is also a reminder that the inner workings of the native default actions are as hidden and magical to us  regular developers as if they were sealed behind an Non-Disclosure Agreement.
+First. You have heard the term many times. "Default actions". You know that the default action of a `click` on a link is to open that web page. Second. You know that you can stop them by calling `e.preventDefault()`. So you can stop the opening of web pages. And maybe you have even stopped the opening of the context menu by calling `e.preventDefault()` on the `contextmenu` event. PopQuiz: do you know if there is a `click` event for a `rightclick` mouse button? Or is a rightclick event *only* followed by a `contextmenu` event? Confused yet?
 
-To activate 
+My point with this little introduction/digression was to illustrate the vagueness that surrounds the concept of default actions. You are not alone in feeling wobly when talking about default actions. And I am here to comfort you:) Because it is not you; it is them! Default actions are poorly documented. They are in the so-called "domain of the browser developers". That means that in principle the browsers developers could attach their own, and it would be fine with the agreed upon "rules of the web". But of course the world doesn't work like that. So what the "domain of the browser developers" mean is that the browser developers can do them slightly different if they want to/have to, and that they therefore don't need to document them. How can you do a `rightclick` on a mac that has only one mouse button?
 
-There are three ways to activate native default actions.
+## Default actions in the virtual event loop
 
-1. Add a global for a specific type of event and add the `:nda`. For example, the global `_click:nda` placed anywhere in the html template will activate the native default actions for all click events in the app. Anywhere!!
+A default action in the virtual event loop is *one* function that will be run *immediately after* an element event has finished bubbling. It is a **post-propagation** callback.
 
-2. Add a semi global event listener to an  ancestor of a big part of the html tree. For example, adding `<main contextmenu:nda>` will enable the default action of opening the contextmenu on right clicks on all rightclicks inside the `<main>` element, but not elsewhere in the code.
+In the virtual event loop, you can add and remove a default action continuously. This means that you can *add* a default action A, then *prevent* the default action, then *add* a new default action B. It creates a **default action list**: `[A, -, B]`.
 
-3. Add the native default action on a play-by-play basis. For example, you want to filter a click event on a link, and only given certain click events, you want to add the default action.
+The default action list enables the developer to read the event loop at different times and recognize what default actions commands where given for any event. This list also enables the developer to re-add a default action after `:prevent-da` has been called.
+
+The default action list is slightly more complex than illustrated above, because it also keeps track about in *which* document the default action command was made. This means that default action commands in *lower*, slotting web components will *loose* to default action commands made in a higher up lightDom.
+
+When the virtual event loop finishes bubbling the event, it will process the default action list in the following manner:
+1. `pop()` the **last default action** from the default action list.
+2. run through the rest of the default action list and mark the actions as `prevented`.
+3. run the last default action.
+
+## Default action reactions
+
+The virtual event loop has three different custom reactions to control default actions.
+
+1. `::da`
+2. `:prevent-da`
+3. `:nda`
+
+### `:da`
+
+You can add your own a default actions by using the `::da` custom reaction. The `::da` must always be preceded by `::`. This is because it is an async that will not continue until the sync event loop has finished the propagation of the event.
+
+You can add `:da` multiple times. It is *only* the *last default action* from the *top-most* document, that will run.
+
+### `:prevent-da` and `e.preventDefault()`
+
+To stop the default action, you can use the `:prevent-da` custom reaction. You can also call `e.preventDefault()` inside one of your own custom reactions.
+
+> Rule of thumb: the `:prevent-da` should be positioned before the `::` async-/thread-mode marker. It makes sense if you think about it. Or read the chapter about `::` async/thread mode.
+
+There is something important to note about default actions. The `:prevent-da` cannot prevent a default action added in document above. Ie. if `:prevent-da` is called from a shadowDom, that will not be able to block a default action added on a child element in the lightDom.
 
 ```html
-<a href="bbc.com" click:is_active:nda>hello sunshine</a>
+<web-comp>
+  <h1 click::da:open="bbc.com">bbc.com</h1>
+</web-comp>
+
+<script>
+customElements.define("web-comp", class WebComp extends HTMLElement{
+  constructor(){
+    super();
+    this.shadowRoot.innerHTML = 
+    `<slot click:prevent-da></slot>`
+  }
+});
+</script>
 ```
 
-In the example above, you can imagine the flow of control in this way.
+If the default action commands from all the documents were equal, then the `<web-comp>` would cancel the default action in the document above. This type of behavior is too hidden. Cloaked. Sneaky. So, in the virtual event loop, default actions are sorted in the hierarchy they are added.
 
-1. When doubledots receives the `click` event, and puts it in the virtual event loop, then it will cancel the native default action by default. This is done, so that there are no reactions that are spawned from the virtual event loop that there is no trace of.
+### `:nda` Native Default Action
 
-2. But then, the `click:is_active:nda` checks that a certain condition `:is_active` is met, and if so, it re-adds the native default action of the `click` event.
+By default, native default actions run as normal. However, like your custom `::da`, you can *re-enable* the native default action even after a custom reaction has been added or `:prevent-da` has been called. This enables you to override any `e.preventDefault()` calls taking place inside a shadowDom.
 
-This is backwards. In normal HTML, the native default actions *run by default* and you must actively *disable* them by calling `e.preventDefault()`; in doubledots, the native default actions are *inactive by default*, so instead you must actively *enable* them by calling `:nda`.
+To re-enable the native default action, a special `:nda` reaction is called. `:nda` *must end* the reaction chain. This reaction can run sync; it doesn't have to run  after `::` in async mode.
+
+> `:nda` stands for "native default action", but it is also a reminder that the inner workings of the native default actions are as hidden and magical to us  regular developers as if they were sealed behind an Non-Disclosure Agreement.
+
+### `:nda` example
+
+```html
+<a href="bbc.com" click:is_active:nda>
+  <web-comp>
+    hello sunshine
+  </web-comp>
+</a>
+```
+Even if a custom reaction inside `<web-comp>` called `.preventDefault()`, the browser would still run the native default action on the event.
+
+>> There is a problem with timing of native default actions. If a native event has native default actions, then a macro-task break should occur in the virtual event loop *before* the next event is processed. This break will enable the browser to correctly time the native default action. This break can be achieved by adding a `nextTick` (using ratechange) at the end of the event loop cycle when `:nda` is encountered.
+
+## `Event` implementation
+
+The below code illustrates how the virtual event loop manages the 
+
+```js
+class Event {
+  private static prevent = {};
+  private static nda = {};
+  private defaultActionList = []; 
+  preventDefault(){
+    this.defaultActionList.push({action: Event.prevent, document: this.currentElement.getRoot()});
+  }
+  nativeDefault(){
+    this.defaultActionList.push({action: Event.nda, document: this.currentElement.getRoot()});
+  }
+  customDefault(){
+    //outside check that the attribute is preceeded by `::`
+    this.defaultActionList.push({action: this.currentAttribute, document: this.currentElement.getRoot()});
+  }
+
+  processDefaultActions(){
+    //the findTheLastDAofTopMostDocument algorithm is a bit tricky as levels between different slotting web comps play as one.
+    //<slotting-a>
+    //  <slotting-b>
+    //    target
+    //
+    //the document depth alone between the default action commands inside slotting-a and slotting-b is not sufficient. If there are actions inside slotting-a, they should always win over commands in slotting-b, regardless of document depth.
+    const singleDa = this.defaultActionList.filter(findTheLastDAofTopMostDocument);
+    const listOfPreventedDas = this.defaultActionList.filter(notSingleDa);
+    returns {singleDa, listOfPreventedDas};
+  }
+}
+```
 
 
 
@@ -1367,7 +1453,7 @@ There are several (unnecessary) complexities in the way the native event loop is
 
 2. Once the path is set up, the browser will first go _down_ the path in a so-called capture phase, and then _up_ the path in the so-called bubble phase. Most developers only concern themselves with the bubble phase, but because the event loop enables both, slicky capture event listeners might sneak into a developers code-base and cause strange behavior.
 
-3. In addition, the browser enable _some_ events to bubble, while others are so-called non-bubbling events. Non-bubbling events should in theory not bubble, and so one might be exused for thinking that such events will only trigger event listeners on the target node itself. Or, that the path for such event listeners only include one element: the target. But. Not so. The non-bubbling target focus only applies to the bubbling phase. Thus, event listeners for non-bubbling events will trigger in the capture phase on ancestors of the target. And! When the target is inside a web component, then the host node of that web component will also be considered "a target", and not an ancestor, and thus the non-bubbling events will be "reverse bubbling in the capture phase" and "ancestor host nodes are targets, not and not parent nodes". Non-bubbling frobscottle.
+3. In addition, the browser enable _some_ events to bubble, while others are so-called non-bubbling events. Non-bubbling events should in theory not bubble, and so one might be exused for thinking that such events will only trigger event listeners on the target node itself. Or, that the path for such event listeners only includes one element: the target. But. Not so. The non-bubbling target focus only applies to the bubbling phase. Thus, event listeners for non-bubbling events will trigger in the capture phase on ancestors of the target. And! When the target is inside a web component, then the host node of that web component will also be considered "a target", and not an ancestor, and thus the non-bubbling events will be "reverse bubbling in the capture phase" and "ancestor host nodes are targets, not and not parent nodes". Non-bubbling frobscottle.
 
 4. For some native events the event listeners get their own macro task. Some don't. What does "getting your own macro task" mean you say? And which events gets what? All good questions! When an event listener gets a macro task, it means that any micro task that completes during the execution of that event listener will be run before the next macro task, ie. before the next event listener for that event is run. Same DOM node or not. Microtasks are such things as MutationObserver callbacks, web component callbacks, and promise resultion or errors. The events that gets a macro task for their running are usually UI events such as `click` and `keypress`, but I don't know of any consensus or autorative list where this is written down.
 
