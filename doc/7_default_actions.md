@@ -80,7 +80,19 @@ Even if a custom reaction inside `<web-comp>` called `.preventDefault()`, the br
 
 >> There is a problem with timing of native default actions. If a native event has native default actions, then a macro-task break should occur in the virtual event loop *before* the next event is processed. This break will enable the browser to correctly time the native default action. This break can be achieved by adding a `nextTick` (using ratechange) at the end of the event loop cycle when `:nda` is encountered.
 
-## `Event` implementation
+## Note on implementation
+
+```js
+customReactions.define("da", function(e,i){
+  const daDelayer = new Promise();
+  e.customDefault(daDelayer);
+  return daDelayer;
+});
+```
+
+When the virtual event loop processes the default action list, it will `promis.resolve(oi)` on the chosen default action, and `promise.resolve(customReactions.break)` on all the default actions that were prevented or not resolved.
+
+### `Event` implementation
 
 The below code illustrates how the virtual event loop manages the 
 
@@ -95,9 +107,9 @@ class Event {
   nativeDefault(){
     this.defaultActionList.push({action: Event.nda, document: this.currentElement.getRoot()});
   }
-  customDefault(){
+  customDefault(promise, oi){
     //outside check that the attribute is preceeded by `::`
-    this.defaultActionList.push({action: this.currentAttribute, document: this.currentElement.getRoot()});
+    this.defaultActionList.push({action: this.currentAttribute, document: this.currentElement.getRoot(), promise, oi});
   }
 
   processDefaultActions(){
