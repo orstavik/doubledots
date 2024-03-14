@@ -1,3 +1,11 @@
+## Todo
+
+1. Short list of deprecated functions
+2. Short list of monkey-patched functions
+3. short list of API functions
+
+## Demos
+
 Assumed easy:
 A. Calculator
 
