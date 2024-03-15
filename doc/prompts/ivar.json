@@ -1,0 +1,212 @@
+[
+  {
+  "role": "user",
+  "content": "
+Doubledots uses attributes in HTML elements to react to events. Doubledots works by adding reactionchains as attributes to html elements. Each reactionchain is broken into two or more pieces separated by ':'. 
+
+## triggers: and :reaction:chains
+
+The first part of the reaction chain is the trigger. The trigger represents the event and is named after the the type of native events `click` or `focus` and other triggers such as type such as `hover` or `inview` or `attribute-changed`. 
+
+, followed by chaining reactions that are separated with ' : '. When we describe triggers in explanation text, we use `trigger-name:` as shorthand.
+
+After the trigger a series of reactions follow. Each reaction is a function that will run when the trigger: is activated. The reactions have different names, such as 'check-validity' or 'toggle-css-class'. The shorthand for referencing a reaction is adding a prefix ':' infront of the name such as ':check-validity'.
+
+For each trigger: several :reactions can be added sequentially. An example of this is: 'click:checkIfOk:extractData:updateValue' where: 
+
+1. The `click` is a trigger
+2. The `checkIfOk` is a filter reaction that validates the input
+3. The `extractData` is a extractor reaction that retrieves data from the DOM or someplace else
+4. The `updateValue` is an effect reaction that changes/mutates the value in the DOM
+
+## How do reaction chains function? 
+
+First, an event or timer or similar activates the trigger:. The trigger calls the first reaction and passes it the event. The first reaction runs, and passes its result to the second. Which then run and pass its result to the third reaction.
+
+Each reaction is defined as a JS function that takes two arguments: `(e , oi)`. The `e` is the event, and the `oi` is the Output from the previous reaction that becomes the Input for this reaction.
+
+```js
+customReaction.define('checkIfOk', function(e, oi){
+  // Perform validation and return
+});
+```
+
+## Categories of reactions
+
+- trigger: (click, in-view)
+- filter (read => to break):
+- extraction (read => to oi output):
+- effect (write => DOM):
+- side-effect (write => outside of DOM):
+- schedulers (throttle, debounce, setTimeout, ready)
+- pure reaction (pure, immutable functions that uses the `e` or the `oi` to form a new `oi` without mutating the incoming `e` or `oi`).
+
+
+
+Make me an example for how we can make a calculator using this system? Break the example into the following three parts.
+1. Layout the html needed for the example. Use minimal template, no css, and no JS.
+2. add functionality using only doubledots triggers and reactions in the html example.
+3. Explain the functionality of the triggers and reactions in plain english.
+4. Describe the roles the different reactions play, such as trigger, filter, extractor, mutator, effect, side-effect, schedular, pure reaction.
+"
+},
+  {
+    "role": "system",
+    "content": "# 
+    ## Demo: How to build a calculator 
+
+    In this example we implement doubledots on a classic calculator. We start with a simple normal html template without any css or js code attached.
+
+    ## 1. Template first
+    
+    
+    ```html
+    
+    only the calculator, link to the css, table, no custom reaction nor script
+    
+    <html>
+      <head>
+        <title>Simple Calculator</title>
+        <link rel='stylesheet' href='./calc.css' type='text/css' />
+      </head>
+      <body>
+        <table id='calculator'>
+          <tr>
+            <td id='result'></td>
+          </tr>
+          <tr>
+            <td id='operation'></td>
+          </tr>
+          <tr>
+            <td id='input'></td>
+          </tr>
+          <tr>
+            <td class='operator'>C</td>
+          </tr>
+          <tr>
+            <td class='number'>1</td>
+            <td class='number'>2</td>
+            <td class='number'>3</td>
+            <td class='operator'>/</td>
+          </tr>
+          <tr>
+            <td class='number'>4</td>
+            <td class='number'>5</td>
+            <td class='number'>6</td>
+            <td class='operator'>*</td>
+          </tr>
+          <tr>
+            <td class='number'>7</td>
+            <td class='number'>8</td>
+            <td class='number'>9</td>
+            <td class='operator'>-</td>
+          </tr>
+          <tr>
+            <td class='number'>0</td>
+            <td class='number'>.</td>
+            <td class='operator'>=</td>
+            <td class='operator'>+</td>
+          </tr>
+        </table>
+      </body>
+    </html>
+    ```
+    
+    ## 2. Add first reaction
+    
+    The first reaciton is to add numbers to the input, when we click on a button inside the calculator. First, we do this by adding a the custom reaction `click:add_number` to the container parent that is the closest ancestor to all the elements involved.
+    
+    ```html
+    
+    <table id='calculator' click:add_number>
+      . . .
+    </table>
+    <script>
+      customReactions.define('add_number', function (e, i) {
+        const input = this.ownerElement.querySelector('#input');
+        input.innerText += i;
+      });
+    </script>
+    ```
+    
+    Problems: the reaction doesn't have a check. if you click something other than a number, we have errors.
+    ## 3. add filter
+    
+    How to fix this? we add a filter in the chain `click:is_number:add_number`
+    
+    ```html
+    <table id='calculator' click:add_number>
+      . . .
+    </table>
+    <script>
+      customReactions.define('is_number', function (e) {
+        if (['result', 'operation', 'input'].indexOf(e.target.id) >= 0) throw customReactions.break;
+        if (e.target.innerText.matches(/0-9/)) return e.target.innerText;
+        throw customReactions.break;
+      });
+      customReactions.define('add_number', function (e, i) {
+        const input = this.ownerElement.querySelector('#input');
+        input.innerText += i;
+      });
+    </script>
+    ```
+    ## 4. add the operator function
+    
+    Let's build the entire calculator. Here we need to explain the logic with the previous operator and the hidden result etc. Once the strategy is explained, just add the extra custom reaction definitions, and the custom reaction invocations on the `<table>` element.
+    
+    ```html
+    <table id='calculator' _keypress:is_number:add_number>
+      . . .
+    </table>
+    <script>
+      customReactions.define('is_operator', function (e) {
+        if (['result', 'operation', 'input'].indexOf(e.target.id) >= 0) throw customReactions.break;
+        if (e.type === 'keypress') {
+          if (e.key === 'Esc') return 'clear';
+          if (['=', '+', '-', '/', '*'].indexOf(e.key) >= 0) return e.key;
+        }
+        if (e.type === 'click') {
+          const targetTxt = e.target.innerText;
+          if (['=', '+', '-', '/', '*', 'clear'].indexOf(targetTxt) >= 0) return targetTxt;
+        }
+        throw customReactions.break;
+      });
+      customReactions.define('do_operator', function (e, i) {
+        . . . (calculator logic) . . .
+      });
+    </script>
+    ```
+    
+    ## 5. add the keypress functionality
+    
+    With a calculator you want multiple events. Add reactions for keypress too.
+    
+    ```html
+    <table id='calculator' _keypress:is_number:add_number>
+      . . .
+    </table>
+    <script>
+      customReactions.define('is_number', function (e) {
+        if (['result', 'operation', 'input'].indexOf(e.target.id) >= 0) throw customReactions.break;
+        if (e.type === 'keypress' && e.key.matches(/0-9/)) return e.key;
+        if (e.type === 'click' && e.target.innerText.matches(/0-9/)) return e.target.innerText;
+        throw customReactions.break;
+      });
+      customReactions.define('add_number', function (e, i) {
+        const input = this.ownerElement.querySelector('#input');
+        input.innerText += i;
+      });
+    </script>
+    ```
+    "
+  },{
+    "role": "user",
+    "content": "
+Good example!
+
+Make an example of a shopping cart. The example illustrates how we can add items into a cart in HTML using Doubledots.  
+
+IMPORTANT: Leave the content of the definitions as a description of what the reaction does inside a comment, like above.
+    "
+  }
+]
