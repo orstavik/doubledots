@@ -9,10 +9,16 @@ customReactions.defineRule("-", function(name){
       throw new DashReactionError(`"${oi}" is not an Object.`);
     }
   }
+  if (name==="-e")
+    return e => customReactions.origin(e);
+  if (name==="-t")
+    return e => customReactions.origin(e.target);
   if (name==="-a")
     return e => customReactions.origin(e.currentAttribute);
   if (name==="-el")
     return e => customReactions.origin(e.currentElement);
+  if (name==="-p")
+    return e => customReactions.origin(e.currentElement.parentNode);
   if (name[1] === "-")
     throw new ReactionError(`--something is not supported yet: ${name}`);
   name = name.substring(1);
@@ -30,11 +36,23 @@ The purpose of the dash reaction is to move the origin of the reaction chain to 
 
 ### List of `:-` reactions
 
-1. `:-` => turns `oi` into `this` iff `oi instanceof Object`.
-2. `:-e` => turns the `e` into `this`.
-3. `:-el` => turns the `.currentElement` into `this`.
-4. `:-a` => turns the `.currentAttribute` into `this`. This essentially returns the origin of the reaction chain to its default position.
-5. `:-attribute_name` => finds the first attribute on the `.currentElement` that starts with `attribute-name` where any `:` in the attribute name is treated as a `_`.
+There is a set of `:-` shorthands that sets a specific objects as the `this` origin of the next reaction:
+1. `:-` => `oi` (fails if `!(oi instanceof Object)`.)
+2. `:-e` => `e`
+3. `:-t` => `e.target` (in the same document, it does not step into any shadowDoms.)
+4. `:-el` => `.currentElement`
+5. `:-p` => `.currentElement.parentNode`
+6. `:-a` => `.currentAttribute` (this works as a reset for origin transposition.)
+
+todo x. add nextSiblings and previousSibling
+
+
+### `:-`-queries.
+
+todo add query selector for children.
+todo add query selector up the ancestor chain,
+
+1. `:-attribute_name` => finds the first attribute on the `.currentElement` that starts with `attribute-name` where any `:` in the attribute name is treated as a `_`.
 
 >> Note: For the first :reaction in the chain, this is equivalent to the `:-` as the first reaction is passed the `e` as both the `e` and `oi` argument.
 
