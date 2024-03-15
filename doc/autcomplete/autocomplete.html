@@ -1,17 +1,16 @@
 <body>
-  <input type="text" name="search" id="search" change::debounce:search:display>
-  <input type="text" name="search" id="search" change::debounce_500:search:display>
+  <input type="text" name="search" id="search" change::debounce:getValue:search:parse:display />
+  <input type="text" name="search" id="search" change::debounce_500:getValue:search:parse:display />
   <div class="suggestions"></div>
 
   <script>
-    // custom reaction implementation of debounce, delay = 1000ms
+    // custom reaction implementation of debounce, time = 1000ms
     const sleepers = new WeakMap();
     const last = new WeakMap();
-    customReactions.define('debounce', async function(e, oi) {
+    customReactions.define("debounce", async function (e, oi) {
       const key = e.currentAttribute;
       let sleeper = sleepers.get(key);
-      if (!sleeper) 
-        sleepers.put(key, sleeper = new Promise(r => setTimeout(r, 1000)));
+      if (!sleeper) sleepers.put(key, (sleeper = new Promise((r) => setTimeout(r, 1000))));
       const kk = new Object();
       last.put(key, kk);
       await sleeper;
@@ -21,51 +20,53 @@
       return check ? oi : customReactions.break;
     });
 
-    // custom reaction rule implementation of debounce, debounce_delay = 1000ms
-    customReactions.defineRule('debounce_', function(name) {
+    // custom reaction rule implementation of debounce, time = 1000ms
+    customReactions.defineRule("debounce_", function (name) {
       const active = new WeakSet();
-      const delay = name.split('_')[1];
+      const delay = name.split("_")[1];
       return function (e, oi) {
         const key = e.currentAttribute;
-        if (active.has(key)) 
-          return customReactions.break;
+        if (active.has(key)) return customReactions.break;
         active.add(key);
-        return new Promise(r => setTimeout(r, delay)).then(() => {
+        return new Promise((r) => setTimeout(r, delay)).then(() => {
           active.delete(key);
           return oi;
         });
       };
     });
 
-    customReactions.define('search', function(e, i) {
-      // is this the correct this implementation?
+    customReactions.define("getValue", function (e, i) {
       let searchText = this.value;
-      // if delete all text, clear the container (SHOULD THIS BE A SEPARATE CHECK W/VALIDATION??)
+      // if delete all text, clear the congetValue:tainer
       if (searchText === "" || searchText === " ") {
         let container = this.parentElement.lastChild;
         container.innerHTML = "";
-      };
-      let searchQuery = searchText.split(' ').join('+');
-      // call api to get data
-      fetch('https://api.datamuse.com/sug?s=' + searchQuery)
-      .then(response => response.json())
-      .then(data => {
-        return data;
-      });
-      
-    });
-    
-    customReactions.defineRule('display', function(e, i) {
-      // is this the correct this implementation?
-      let container = this.parentElement.lastChild;
-      // clear the container before adding new suggestions
-      container.innerHTML = "";
-      for (element of i) {
-        let newElement = document.createElement('div');
-        newElement.innerHTML = `<p>${element.word}</p>`;
-        container.appendChild(newElement);
       }
+      let searchQuery = searchText.split(" ").join("+");
+      return searchQuery;
     });
 
+    customReactions.define("search", async function (e, i) {
+      // call api to get data
+      let response = await fetch("https://api.datamuse.com/sug?s=" + i);
+      let responseData = await response.json();
+      return data;
+    });
+
+    customReaction.define("parse", function (e, i) {
+      let elements = ``;
+      for (element of i) {
+        elements += `<div><p>${element.word}</p></div>`;
+      }
+      return elements;
+    });
+
+    customReactions.defineRule("display", function (e, i) {
+      // is this the correct this implementation?
+      let container = this.parentElement.lastChild;
+      container.innerHTML = i
+    });
+
+    // make pure funtion to parse response to html to inject in container
   </script>
 </body>
