@@ -19,6 +19,8 @@ customReactions.defineRule("-", function(name){
     return e => customReactions.origin(e.currentElement);
   if (name==="-p")
     return e => customReactions.origin(e.currentElement.parentNode);
+  if (name==="-pp")
+    return e => customReactions.origin(e.currentElement.parentNode.parentNode);
   if (name[1] === "-")
     throw new ReactionError(`--something is not supported yet: ${name}`);
   name = name.substring(1);
