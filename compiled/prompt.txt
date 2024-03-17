@@ -1,0 +1,22 @@
+Here I have 2 files that are a compilation of the md files and the examples inside html files inside my proyect: Doubledots. The purpose of my proyect is to have eventlisteners be handled within HTML, like HTMX does for requests.
+
+I want to have more examples that build on top of each other in complexity. I want to have various types such as
+
+Categories of reactions
+
+trigger: (click, in-view)
+
+filter (read => to break):
+
+extraction (read => to oi output):
+
+effect (write => DOM):
+
+side-effect (write => outside of DOM):
+
+schedulers (throttle, debounce, setTimeout, ready)
+
+pure reaction (read only e and oi, make no changes to input argument objects, only produce a new oi output.: (pure functions that turn data from one form into another, or filter or maps that data. It fitlers, but it only filters the input data. Often combined with the :filter into a single reaction).
+
+Please ask any further questions you might have about the proyect before giving me your answers.
+

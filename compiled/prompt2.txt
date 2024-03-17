@@ -1,0 +1,540 @@
+Like HTMX uses attributes in html elements, my project called Doubledots.
+
+I want to have more examples that build on top of each other in complexity. I want to have various types such as
+
+Categories of reactions
+
+trigger: (click, in-view)
+
+filter (read => to break):
+
+extraction (read => to oi output):
+
+effect (write => DOM):
+
+side-effect (write => outside of DOM):
+
+schedulers (throttle, debounce, setTimeout, ready)
+
+pure reaction (read only e and oi, make no changes to input argument objects, only produce a new oi output.: (pure functions that turn data from one form into another, or filter or maps that data. It fitlers, but it only filters the input data. Often combined with the :filter into a single reaction).
+
+Please ask any further questions you might have about the proyect before giving me your answers.
+
+This is a simple example for a theme toggle.
+
+<body>
+  <h1>Theme Toggle Example</h1>
+
+  <button click:themeTogle>Toggle Theme</button>
+  <script>
+    customReaction.define('themeTogle', () => {
+      document.body.classList.toggle('dark')
+    })
+  </script>
+</body>
+
+This is the intro.md file 
+
+## Basic concept of _HTML doubledots_ (or `HTML:` or just "doubledots")
+
+This framework enables you to write a full web application using only html. It does so by extending html attributes, so that they can represent event listeners.
+
+### Example 1: `event:reaction`
+
+In simplified terms, the `href` attribute of the `<a>` element acts as an event listener. When you wrap text or other elements in your code as 
+
+```html
+<a href="bbc.com"><div>hello bbc</div></a>
+```
+
+The "link" represented by the `<a>` element and `href` attribute, will listen to `click` events within, and then tell the browser to open the web page whose link is in the `href` attribute's value. The link. Most, if not all, functionality on any modern web page can be viewed as such an event reaction. An event occurs, and then a function is run as a reaction to that event. 
+
+Keeping things simple for now, we illustrate this "event" => "reaction function" as an `event:reaction` pair. The `<a href="bbc.com"><div>...</div></a>` event listener could therefore be understood as the `<div click:open="bbc.com">` where `click:open` represents the `event:reaction` pair. 
+
+```html
+<div click:open="bbc.com">hello bbc</div>
+```
+
+### Example 2: `customReactions.define("open", ...)`
+
+That sounds nice, you say. But how in the world would this work in practice? Well, to make this work is actually quite simple. You need only to do two steps:
+1. load `<script src="html_doubledots.js">` at the top of your `.html` file, and
+2. define the custom reaction "open" in a javascript code.
+
+```html
+<script src="www.htmldoubledots.com/topdoubledots.js"></script>
+<script>
+  customReactions.define("open", function(e){
+    window.open(this.value);
+  });
+</script>
+
+<div click:open="bbc.com">hello bbc</div>
+```
+
+Ok, still a little fudgy. No problem! It is quite easy:)
+
+1. `<script src="www.htmldoubledots.com/topdoubledots.js"></script>` loads the doubledots framework. We recommend using `topdoubledots.js` and importing the framework at the beginning of your `.html` document, but you can also append `enddoubledots.js` near the bottom of your `.html` file, if you want.
+
+2. The `topdoubledots.js` file  implements the special `attribute` => `eventListener` functionality. Now, you can listen for events via attributes by writing `click:do_something`, `offline:do_something_else`, `mousemove:another_action`, etc. etc. All the native events, or custom events, will now find and trigger the new `<element event:reaction>` attributes in your `.html` document.
+
+### Example 3: how to filter and chain reactions
+
+Now, in our .html document, we can add event listeners for any event (such as `click:`) and react to them (such as `open`). That is nice. But what else can we do?
+
+```html
+<div click:is_active:open="bbc.com">hello bbc</div>
+```
+
+In the example above, we add two reactions inside the same doubledot attribute: `is_active` and `open`. We are making a chain of reactions. Where each reaction can break the chain.
+
+We can imagine the example above behaving as following: When a `click` event occurs, the `is_active` performs a check. If the `<div>` element is active, then continue and `open` the attribute value `bbc.com`. If the `<div>` element is not active, then break and do _not_ open bbc.com.
+
+We can implement this as follows:
+
+```html
+<script src="www.htmldoubledots.com/topdoubledots.js"></script>
+<script>
+  customReactions.define("open", e => window.open(this.value));
+  customReactions.define("is_active", function(e) {
+    if (this.ownerElement.hasAttribute("off"))
+      throw customReactions.break;
+  }
+</script>
+
+<div click:is_active:open="bbc.com">hello bbc</div>
+<div off click:is_active:open="foxnews.com">hello fox news</div>
+```
+
+Some technical details:
+1. You can chain as many reactions as you would like to the reaction chain.
+2. To break the chain reaction, you need to `throw` the special `customReactions.break` error. This might seem a little cumbersome, agree, but you will come to like it a little later on. Trust me. But the essence of the special break is that it frees your code to _freely_ `return` and `throw` _anything you want_.
+
+>> this example 'click:open' is doing the same thing as the 'a href' would do. It is not doing something new.
+
+
+-----
+
+There are 2 corrections I will make. 
+
+First we will not use setTimeout functions. Here is another piece of the docs regarding the event loop issues doubledots encounters.
+
+# Problems with the native event loop
+
+The main flow of control an HTML application is the event loop. The event loop is a queue. An event occurs, and it is added to the queue. The browser then executes each event, one by one.
+
+To react to an event, the developer can add functions called "event listeners" for different types of events to different elements in the DOM. When the browser executes an event, the browser first will find the "path" for the event. The path is the "target" of the event and all the ancestor nodes of the target. The browser then "propagates" over this list of DOM nodes and calls the event listeners for that event on each node in the path.
+
+There are several (unnecessary) complexities in the way the native event loop is set up:
+
+1. The way the browser creates the path is tricky. First, some events are so-called "not composed", and when the browser makes the path for these events, the path will stop at the nearest document or shadowRoot node. But the path will include the elements in the shadowRoot of other web components that "slot" in the event. For some focus events, at least in some older versions of the browser, the non-composed events could be stopped on a higher shadowRoot one or two level up, but still not include some or more higher ligthDoms.
+
+2. Once the path is set up, the browser will first go _down_ the path in a so-called capture phase, and then _up_ the path in the so-called bubble phase. Most developers only concern themselves with the bubble phase, but because the event loop enables both, slicky capture event listeners might sneak into a developers code-base and cause strange behavior.
+
+3. In addition, the browser enable _some_ events to bubble, while others are so-called non-bubbling events. Non-bubbling events should in theory not bubble, and so one might be exused for thinking that such events will only trigger event listeners on the target node itself. Or, that the path for such event listeners only includes one element: the target. But. Not so. The non-bubbling target focus only applies to the bubbling phase. Thus, event listeners for non-bubbling events will trigger in the capture phase on ancestors of the target. And! When the target is inside a web component, then the host node of that web component will also be considered "a target", and not an ancestor, and thus the non-bubbling events will be "reverse bubbling in the capture phase" and "ancestor host nodes are targets, not and not parent nodes". Non-bubbling frobscottle.
+
+4. For some native events the event listeners get their own macro task. Some don't. What does "getting your own macro task" mean you say? And which events gets what? All good questions! When an event listener gets a macro task, it means that any micro task that completes during the execution of that event listener will be run before the next macro task, ie. before the next event listener for that event is run. Same DOM node or not. Microtasks are such things as MutationObserver callbacks, web component callbacks, and promise resultion or errors. The events that gets a macro task for their running are usually UI events such as `click` and `keypress`, but I don't know of any consensus or autorative list where this is written down.
+
+5. `setTimeout` are also macro tasks that are queued in the event loop. But they cause no event propagation, and they are added using callback structure, not event listeners. There are also special rules regarding the timeout callbacks, such as the 4ms minimum delay, and low priority, meaning that if you want to call a *true* `setTimeout(.., 0)`, you need to do:
+```javascript
+function setTimeout0(cb){
+  const a = document.createElement("audio");
+  a.onratechange = cb;
+  a.playbackRate = 2;
+}
+```
+
+6. When a `<script>` runs, it also is given a macro task: the running of a script is a task in the event loop. In Firefox this /script/ macro task/event is preceeded by a regular `beforescriptexecute` event, while in the other browsers, you can only intercept this event by adding a MutationObserver to the node onto which the event is added. 
+
+7. Custom events, that are dispatched using `.dispatchEvent(..)` are *not* added to the event loop. They are not "event" in the "event loop" meaning of the word. They do *not* get their own macro task, and they run *before* the native event which triggered them are finished. This means that if you in a `click` event listener dispatch your own `custom-event`, then maybe a handful of `click` event listeners will run, then a handfull of `custom-event` listeners, and then some more `click` event listeners for the same, original `click` event. Nested niceness. But. With all super convoluted systems, it is the possibility to know super intricate trivia and cool tricks: You only need to do a `setTimeout0(()=>element.dispatchEvent(customEvent))` to dispath a custom event *properly*.
+
+8. When the propagation path is calculated, you cannot later add new elements to the path (such as by inserting a new ancestor), nor remove elements from the propagation path (such as by moving the current target to another branch of the dom). This makes sense, this kind of move-during-event-propagation would be super confusing and could easily turn into infinite loops. But, at the same time, it causes the path to sometimes become a "stale" representation of the DOM, somewhat dynamic (updated anew for each event), but still static (if the DOM changes during propagation, this change doesn't affect which elements' listeners will be invoked).
+
+9. The same problem with semi-stale dynamic ability applies to listeners per element. If you add another event listener to the currentTarget of an event, then that listener will not run on the same event. However, if you remove a later event listener on the same element for the same event, then that event listener will *not* run. This makes sense in practice, and rarely cause any problems, but it is still small-print-details that specify a series of special points in time, ie. when-path-is-calculated and when-listeners-on-an-element-is-gotten, that the developer should take into account when adding and removing event listeners during propagation, or (re)moving elements in the current propagation path.
+
+Secondly, the chaining in the second example is wrong. The `isEnabled` filter needs to occur before the action of changing the theme.
+
+Here is a piece of the docs regarding chaining.
+
+# Chain reactions and custom reaction definitions (part 1)
+
+## 1. chain reactions
+
+In doubledots you chain reactions like this: `event:reaction1:reaction2:...`. When the `event` triggers, it is first passed to `:reaction1`, then `:reaction2`, etc.etc.
+
+```html
+<div click:get_date:add_two_days:subtract_one_month>hello</div>
+```
+
+## 2. define custom reactions
+
+The first reaction in the chain is passed a single argument: the event object. But, when the second reaction is called, it is passed *two* arguments: the event object *and* the output of the previous reaction. 
+
+```javascript
+customReactions.define("get_date", ()=>new Date());
+customReactions.define("add_two_days", function(e, date){
+  date.setDate(date.getDate() + 2);
+  return date;
+});
+customReactions.define("subtract_one_month", function(e, date){
+  date.setMonth(date.getMonth() - 1);
+  return date;
+});
+```
+
+In the example above, the two last reactions are getting the `date` object from the previous reaction as the second argument. 
+
+>> Note. In the documentation, we often refer to the two arguments of the custom reactions as `e` for "event" and `oi` for "output-input".
+
+## 3. `this` in customReactions
+
+Inside a reaction function `this` points to the attribute object (the `Attr`). 
+
+```html
+<div click:log_name:log_value:log_tagname="hello">
+  sunshine
+</div>
+
+<script>
+  customReactions.define("log_name", () => console.log(this.name));
+  customReactions.define("log_value", () => console.log(this.value));
+  customReactions.define("log_tagname", 
+    () => console.log(this.ownerElement.tagName)
+  );
+</script>
+```
+
+This can be a little confusing because customReactions look a lot like normal event listeners, and in an event listener the `this` points to the element the listener is associated with. 
+
+Why? Why would doubledot confuse us and make `this` the attribute node, and not the element node? The reason has to do with the `.value` property of the attribute. With `this` being the attribute, then all relevant properties of a custom reaction can be reached using normal dom node traversal (ie. `this.ownerElement`, `this.value`, `this.ownerElement.parentNode.querySelector(..)` etc.). If `this` pointed to the element, then we would need to add some special context attribute or parameter to the custom reaction function to tell it where the `.value` associated with the custom reaction is.
+
+>> Note! In html doubledots, the `this` is the attribute node. To get the element node, you need to write `this.ownerElement`.
+
+## 4. Can i use existing functions as custom reactions?
+
+Yes! No problem. We can for example do this by adding a `console.log` reaction at the end of the previous example.
+
+```html
+<div click:get_date:add_two_days:subtract_one_month:console.log>
+  hello
+</div>
+
+<script>
+  customReactions.define("log", (e, oi) => console.log(e, oi));
+  // or simply
+  // customReactions.define("log", console.log);
+</script>
+```
+
+When the virtual event loop inside doubledots invoke the reaction, it does so by `.call`-ing the registered function with the `Attr` object that is the custom reaction as the `this` object and passing it the trigger `Event` as the first argument, and the output (if any) from the previous reaction `oi` as the second argument. 
+
+In practice, this excludes all methods (ie. functions that rely on and use `this` inside). But if the function doesn't use `this` and has an argument structure that fits with the `(e, oi)` argument list, then it is no problem just defining that function as a custom reaction.
+
+
+-----
+
+This is the docs for a calculator example 
+
+# Demo: How to build a calculator
+
+## 1. Template first
+
+In this example we implement doubledots on a classic calculator. We start with the pure, normal html template and lay it out:
+
+```html
+only the calculator, link to the css, table, no custom reaction nor script
+
+<html>
+  <head>
+    <title>Simple Calculator</title>
+    <link rel="stylesheet" href="./calc.css" type="text/css" />
+  </head>
+
+  <body>
+    <table id="calculator">
+      <tr>
+        <td id="result"></td>
+      </tr>
+      <tr>
+        <td id="operation"></td>
+      </tr>
+      <tr>
+        <td id="input"></td>
+      </tr>
+      <tr>
+        <td class="operator">C</td>
+      </tr>
+      <tr>
+        <td class="number">1</td>
+        <td class="number">2</td>
+        <td class="number">3</td>
+        <td class="operator">/</td>
+      </tr>
+      <tr>
+        <td class="number">4</td>
+        <td class="number">5</td>
+        <td class="number">6</td>
+        <td class="operator">*</td>
+      </tr>
+      <tr>
+        <td class="number">7</td>
+        <td class="number">8</td>
+        <td class="number">9</td>
+        <td class="operator">-</td>
+      </tr>
+      <tr>
+        <td class="number">0</td>
+        <td class="number">.</td>
+        <td class="operator">=</td>
+        <td class="operator">+</td>
+      </tr>
+    </table>
+  </body>
+</html>
+```
+
+## 2. Add first reaction
+
+The first reaciton is to add numbers to the input, when we click on a button inside the calculator. First, we do this by adding a the custom reaction `click:add_number` to the container parent that is the closest ancestor to all the elements involved.
+
+```html
+<table id="calculator" click:add_number>
+  . . .
+</table>
+<script>
+  customReactions.define("add_number", function (e, i) {
+    const input = this.ownerElement.querySelector("#input");
+    input.innerText += i;
+  });
+</script>
+```
+
+Problems: the reaction doesn't have a check. if you click something other than a number, we have errors.
+
+## 3. add filter
+
+How to fix this? we add a filter in the chain `click:is_number:add_number`
+
+```html
+<table id="calculator" click:add_number>
+  . . .
+</table>
+<script>
+  customReactions.define("is_number", function (e) {
+    if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
+    if (e.target.innerText.matches(/0-9/)) return e.target.innerText;
+    throw customReactions.break;
+  });
+  customReactions.define("add_number", function (e, i) {
+    const input = this.ownerElement.querySelector("#input");
+    input.innerText += i;
+  });
+</script>
+```
+
+## 4. add the operator function
+
+Let's build the entire calculator. Here we need to explain the logic with the previous operator and the hidden result etc. Once the strategy is explained, just add the extra custom reaction definitions, and the custom reaction invocations on the `<table>` element.
+
+```html
+
+<table id="calculator" _keypress:is_number:add_number>
+  . . .
+</table>
+<script>
+
+  customReactions.define("is_operator", function (e) {
+    if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
+    if (e.type === "keypress") {
+      if (e.key === "Esc") return "clear";
+      if (["=", "+", "-", "/", "*"].indexOf(e.key) >= 0) return e.key;
+    }
+    if (e.type === "click") {
+      const targetTxt = e.target.innerText;
+      if (["=", "+", "-", "/", "*", "clear"].indexOf(targetTxt) >= 0) return targetTxt;
+    }
+    throw customReactions.break;
+  });
+
+  customReactions.define("do_operator", function (e, i) {
+    . . . (calculator logic) . . .
+  });
+
+</script>
+```
+
+## 5. add the keypress functionality
+
+With a calculator you want multiple events. Add reactions for keypress too.
+
+```html
+
+<table id="calculator" _keypress:is_number:add_number>
+  . . .
+</table>
+<script>
+  customReactions.define("is_number", function (e) {
+    if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
+    if (e.type === "keypress" && e.key.matches(/0-9/)) return e.key;
+    if (e.type === "click" && e.target.innerText.matches(/0-9/)) return e.target.innerText;
+    throw customReactions.break;
+  });
+  customReactions.define("add_number", function (e, i) {
+    const input = this.ownerElement.querySelector("#input");
+    input.innerText += i;
+  });
+</script>
+```
+
+
+This is the complete html
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Simple Calculator</title>
+    <link rel="stylesheet" href="./calc.css" type="text/css" />
+  </head>
+
+  <body>
+    <table id="calculator" click:is_number:add_number _keypress:is_number:add_number click:is_operator:do_operator _keypress:is_operator:do_operator>
+      <tr>
+        <td id="result"></td>
+        <td id="operation"> x </td>
+      </tr>
+      <tr>
+        <td id="input"></td>
+        <td class="operator">C</td>
+      </tr>
+      <tr>
+        <td class="number">1</td>
+        <td class="number">2</td>
+        <td class="number">3</td>
+        <td class="operator">/</td>
+      </tr>
+      <tr>
+        <td class="number">4</td>
+        <td class="number">5</td>
+        <td class="number">6</td>
+        <td class="operator">*</td>
+      </tr>
+      <tr>
+        <td class="number">7</td>
+        <td class="number">8</td>
+        <td class="number">9</td>
+        <td class="operator">-</td>
+      </tr>
+      <tr>
+        <td class="number">0</td>
+        <td class="number">.</td>
+        <td class="operator">=</td>
+        <td class="operator">+</td>
+      </tr>
+    </table>
+
+    <script>
+      // filters
+      // 1. illustrate how we retrieve data from the event and from the target in the dom.
+      //    no need to add lots of attribute or elements, if we can read the state directly
+      //    from either the event or the dom.
+      // 2. illustrate that we pass along the filtered output to the next reaction in the chain
+      //    and illustrate how we break the chain.
+      customReactions.define("is_number", function (e) {
+        //TODO MAKE BETTER CHECK
+        //TODO MAKE BETTER CHECK
+        if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
+        if (e.type === "keypress" && e.key.matches(/0-9/)) return e.key;
+        if (e.type === "click" && e.target.innerText.matches(/0-9/)) return e.target.innerText;
+        throw customReactions.break;
+      });
+      customReactions.define("is_operator", function (e) {
+        //TODO MAKE BETTER CHECK
+        //TODO MAKE BETTER CHECK
+        if (["result", "operation", "input"].indexOf(e.target.id) >= 0) throw customReactions.break;
+        if (e.type === "keypress") {
+          if (e.key === "Esc") return "clear";
+          if (["=", "+", "-", "/", "*"].indexOf(e.key) >= 0) return e.key;
+        }
+        if (e.type === "click") {
+          const targetTxt = e.target.innerText;
+          if (["=", "+", "-", "/", "*", "clear"].indexOf(targetTxt) >= 0) return targetTxt;
+        }
+        throw customReactions.break;
+      });
+
+      //reducers
+      //1. illustrate how we can get data from previous reactions using the `i` argument.
+      //2. illustrate how we can get dom nodes we can change.
+      //   Important tip: 1. add the reactions around both the trigger elements and the to-be-changed elements. This way, you can likely catch many triggers with the same custom reaction, and it is safe to find the right dom element with less chance of it being confused with another part of your dom. Add custom reactions to the shared ancestor.
+      customReactions.define("do_operator", function (e, i) {
+        const input = this.ownerElement.querySelector("#input");
+        const result = this.ownerElement.querySelector("#result");
+        const operation = this.ownerElement.querySelector("#operation");
+        // we queue operations to display the previous value and the next to be computed
+        // on each operation, we check if the is no input, only the queued operation is changed
+
+        function solve() {
+          const a = parseFloat(result.innerText);
+          const b = parseFloat(input.innerText);
+          if (operation.innerText === "+") {
+            result.innerText = a + b;
+          } else if (operation.innerText === "-") {
+            result.innerText = a - b;
+          } else if (operation.innerText === "/") {
+            result.innerText = a / b;
+          } else if (operation.innerText === "*") {
+            result.innerText = a * b;
+          }
+          input.innerText = "";
+          operation.innerText = "";
+        }
+
+        if (i === "clear") {
+          result.innerText = "";
+          input.innerText = "";
+          operation.innerText = "";
+          return;
+        }
+
+        // if neither value nor input available, do nothing.
+        if (input.innerText === "" && result.innerText === "") return;
+
+        // if there is no result, we set the result to the input and clear the input, also set the operation later.
+        if (result.innerText === "" && input.innerText !== "") {
+          result.innerText = input.innerText;
+          input.innerText = "";
+        }
+
+        // if there is a result, an input, and a queued operation, we compute the result and set the next operation later.'
+        if (result.innerText !== "" && input.innerText !== "" && operation.innerText !== "") {
+          solve();
+        }
+        
+        // CHECK IF SOLVING IS NEEDED
+        if (i === "=") {
+          solve();
+          return;
+        }
+
+        //if there is a result but not an input only change the operation to be computed next.
+
+        //By this point, we can be sure that the result is set, and the input is clear, and the operation can be changed.
+        if (i === "+") {
+          operation.innerText = "+";
+        } else if (i === "-") {
+          operation.innerText = "-";
+        } else if (i === "/") {
+          operation.innerText = "/";
+        } else if (i === "*") {
+          operation.innerText = "*";
+        }
+      });
+
+      customReactions.define("add_number", function (e, i) {
+        const input = this.ownerElement.querySelector("#input");
+        if (i === "." && input.innerText.indexOf(".") >= 0) return;
+        input.innerText += i;
+      });
+    </script>
+  </body>
+</html>
