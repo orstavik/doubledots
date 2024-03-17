@@ -626,6 +626,17 @@ The purpose of the demo is to illustrate how to make more complex reaction chain
   2. We select the `<thead>` as the location for the reaction chain. This gives us the best balanced position between the (multiple) locations of the trigger(s) and the single location of the effect.
   3. The use of the `:-` dash rule gives us the ability to connect to the relevant locations in the DOM fairly easily.
   4. DoubleDots does *not* enable you to connect *loose* JS elements to the DOM. But. DoubleDots allows for moving elements *within* the same document root. So, if you need to add elements, use `.innerHTML`; if you need to remove elements, they will be removed permanently; and if you need to move elements, add them to their new location without removing them first."
+}, {
+  "role": "user",
+  "content": "Excellent!
+In DoubleDots `setTimeout` and `setInterval` are deprecated. And so is `clearTimeout` and `clearInterval`. They are all replaced by a single `async` function `sleep(ms)` added to `window`.
+
+The reason `setTimeout` (and `setInterval`) are deprecated is: 
+1. When a callback is sent to `setTimeout`, the browser will run the callback in a new, separate frame (macro task).
+2. This macro-task is not simple for the virtual event loop to intercept.
+3. But if we instead `await sleep(10)` inside a `trigger:` or a `:reaction`, then the virtual event loop can control this async behavior in the same way as all the other async functions in the browser.
+
+Can you make me a demo for an egg timer? The egg timer should use a custom reaction rule called `:sleep_`. The egg timer should read an element with the innerText on format minutes:seconds, and then show a clock counting down as the innerText of another element. I also want you to add a short note about why DoubleDots uses `:sleep_1000` instead of `setTimeout`."
 }
 ]
 
