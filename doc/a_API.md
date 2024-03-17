@@ -4,6 +4,8 @@
 
 ### Partially deprecated JS methods
 
+* `setTimeout` and `setInterval` are no longer accessible. Instead a new window method `window.sleep = async function(ms){...}` is made available. This can be used in any trigger: and :reaction definition.
+
 ### `Event.prototype`
 
 * `Event.stopPropagation()`: or this could be altered so that it only works within the current document, and we can have 
