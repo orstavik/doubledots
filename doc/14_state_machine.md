@@ -1,12 +1,12 @@
-# state machines
+# State machines
 
 State machines are everywhere in the browser. And a key to creating manageable and scalable application is to correctly identify and to be able to reuse proper statemachines. This is something Doubledots take great pride in. A lot of the more complex functionality of Doubledots is oriented towards making statemachines simple, transparent, safe, and reusable.
 
 When we look at state machines in the web browser, there are three binary categories that are helpful in order to understand them.
 
-1. **Simple** vs. **Complex**: Do the state machine have *more than* two states? If they have *three or more* states, we call them **complex**. If they only have *two* states, we call them **simple**. (If they only have one state, they are not statemachines, but just a simple reaction(chain)).
+1. **single-trigger** vs. **multi-trigger** state machine: Do the state machine listen to only one *trigger type*? If so, it is a "single-trigger" statemachine. If the state machine listens to multiple types of triggers, such as a "hover" that listens for both `mouseenter` and `mouseleave`, then it is a multitrigger statemachine.
 
-2. **single-trigger** vs. **multi-trigger** statemachine: Do the state machine listen to only one *trigger type*? If so, it is a "single-trigger" statemachine. If the state machine listens to multiple types of triggers, such as a "hover" that listens for both `mouseenter` and `mouseleave`, then it is a multitrigger statemachine.
+2. **Simple** vs. **Complex**: Do the state machine have *more than* two states? If they have *three or more* states, we call them **complex**. If they only have *two* states, we call them **simple**. (If they only have one state, they are not statemachines, but just a simple reaction(chain)).
 
 3. **Gestures** vs. "plain statemachines": Gestures are statemachines that react to UI events and describe the state of user interaction. They are commonly complex, multi-trigger, and focus on dispatching events, but exceptions do exists to all these rules: `click` is simple, a naive `doubleclick` is single-trigger, `hover` outputs no events, only update CSS (pseudo) class.
 

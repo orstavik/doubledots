@@ -12,7 +12,9 @@ To define a trigger is very similar to defining a reaction rule, except that the
 
 ```js
 customReactions.defineTrigger("prefix", class MyTrigger extends Attr{
-  this;//=> the attribute node
+  upgrade(fullname) {
+    this; //=> the attribute node
+  }
 });
 ```
 

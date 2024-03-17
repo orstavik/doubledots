@@ -36,7 +36,16 @@ customReactions.defineRule("-", function(name){
 
 The purpose of the dash reaction is to move the origin of the reaction chain to either an HTMLElement and an HTML attribute (here collectively called html nodes as they are the only `Node` types that are visible in HTML template).
 
-### List of `:-` reactions
+TODO the `:-` rules should be nested. The `:-pp-_input_radiobutton` will do `e.currentElement.parentNode.parentNode.querySelector("input[radiobutton]")`.
+
+If they are nested, then we can keep the rule origin static?
+
+The default implementation of the `:-` rule *shortcuts* are **static**. This means that the shortcuts are ignores the current `this` and instead interprets the origin as if they were the first reaction in the chain, always. 
+
+The default implementation of the `:-` rule *queries* are **dynamic**. This means that the `:-` querries use the current `this` to find the 
+This is a choice. This can cause confusion. The alternative would have been a **dynamic** interpretation of the `:-` rule. This might cause less confusion in some settings, and enable more complex searches.. such as This would enable more, but could cause more problems as there is no   But a choice was made. Having the `:-` shortcuts 
+
+## List of `:-` shortcuts
 
 There is a set of `:-` shorthands that sets a specific objects as the `this` origin of the next reaction:
 1. `:-` => `oi` (fails if `!(oi instanceof Object)`.)
@@ -44,12 +53,16 @@ There is a set of `:-` shorthands that sets a specific objects as the `this` ori
 3. `:-t` => `e.target` (in the same document, it does not step into any shadowDoms.)
 4. `:-el` => `.currentElement`
 5. `:-p` => `.currentElement.parentNode`
-6. `:-a` => `.currentAttribute` (this works as a reset for origin transposition.)
+6. `:-pp` => `.currentElement.parentNode.parentNode` 
+7. `:-prev` => `.currentElement.previousSiblingElement`
+8. `:-next` => `.currentElement.nextSiblingElement`
+8. `:-first` => `.currentElement.nextSiblingElement`
+8. `:-last` => `.currentElement.nextSiblingElement`
+9. `:-a` => `.currentAttribute` (this works as a reset for origin transposition.)
 
-todo x. add nextSiblings and previousSibling
+>> Note: The `:-p`, `:-pp`, `:-next`, `:-prev`, `:-first`, and `:-last` rules are static: they are interpreted against the initial `element` at the beginning of the reaction chain, not the current, interpreted `this` that may fluctuate up and down and round and about in the reaction state.  It is a valid choice to implement another `:-` 
 
-
-### `:-`-queries.
+## List of `:-`-queries.
 
 todo add query selector for children.
 todo add query selector up the ancestor chain,
