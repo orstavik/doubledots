@@ -96,6 +96,7 @@ Nice! We can make a sortable table in DoubleDots with only 15 lines of code defi
 ## Notes about DoubleDots
 
 There are a couple of things to note here.
-1. We select the `<thead>` as the location for the reaction chain. This gives us the best balanced position between the (multiple) locations of the trigger(s) and the single location of the effect.
-2. The use of the `:-` dash rule gives us the ability to connect to the relevant locations in the DOM fairly easily.
-3. DoubleDots does *not* enable you to connect *loose* JS elements to the DOM. But. DoubleDots allows for moving elements *within* the same document root. So, if you need to add elements, use `.innerHTML`; if you need to remove elements, they will be removed permanently; and if you need to move elements, add them to their new location without removing them first.
+1. The `oi` output-input argument in the reaction chain is useful to contain state that is meant for the reaction chain only. The `oi` is the `return` value of one `:reaction` that becomes the second argument for the next `:reaction`.
+2. We select the `<thead>` as the location for the reaction chain. This gives us the best balanced position between the (multiple) locations of the trigger(s) and the single location of the effect.
+3. The use of the `:-` dash rule gives us the ability to connect to the relevant locations in the DOM fairly easily.
+4. DoubleDots does *not* enable you to connect *loose* JS elements to the DOM. But. DoubleDots allows for moving elements *within* the same document root. So, if you need to add elements, use `.innerHTML`; if you need to remove elements, they will be removed permanently; and if you need to move elements, add them to their new location without removing them first.
