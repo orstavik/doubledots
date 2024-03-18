@@ -112,6 +112,21 @@ class Event {
     this.defaultActionList.push({action: this.currentAttribute, document: this.currentElement.getRoot(), promise, oi});
   }
 
+  stopProgation(){
+    //after the current element
+    //restricted to only work within the current document    
+  }
+
+  stopProgationElementOnly(){
+    //stop the rest of  the reactions on this element, but let the reactions on ancestor elements run as before
+    //restricted to only work within the current document    
+  }
+
+  stopImmediateProgation(){
+    //current element and rest of document
+    //restricted to only work within the current document
+  }
+
   processDefaultActions(){
     //the findTheLastDAofTopMostDocument algorithm is a bit tricky as levels between different slotting web comps play as one.
     //<slotting-a>
