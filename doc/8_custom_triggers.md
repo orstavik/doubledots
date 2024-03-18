@@ -178,7 +178,7 @@ The `interval_x:` works better than `timeout_x:` as a trigger. But, we can also 
 ```html
 <script>
   //customReactions.defineReactionRule(".", dotReactionRule) //see later chapter
-  customReactions.defineReactionRule(":sleep_", function(sleep_x){
+  customReactions.defineReactionRule("sleep_", function(sleep_x){
     const delay = parseInt(sleep_x.split("_")[1]);
     return async function(e, oi){
       await sleep(delay);
