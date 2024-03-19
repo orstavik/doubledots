@@ -10,7 +10,7 @@ In addition, custom reactions can return three special types of values:
 
 We have already seen how `customReactions.break` as a special return value from a reaction can halt the reaction chain (as expected) without adding an `Error` event to the event loop. So here we will look only at the two others.
 
-## `customReactions.goto(int)`
+## 1. `customReactions.goto(int)`
 
 To be able to implement control structures such as `if else` and `for`-loops, custom reactions need to be able to control the execution sequence in the custom reaction chain.
 
@@ -58,8 +58,24 @@ The above example will run
 3. the `:lt64_-2` will check that if the number is less than 64, it will go back two steps to `:n1`.
 4. This creates a loop, that multiplies a number, starting with 1, by 2, until the value is 64 or over.
 
-## `customReactions.origin(obj)`
+## 2. `customReactions.origin(obj)`
 
 The `this` object for the custom reaction is by default, and at the start of *every* custom reaction chain, the current reaction attriubte. But. You can change this. In order to change this, you need to have a custom reaction that returns a special `origin` wrapped object.
 
 If you for example have a customReaction that `return customReactions.origin(this.ownerElement)`, then for the next reaction, the `this` of the reaction function will be the element that the custom Reaction is attached to.
+
+## 3. `customReactions.index`
+
+In addition to `.define` the `customReactions` object has another special property: `.index`. The `.index` is the current position of the execution of the current custom reaction within the custom reaction chain/attribute.
+
+```html
+<div click:one:two:three:one>hello sunshine</div>
+```
+
+1. During the first run of reaction `:one`, then `customReactions.index == 1`.
+2. During reaction `:two`, then `customReactions.index` is `2`.
+3. During reaciton `:three`, then `3`.
+4. During the second run of reaction `:one`, then finally `4`.
+
+The `customReactions.index` is not a property you will use all that much. But it can be handy when you need to implement semi control structures and other reflexive or code-oriented functionality. And yes, you are right, it is kinda like the old, deprecate global `event` property.
+
