@@ -13,7 +13,6 @@ The reason `setTimeout` (and `setInterval`) are deprecated is:
 2. This macro-task is not simple for the virtual event loop to intercept.
 3. But if we instead `await sleep(10)` inside a `trigger:` or a `:reaction`, then the virtual event loop can control this async behavior in the same way as all the other async functions in the browser.
 
-
 ### How to implement `setInterval` using `await sleep()`?
 
 To implement `setinterval` using `await sleep()`, you make your own custom `for` or `while` loop around the delayed callback code. Here is an example:
@@ -47,6 +46,8 @@ async function myReaction() {//new way
   window.clearInterval = _=> {throw SyntaxError("clearInterval" + msg)};
 })(setTimeout, setInterval, clearTimeout, clearInterval);
 ```
+
+
 
 ### `Event.prototype`
 
