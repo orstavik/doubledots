@@ -17,7 +17,7 @@ When a reaction is called, it is passed *two* arguments: `e` *and* the output of
 To define a custom reaction, you register a name and a callback function in the `customReactions` register. The callback function is a regular js function with *two* arguments, `(e, oi)`.
   
 ```html
-<p click:get-text:log>Loggin this</p>
+<p click:get-text:log>Hello sunshine</p>
 <script>
   customReactions.define("get-text", () => {
     return this.ownerElement.textContent;
@@ -58,17 +58,16 @@ In advanced DoubleDots syntax, you can change the `this` in your custom reaction
 
 ## 4. Can i use existing functions as custom reactions?
 
-Yes! No problem. We can for example do this by adding a `console.log` reaction at the end of the previous example.
+Yes! No problem. The function will then be passed the `e` and `oi` as arguments, but if that works for your function, your function will work as a reaction:
 
 ```html
-<div click:get_date:add_two_days:subtract_one_month:console.log>
-  hello
-</div>
-
+<p click:get-text:log>Hello sunshine</p>
 <script>
-  customReactions.define("log", (e, oi) => console.log(e, oi));
-  // or simply
-  // customReactions.define("log", console.log);
+  customReactions.define("get-text", () => {
+    return this.ownerElement.textContent;
+  });
+  // customReactions.define("log", (e, oi) => console.log(e, oi));
+  customReactions.define("log", console.log);
 </script>
 ```
 
