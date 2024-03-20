@@ -62,7 +62,7 @@ Above we have looked at several alternatives to using `.value`. And we saw that 
 
 The answers are:
 1. We most definitely still use the `.value`. After all, it is super handy. Primarily we use the `.value` for a) state machine triggers/reactions and b) complex arguments such as `url`s, `/regex/`, `json`, etc. that do not fit as rule `_arguments` (because they use special characters).
-2. But, when a trigger or reaction uses the `.value`, it does **NO SHARING**. So, the opposite of what you as human should do with `.value`. It is super selfish. It writes and reads to the `.value` as if it was alone in the reaction chain. It is you, the DoubleDots developer, that must make sure that there are no conflicts, ie. that you put only a *single* selfish, `.value`-hogging trigger or reaction per chain. 
+2. But, when a trigger or reaction uses the `.value`, it does **NO SHARING**. It is super selfish. It writes and reads to the `.value` as if it was alone in the reaction chain. It is on you, the DoubleDots developer, to ensure that there is *only one* selfish, `.value`-hogging trigger/reaction per chain.
 
 ## Other alternatives for storing state
 
