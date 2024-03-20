@@ -6,6 +6,8 @@ When an event propagates, it will trigger reaction chain that contain the
 
 ## Define a `trigger:`
 
+> Note! Trigger names cannot start with `.` nor `-`. The first charachter in a trigger name must be `/[a-z_]/`.
+
 In Doubledots you can also define your own `trigger:`. Triggers are event factories, sort of. Some are atomic and simple, like `set-timeout_10:` or `attr-change_style:` for example. Others are complex state machines like `swipeable` and `drag-n-drop`. In this chapter we start with the simple ones.
 
 To define a trigger is very similar to defining a reaction rule, except that the definition is not a function, but a `class` that `extends Attr`. This is what it looks like:
