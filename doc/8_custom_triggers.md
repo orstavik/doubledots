@@ -6,7 +6,7 @@ When an event propagates, it will trigger reaction chain that contain the
 
 ## Define a `trigger:`
 
-> Note! Trigger names cannot start with `.` nor `-`. The first charachter in a trigger name must be `/[a-z_]/`.
+> Note! The first charachter in a trigger name must be a lower case english letter: `a-z`. Trigger names cannot begin with `.`,  `-`, nor `_` (the first two are illegal HTML, and the `_` is reserved for *global* triggers in DoubleDots).
 
 In Doubledots you can also define your own `trigger:`. Triggers are event factories, sort of. Some are atomic and simple, like `set-timeout_10:` or `attr-change_style:` for example. Others are complex state machines like `swipeable` and `drag-n-drop`. In this chapter we start with the simple ones.
 
@@ -40,13 +40,20 @@ The purpose of triggers is to `dispatchEvent()`. There are two targets that the 
 
 Events that are dispatched to an attribute only trigger the reactionchain on that particular attribute. No bubbling. No _global reactions. Triggers that dispatch single attribute only events are therefore "simpler" and "atomic". Technically, the event type name and the trigger name do not have to match, but in practice it is common to give the custom attribute event the same name as the trigger prefix.
 
-Events that are dispatched on the element will trigger all reactionchains for _global reactions and for trigger names matching its type name on other elements that it bubbles to. For such triggers you should therefore *not* give their custom event's the same type name as the prefix or full name of the trigger. For example, `swipeable` will dispatch `swipe` and `swipe-end` events.
+### What to name the events?
 
-Triggers that dispatch full, normal, propagating element events are commonly more complex and stateful than triggers that dispatch simple, atomic attribute events. We will therefore discuss these triggers in subsequent chapters and here only focus on simple, atomic, stateless triggers.
+When naming events, observe these guidelines:
+1. All event names *must* be lower case.
+2. All event names *must* begin with an english letter `a-z`.
+3. Element event names *should not* end with `able`.
 
-Event type names *cannot* startsWith `_`. Event type names *should not* contain `.` nor `_` and endsWith `able`.
+The first and second rule are required so that it will be possible to add triggers for these events in the DOM. The `_` is preserved for global event triggers, and therefore adding `_` on the event would force it to only run globally. In HTML, it is illegal to start an attribute name with `.` and `-`. Therefore, if you start an event type name with either `.` or `-` it would be impossible to add regular triggers for those events.
+
+The third (soft) rule is there to prevent conflicts between gestures and their events. For example: You name a trigger `swipeable:`. This trigger dispatches events with type `swipe` and `swipe-end`. These events will not trigger the `swipeable:` trigger, because `swipe` and `swipeable` are different names. If you had named the trigger `swipe:`, then when this trigger dispatched an event with type `swipe`, then that event would have triggered the event generating triggers reaction chain (if it has any). That is most likely not what you want.
 
 ## Simple, atomic, (almost) stateless triggers
+
+Triggers that dispatch full, normal, propagating element events are commonly more complex and stateful than triggers that dispatch simple, atomic attribute events. We will therefore discuss these triggers in subsequent chapters and here only focus on simple, atomic, stateless triggers.
 
 ### `attr_xyz:`
 
