@@ -77,5 +77,5 @@ customReactions.defineRule("throttle_", function (name) {
 });
 ```
 
-Look more at RxJS
-##
+
+## todo Look to RxJS
