@@ -95,6 +95,27 @@ customReaction.defineReaction('log', console.log);
 
 As can be seen, this type of reaction state machines implicitly rely on themselves being the only one that write to their `.value`. 
 
+## Tandem reaction state machines
+
+To illustrate how reaction state machines can work in pairs, we will make a simple `hover` using two reaction state machines.
+
+```html
+<h1 mouseenter:hover-on mouseleave:hover-off>Hello sunshine</h1>
+<script>
+customReaction.define('hover-on', function(e) {
+  this.ownerElement.dispatchEvent(new e.constructor("hover", e));
+  this.ownerElement.classList.add('hover');
+});
+customReaction.define('hover-off', function(e) {
+  this.ownerElement.classList.remove('hover');
+});
+</script>
+```
+
+The example above illustrate how you can orchestrate a simple two trigger state machine as two reaction chains. It works. It is simple. And if it ain't broken, why fix it?
+
+But. What if you need to observe different triggers? What if the states the reactions are switching start diversifying? What if the reactions to different triggers change from state to state? At that time, having reaction state machines working in concert is *not good*. In these instances you *need* something else: a `StateMachineAttr`.(link to chpater)
+
 
 
 ## Examples of reaction state machines
