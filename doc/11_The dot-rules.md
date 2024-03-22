@@ -49,6 +49,23 @@ Kebab reflection primarily enable doubledots developers to access:
 
 When you need to have your custom name space for reactions associated with an HTML node such as a state-machine attribute or a web component, then using `:.kebab-reflection` is very helpful and makes a lot of sense for the developer.
 
+## ToDo
+
+`StateMachineAttr` **must** enable passing of string parameters!
+!!! todo update the `.dot` rule to enable string parameter passing.!!!
+
+should we allow for arguments to be added by the system. Like in:
+
+```
+.toggle-attribute_open
+```
+
+If we have `_arg_arg2`, then we will pass in strings?
+
+
+`:.switch_on` uses the `.` reaction rule to invoke `switch("on")` on the `this` attribute we are on.
+
+
 ## Have your cake and eat it
 
 The `:.`-rule only reserves the `.` as the first character of reaction names. You can still make your own custom reactions that return `customReactions.goto()` and `customReactions.break` or that does method invocation on html nodes any way you would like. And, if you don't like the logic and feel of the `.`-reactions, simply exclude it. That is the benefit of having this functionality implemented as reaction rule, and not hard coded into the syntax of html doubledots.
