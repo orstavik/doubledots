@@ -1,7 +1,7 @@
 
 # TASK 
 
-I want you to write an example of a snake game in HTML using my framework called Doubledots.  Use little to none styles. It should have a grid to play the game, randomly spawn 'eatable' spots in the grind, the snake should move on its own, straight, if no input is made. Also the snake can be controlled with buttons on the screen, for arrows that determine the next move of the snake.
+I want you to write an example of a database viewer in HTML using my framework called Doubledots.  Use little to none styles. It should have 2 button that on click, display different content on an opening modal. This modal should have a close button that closes the modal.
 
 # FURTHER EXPLANATION 
 
