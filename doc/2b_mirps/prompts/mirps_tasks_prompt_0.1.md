@@ -1,7 +1,7 @@
 
 ## TASK ##
 
-I want you to write an example of an encrypter in HTML using my framework called Doubledots.  Use little to none styles. It should have a text area to place the text to encrypt and a preview area to place the text once encrypted. Leave the logic of the encryption empty, just define the customReaction when it is needed.
+I want you to write an example of a modal in HTML using my framework called Doubledots.  Use little to none styles. It should have 2 button that on click, display different content on an opening modal. This modal should have a close button that closes the modal.
 
 ## FURTHER EXPLANATION ##
 
