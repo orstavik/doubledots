@@ -1,26 +1,60 @@
-# The `.` rules
+# The `.dot` reaction rule, aka. KebabReflection
+
+KebabReflection enable DoubleDots developers to access for example:
+1. the `.value` on an attribute,
+2. properties on events such as `.time-stamp` or `.x` on `PointerEvent`s,  
+3. methods such as `.dispatch-event` and `.first-element-child` on `HTMLElement`s,
+4. custom methods on web components or native elements such as `<dialog>.showModal()`, and 
+5. methods and properties on state-machine attributes.
+
+When you need to have your custom name space for reactions associated with an HTML node such as a state-machine attribute or a web component, then using `:.kebab-reflection` is very helpful and makes a lot of sense for the developer.
+
+## 1. Implementation
 
 ```js
+class DotReactionRuleError extends SyntaxError{ } //todo implement
 customReactions.defineRule(".", function(name){
   if (name===".")
     return (e, oi) => oi || customReactions.break;
-
   if (name==="..")
     return (e, oi) => oi && customReactions.break;
+  if (name === "..0")
+    throw new DotReactionRuleError("`:..0` is an illegal jump.");
 
-  const [_, jump] = name.matches(/\.\.(d+)/) || [];
-  if (jump) //att! no goto(0)
+  const [_, negI] = name.matches(/^\.(\-[0-9]+)$/) || [];
+  if(negI)
+    return function(){
+      return this[this.length + parseInt(negI)];
+    }
+
+  const [_, posI] = name.matches(/^\.(\-[0-9]+)$/) || [];
+  if(posI)
+    return function(){
+      return this[parseInt(posI)]; //todo not sure if posI is necessary here
+    }
+
+  const [_, jump] = name.matches(/^\.\.([-]?[1-9][\d]*)$/) || [];
+  if (jump)
     return (e, oi) => oi ? customReactions.goto(jump) : oi;
-    
-  const [_, kName] = name.matches(/\.(a-z-)/) || [];
-  if (kName) {
-    const cName = kName.replace(/(-\w)/g, m=> m[1].toUpperCase());
+
+  const [_, kebab] = name.matches(/\.([a-z][a-z0-9_-]*)/) || [];
+  if (kebab) {
+    const [prop, ...args] = kebab.split("_");
+    const cName = prop.replace(/(-\w)/g, m=> m[1].toUpperCase());
     return function(e, oi) {
       const p = this[cName];
-      return p instanceof Function ? p.call(oi) : p;
+      if (p instanceof Function){
+        args.replaceAll(i => i === "e" ? e : i === "oi" ? oi : i);
+        return p.call(this, ...args);
+      }
+      if (!args.length)
+        return p;
+      if (args.length === 1)
+        this[cName] = args[0];
+      throw new DotReactionRuleError(`this.${cName} is not a function, but still given 2 args: ${args}.`);
     };
   }
-  throw new SyntaxError(`The name: "{name}" doesn't match the "."rule`);
+  throw new DotReactionRuleError(`The name: "{name}" doesn't match the "."rule`);
 });
 ```
 
@@ -30,42 +64,65 @@ The default dot-rule handles `:.` as a filter that breaks if the input is `falsy
 
 The `:..` works the same way, but in reverse. If the `oi` is `falsy`, the reaction just lets it through; if the `oi` is `truey`, then the reaction will break.
 
-## The `:..3` jump
+## jump! `:..3` and `..-2` 
 
 The `:..` specifies a jump. It is useful to implement control structures. The `:..X` where X must be a positive or negative integer. If the `oi` is falsy, then the jump will not happen.
 
->> todo. should jump be triggered on truey, falsey, or always?
+>> todo? add a falsy jump? `:.._-3` for example?
 
-## To `:.kebab-reflection` is to `this.kebabReflection(oi)`
+## To `:.kebab-reflection_arg_arg` is to `this.kebabReflection("arg", "arg")`
 
-The `:.-a-z` turns the reaction name after `.` into a camelCase property name. The reaction will then look for the property on the `this` object for the reaction. If the property is a function, it will call it, using the `oi` as the only argument. Otherwise, it will simply return the property value.
+We look at some examples:
+1. `:.-alpha-zeta_fo-o_bar`
+2. `:.beta-gamma_3`
+3. `:.delta`
+4. `:.4`
 
-Kebab reflection primarily enable doubledots developers to access:
-1. the `.value` on attributes,
-2. methods such as `.dispatch-event` and `.first-element-child` on `HTMLElement`s,
-3. properties on events such as `.time-stamp` and `.x` on `PointerEvent`s,  
-4. custom methods on web components or other html element based modules, and 
-5. methods and properties on state-machine attributes.
+The `:.-alpha-zeta_fo-o_e` is split into:
+1. `-alpha-zeta` snake name. Converted into a KebabCase property `AlphaZeta`.
+2. `_fo-o_bar` string arguments. Converted into string array, with `"e"` replaced with `e` and `"oi"` with `oi`: `["fo-o", "e"]`.
 
-When you need to have your custom name space for reactions associated with an HTML node such as a state-machine attribute or a web component, then using `:.kebab-reflection` is very helpful and makes a lot of sense for the developer.
+The `:.beta-gamma_3` is split into:
+1. `beta-gamma` snake name. Converted into a KebabCase property `betaGamma`.
+2. `_3` string arguments. Converted into string array `["3"]`.
 
-## ToDo
+The `:.delta` is split into:
+1. `delta` snake name. Converted into a KebabCase property `delta`.
+2. empty string arguments.
 
-`StateMachineAttr` **must** enable passing of string parameters!
-!!! todo update the `.dot` rule to enable string parameter passing.!!!
+The `:.4` is split into:
+1. `4`. Think of it as an array index.
+2. empty string arguments.
 
-should we allow for arguments to be added by the system. Like in:
+There are four valid situations:
+1. The KebabCase property is a `function`. This function will be called with the `this` origin as `this` and the string arguments array or empty array as arguments. In the arguments, strings `"e"` will be replaced with the `e`, and strings `"oi"` will be replaced with the `oi` (outputInput argument). E.g. `this.AlphaZeta("fo-o", e)`, `this.betaGamma("3")`, or `this.delta()`;
 
+2. The KebabCase property is *not* `function` and the string arguments has ***a single*** item. This will be interpreted as a setter, e.g. `return this.betaGamma = "3"`.
+
+3. The KebabCase property is *not* `function` and the string arguments is ***empty***. This will ge interpeted as a getter, e.g. `return this.delta`.
+
+4. The KebabCase property is an `Object` and the string arguments is ***empty***. This will be interpreted as a getter, an array lookup, e.g. `return this[4]`.
+
+```html
+<h1 click:.toggle-attribute_open>hello sunshine</h1>
 ```
-.toggle-attribute_open
-```
 
-If we have `_arg_arg2`, then we will pass in strings?
+## The `.dot` rule and `StateMachineAttr`
 
+The `StateMachineAttr` **depends** on the `.dot` rule. In order to avoid having the complex state machines spawn custom reaction names, it needs to be able to use some kind of reflection to access the method names on the `StateMachineAttr` instance. The `class` name in JS provides a namespace for uniquely identifiable methods, and so by combining the `.dot` rule with the `class` namespace encapsulation, we can generate complex statemachines that use their own names *without* bleeding various reaction names to an outside namespace.
 
-`:.switch_on` uses the `.` reaction rule to invoke `switch("on")` on the `this` attribute we are on.
+## The `.dot` rule is an *op*tional, *op*inionated *op*erator
 
+Is it optional? Yes. The `.dot`-reactions is a reaction rule. Semantics. Semantics is optional. Words you can choose not to utter. A word whose meaning you can define on your own terms. Reaction rules are super easy to exclude and write your own versions of. So if you don't like the logic and feel of the `.dot`-reactions, that is 100% ok. You are truly welcome to implement your own! The system is built that way:D 
 
-## Have your cake and eat it
+But if you include this `.dot` rule, do you then have to use it? Nope. You can still make as many custom reactions that use reflection and/or `return` `customReactions.goto()`/`customReactions.break`.
 
-The `:.`-rule only reserves the `.` as the first character of reaction names. You can still make your own custom reactions that return `customReactions.goto()` and `customReactions.break` or that does method invocation on html nodes any way you would like. And, if you don't like the logic and feel of the `.`-reactions, simply exclude it. That is the benefit of having this functionality implemented as reaction rule, and not hard coded into the syntax of html doubledots.
+However. This `.dot` rule reserves the `.` prefix. So with the `.dot` rule included, you cannot make your own custom reactions whose name begins with `.`.
+
+Ok, but let's hear the dirt! How is the `.dot` rule *opinionated*? There are many dubious choices made in how the `.dot` rule has chosen to interpret its text. For example, the `.dot` rule KebabReflective method replaces two special words `"e"` and `"oi"` with the two input arguments. This can definitively be confusing. Furthermore, choices are made concerning jump and filter syntax too. There are good, alternative routes dot taken.
+
+But, and this is a big but! When we implement a set of custom state machines that spawn and orchestrate their own reaction chains, we *had to have* some *globally available* rules that enable us to both:
+* *dynamically move the `this` origin* (the `-dash` rule) and
+* *reflectively invoke methods on `this`* (the `.dot` rule).  
+
+The reason we *had to*, is that the alternative to moving `this` and reflective method invocation is to *flush the namespace with a myriad of custom reactions*. This is simply a significantly worse choice, especially for readability, but also for maintainability when making custom state machines. So, the `StateMachineAttr` we use to implement so many of our standard gestures and other complex state machines *voluntarily* chose to depend on the `.dot` and `-dash` rule. So, the big but is that the option to *not* use `.dot` and/or `-dash` (or break certain aspects of them), comes with the penalty of loosing access to the DoubleDots standard registry of gestures and other fun, complex state machines. Sorry. We simply had to break some eggs to make those omeletts.
