@@ -119,7 +119,7 @@ But if you include this `.dot` rule, do you then have to use it? Nope. You can s
 
 However. This `.dot` rule reserves the `.` prefix. So with the `.dot` rule included, you cannot make your own custom reactions whose name begins with `.`.
 
-Ok, but let's hear the dirt! How is the `.dot` rule *opinionated*? There are many dubious choices made in how the `.dot` rule has chosen to interpret its text. For example, the `.dot` rule KebabReflective method replaces two special words `"e"` and `"oi"` with the two input arguments. This can definitively be confusing. Furthermore, choices are made concerning jump and filter syntax too. There are good, alternative routes dot taken.
+Ok, but let's hear the dirt! How is the `.dot` rule *opinionated*? There are many dubious choices made in how the `.dot` rule has chosen to interpret its text. For example, the `.dot` rule KebabReflective method replaces two special words `"e"` and `"oi"` with the two input arguments. This can definitively be confusing. The `.dot` rule doesn't support `"_"` in method names, not even at the beginning of their name. Sorry Python developers. Furthermore, choices are made concerning jump and filter syntax too. There are good, alternative routes dot taken.
 
 But, and this is a big but! When we implement a set of custom state machines that spawn and orchestrate their own reaction chains, we *had to have* some *globally available* rules that enable us to both:
 * *dynamically move the `this` origin* (the `-dash` rule) and

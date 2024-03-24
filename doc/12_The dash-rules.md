@@ -1,7 +1,13 @@
-# The `-` rules
+# The `-dash` rule
+
+The purpose of the dash reaction is to move the origin of the reaction chain to either an HTMLElement and an HTML attribute (here collectively called html nodes as they are the only `Node` types that are visible in HTML template).
+
+The `-dash` reaction rule really tips its hat to jQuery. Thanks jQuery. For everything. Really appreciated, even loved at times. DoubleDots was inspired and this `-dash` monadish construct is a monad hybrid chained query selector, all rolled up into one. 
+
+## Implementation
 
 ```js
-customReactions.defineRule("-", function(name){
+customReactions.defineRule("-", function(name) {
   if (name==="-") {
     return function(e, oi){
       if (oi instanceof Object)
@@ -11,34 +17,80 @@ customReactions.defineRule("-", function(name){
   }
   if (name==="-e")
     return e => customReactions.origin(e);
-  if (name==="-t")
-    return e => customReactions.origin(e.target);
   if (name==="-a")
     return e => customReactions.origin(e.currentAttribute);
-  if (name==="-el")
+  if (name==="--el")
     return e => customReactions.origin(e.currentElement);
-  if (name==="-p")
-    return e => customReactions.origin(e.currentElement.parentNode);
-  if (name==="-pp")
-    return e => customReactions.origin(e.currentElement.parentNode.parentNode);
-  if (name[1] === "-")
-    throw new ReactionError(`--something is not supported yet: ${name}`);
-  name = name.substring(1);
-  return function(e,oi) {
-    for (let attr of e.currentElement.attributes)
-      if (attr.name.replace(":", "_").startsWith(name))
-        return customReactions.origin(attr);
+  if (name.startsWith("--el--")){
+    console.warn(`--el is unnecessary, '${name}' should be '${name.substring(4)}'.`):
+    name = name.substring(4);
+  }
+
+  function makeAttributeTraverser(name){
+    return function attributeTraverser(e, oi) {
+      for (let attr of e.currentElement.attributes)
+        if (attr.name.replace(":", "_").startsWith(name))
+          return attr;
+      };
+  }
+  //--multi-step--query--traverser
+  function makeElementTraverser(name){
+    return function elementTraverser(root, e) {
+      root = root.ownerElement || root;
+      if (name==="t")
+        return e.target;
+      if (name==="prev")
+        return root.previousSiblingElement;
+      if (name==="next")
+        return root.nextSiblingElement;
+      if (name==="pa")
+        return root.parentNode;
+      if (name==="papa")
+        return root.parentNode.parentNode;
+      const [_, child] = name.matches(/child(\-?[\d]+)/);
+      if (child !== undefined) 
+        root.children[child[0] === "-"? root.children.length + +child : +child];
+      //todo add attribute with value syntax for querySelector?
+      return root.querySelector(name); 
+    }
+  }
+  const [_, paths] = name.split("--");
+  let queryAttr;
+  if (paths[-1][0] === "-")
+    queryAttr = makeAtributeTraverser(paths.pop().substring(1));
+  const calls = paths.map(name => makeElementTraverser(name));
+  return function(e, oi) {
+    //the dash-rule is interpreted equally regardless of position in the reaction chain. It is static
+    let root = e.currentElement;
+    //if the starting point for the -dash-rule was dynamic and 
+    //could change with the position in the reaction chain, we would do:
+    // let root = this;  
+    for (let queryE of calls)
+      root = queryE(root, e);
+    if(queryAttr)
+      root = queryAttr(root);
+    return customReactions.origin(root);
   }
 });
 ```
 
 ## The `:-` dash reaction
 
-The purpose of the dash reaction is to move the origin of the reaction chain to either an HTMLElement and an HTML attribute (here collectively called html nodes as they are the only `Node` types that are visible in HTML template).
+`:--papa--input---attr-name`. The `this.parentNode.parentNode.getFirstAttributeStartingWith("attr-name")`
+`:--t--pa--child0--child-1`. The `next = e.target.parentNode.children[0]; next = next.children[next.children.length - 1]`.
+`:--`
 
-TODO the `:-` rules should be nested. The `:-pp-_input_radiobutton` will do `e.currentElement.parentNode.parentNode.querySelector("input[radiobutton]")`.
+`:-e` the `event`
+`:-a` the `currentAttribute`
+`:---attribute-name_starts_with` where `:` is replaced with `_`
 
-If they are nested, then we can keep the rule origin static?
+## todo: static or dynamic??
+
+>> todo we choose **static** !!! If you implement other means, you might wish to be dynamic, like array after array after array. But here, we start with the `--el` origin every time.
+
+
+
+
 
 The default implementation of the `:-` rule *shortcuts* are **static**. This means that the shortcuts are ignores the current `this` and instead interprets the origin as if they were the first reaction in the chain, always. 
 
