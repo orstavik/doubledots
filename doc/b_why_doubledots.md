@@ -2,7 +2,7 @@
 
 >> Everything written here is true. But still. Be forewarned. This is a sales pitch. This is the way we would present the benefits of DoubleDots when we throw causion and humility to the side. We hope you find it inspiring, and enlightening, and that you forgive us for this bluster and temporary lapse in character.
 
-Below are 5 points why DoubleDots is memorable. Once you see HTML throught the lens of DoubleDots, you will never be able to unsee it. It is unforgettable.
+Below are 6 points why DoubleDots is memorable. Once you see HTML throught the lens of DoubleDots, you will never be able to unsee it. It is unforgettable.
 
 1. DoubleDots renovates the **timeline** in HTML. It unifies all the different timers, callbacks, observers, and the native event queue into a single **virtual event loop**. This makes it much easier to understand the different priorities between tasks (promises, micro, meso, macro, etc.). This illustrates not only how to solve and avoid race conditions between these different queues that now are quite obfuscated, but it also illustrate the clear difference between the thread structure `async/await` allows and how these threads should be viewed up against the singularity of the event loop.
 
@@ -14,24 +14,4 @@ Below are 5 points why DoubleDots is memorable. Once you see HTML throught the l
 
 5. Using reactions and triggers, DoubleDots also give new meaning to the concept of state machines. State machines is a recurring problem in HTML (and coding in general). But, imperative languages like JS are not really good at highlighting them. DoubleDots is not an imperative language; DoubleDots is reactive. In DoubleDots we can easily spot what state machines we need; where; which states we need; and which transitions. And DoubleDots provide simple means to implement them. **Gestures and other elaborate state machines are simple in DoubleDots**. So. DoubleDots have already implemented a full register of common web gestures such as `swipe`, `fling`, `pinch`, and `pan` that you can use as is, read to understand, and modify and augment to your hearts desire.
 
-## Coming soon!!
-
-6. Solving the issue of encapsulation.
-The encapsulation strategy is not only built on the static element structure, but on the semi-dynamic dom (element at first attach time). 
-
-This is possible because DoubleDots attaches definitions to the `document` owner, not the global js name space.
-
-Because of this, imagine you have an app A. the main `document`. It uses 2 web components written by two different developers B and C. `shadowRoot` B and `shadowRoot` C. And both B and C use a common component D. written by developer D with two shadowRoots BD, and CD.
-
-When the shadowRoot starts, it will do the following:
-1. it will run through the host node chain to the top hostNode.
-2. then it will check the host node chain for a special `[override-reaction]`, `[override-rules]` and `[override-trigger]` attribute. This attribute can only be added to the element when it is first added to the DOM. The map
-3. when a reaction is queried from the attribute, it will:
-    1. go to the `getRoot()` shadowRoot.
-    2. if there is an override for that reaction or trigger, when it goes through the map top-down, then it will simply transpose the root to that override.
-    3. On the root/overriding root, it will search for the definition. If it finds no definition on itself, it will get the .hostNode.getRoot() until it has reached the top document.
-    4. But inside shadowRoots, the ability to register new reactions *must* be done *before* any reactions are queried from the DOM. The reaction doesn't have to be ready, a name can point to a `Promise` of a coming definition, but the `shadowRoot.defineReaction(name, promise)` must be called at the head of the constructor of the element.
-
-4. this means that when there is no overriding rule, the 
-
-When D starts, it  looks for its own definition in C first. 
+6. Definitions either bleed or borrow. On one hand we have web component definitions. If a web component wish to define and use other web components inside its `shadowRoot`, it must use the *global* `customElements.define()`. The web components inner definitions are thus added globally, ie. *bleeding* into the rest of the app. On the other hand we have styling web component the `shadowRoot`. Even if you know exactly the element name, the CSS classes, its attributes, etc., if the web component hasn't already *actively exposed* these structures, you *cannot* style it from the outside, no matter how precisely you define the CSS selector in the lightDom. Element styling *borrows*. We feel we have found a good balance between bleeding and burrowing in DoubleDots. By default all definitions burrow, which is needed 99% of the time, but if you need, you can explicitly override any reaction or trigger on a *per element* level in the lightDom. To achieve this, a light restriction is set on *timing* of shadowDom definitions and lightDom overrides. A balance is struck, possibly memorable too (but this we don't really feel one way or the other about yet).
