@@ -199,7 +199,9 @@ immutability and identity checks.
 ```
 
 
-### `loose:`
+## `game:` state machine
+
+Here, we have a game as a state machine, that needs to orchestrate different `click` listeners, along with a timer. we first make it as a reaction state machine, and then we make it as a `StateMachineAttr`. I guess this is fun? :)
 
 In this custom trigger, we will finish a game after a loss or timeout. We will change styles and handle the according logic.
 
