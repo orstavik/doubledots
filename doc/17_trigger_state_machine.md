@@ -203,6 +203,10 @@ immutability and identity checks.
 
 Here, we have a game as a state machine, that needs to orchestrate different `click` listeners, along with a timer. we first make it as a reaction state machine, and then we make it as a `StateMachineAttr`. I guess this is fun? :)
 
+1. we make it quite simple, with a transient timer. This is buggy though, because it is difficult to stop
+2. second, we replace it with a `::sleep_1000:count_down:..-2`. This is a loop that we can take out, when we don't need it
+3. we finally move into a `StateMachineAttr` that makes a nice and tidy class for everything.
+
 In this custom trigger, we will finish a game after a loss or timeout. We will change styles and handle the according logic.
 
 ```html
@@ -234,7 +238,7 @@ customReactions.define("game-states", function(e){
     
     //handling a second event transiently, as a separate thread managed internally
     //this threading is hacky..
-    (async function(){
+    (async () => {
       for (let i = 0; i<5; i++){
         this.ownerElement.querySelector("h2").innerText = 5-i;
         await sleep(1000);
