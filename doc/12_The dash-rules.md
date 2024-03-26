@@ -1,8 +1,28 @@
 # The `-dash` rule
 
-The purpose of the dash reaction is to move the origin of the reaction chain to either an HTMLElement and an HTML attribute (here collectively called html nodes as they are the only `Node` types that are visible in HTML template).
+> Hey jQuery! How are ya? :) Me? I'm doing good, thanks for asking :) But sorry for coming at you out the blue like this. I know it was a long time ago. And I didn't really make a clean break. I just started looking at some other frameworks, and then one thing led to another.. it just happened.. But I wanted to tell you that.. I see now that I was wrong. That you were right. And that we were good together, just like you said. I wish I hadn't left you the way I did. I see that now. I am truly sorry about that. But. What I waaant to say is.. I just really wanted to thank you for a really good time back then. I really enjoyed myself when I was with you. It was real. I meant all the things I wrote. I just wanted you to know that.. Anyways, thank you jQuery! For everything.
 
-The `-dash` reaction rule really tips its hat to jQuery. Thanks jQuery. For everything. Really appreciated, even loved at times. DoubleDots was inspired and this `-dash` monadish construct is a monad hybrid chained query selector, all rolled up into one. 
+The purpose of the dash reaction is to move the origin of the reaction chain to new HTML nodes (elements or attributes). The dash rule is like a custom querySelector whose return is the movement of the `this` in the reaction chain. Here are some examples:
+
+#### `:-e`
+1. `:-e`. Dash-to the event 
+
+`:--papa--input---attr-name`. 
+
+The `this.parentNode.parentNode.getFirstAttributeStartingWith("attr-name")`
+
+`:--t--pa--child0--child-1`. The `next = e.target.parentNode.children[0]; next = next.children[next.children.length - 1]`.
+
+`:--`
+
+`:---attribute-name_starts_with` where `:` is replaced with `_`
+
+## The `-dash` rule makes *static reactions*
+
+The `-dash` rule is a **static** reaction. Static reactions means that they will *work the same regardless of their position in the reaction chain*. To achieve this feat, the `-dash` rule doesn't use the `this`, but instead *always originate from the `e.currentElement` and `e.currentAttribute`.
+
+Note. Static is a choice. It can cause confusion. The alternative to static interpretation is a dynamic interpretation of `:-` that would originate from the `this`. Dynamic query reactions/rules are fine. But they might also cause confusion in their own way. So again, a choice was made. But if you want, make your own dynamic `-dash` rule and flow with it. It was meant to be;)
+
 
 ## Implementation
 
@@ -27,7 +47,7 @@ customReactions.defineRule("-", function(name) {
   }
 
   function makeAttributeTraverser(name){
-    return function attributeTraverser(e, oi) {
+    return function attributeTraverser(e) {
       for (let attr of e.currentElement.attributes)
         if (attr.name.replace(":", "_").startsWith(name))
           return attr;
@@ -74,28 +94,8 @@ customReactions.defineRule("-", function(name) {
 });
 ```
 
-## The `:-` dash reaction
-
-`:--papa--input---attr-name`. The `this.parentNode.parentNode.getFirstAttributeStartingWith("attr-name")`
-`:--t--pa--child0--child-1`. The `next = e.target.parentNode.children[0]; next = next.children[next.children.length - 1]`.
-`:--`
-
-`:-e` the `event`
-`:-a` the `currentAttribute`
-`:---attribute-name_starts_with` where `:` is replaced with `_`
-
-## todo: static or dynamic??
-
->> todo we choose **static** !!! If you implement other means, you might wish to be dynamic, like array after array after array. But here, we start with the `--el` origin every time.
 
 
-
-
-
-The default implementation of the `:-` rule *shortcuts* are **static**. This means that the shortcuts are ignores the current `this` and instead interprets the origin as if they were the first reaction in the chain, always. 
-
-The default implementation of the `:-` rule *queries* are **dynamic**. This means that the `:-` querries use the current `this` to find the 
-This is a choice. This can cause confusion. The alternative would have been a **dynamic** interpretation of the `:-` rule. This might cause less confusion in some settings, and enable more complex searches.. such as This would enable more, but could cause more problems as there is no   But a choice was made. Having the `:-` shortcuts 
 
 ## List of `:-` shortcuts
 

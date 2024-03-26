@@ -1,10 +1,36 @@
 # custom `trigger:`
 
-## Undefined event triggers: `click:` and `_click:`
+## Listener triggers: `click:`
 
-When an event propagates, it will trigger reaction chain that contain the 
+The trigger is primarily event listeners. Whenever an event propagates in the DOM, any trigger with the *same name* as the event type, will trigger its reaction chain. For example, if the user `click` on an element inside another element that has a `click:` trigger, then the reaction chain behind the `click:` trigger will run when the event bubbles past the `ownerElement`.
 
-## Define a `trigger:`
+```html
+<div click:say-hi>
+  <h1>hello sunshine</h1>
+<div>
+```
+
+## _global listener triggers:  `_click:`
+
+If you prefix the trigger name with an `_`, you turn the event listener into a ***_global trigger*** (aka global event listener). For example:
+
+```html
+<div _click:say-hi>
+  <h1>hello sunshine</h1>
+<div>
+<div>
+  <h1>hello world</h1>
+</div>
+```
+
+If you in the example above `click` on *hello world*
+
+_global triggers are:
+1. triggered by *any* event that will hit that would have propagated past any other element in that `document`. 
+
+ will be triggered when any event of that type propagates the DOM, regardless if  is *any* event listener Normal HTML and DOM events do not offer _global event 
+
+## Define a `trigger:` 
 
 > Note! The first charachter in a trigger name must be a lower case english letter: `a-z`. Trigger names cannot begin with `.`,  `-`, nor `_` (the first two are illegal HTML, and the `_` is reserved for *global* triggers in DoubleDots).
 
@@ -19,6 +45,8 @@ customReactions.defineTrigger("prefix", class MyTrigger extends Attr{
   }
 });
 ```
+
+## The `upgrade(fullname){...}` constructor
 
 Inside the trigger `class` you must implement *one* function called `upgrade(fullname)`. The `upgrade(fullname){...}` function is the constructor of the trigger (and if it wasn't impossible to invoke constructors using reflection in JS, it would have been called the `constructor(...)` too). 
 
