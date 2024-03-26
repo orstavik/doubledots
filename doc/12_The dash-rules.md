@@ -146,12 +146,12 @@ function* upwardsIterator(el) {
   }
 }
 
-// function* previousSiblingIterator(el) {
-//   while (el instanceof Element) {
-//     el = el.previousSiblingElement;
-//     yield el;
-//   }
-// }
+function* previousSiblingIterator(el) {
+  while (el instanceof Element) {
+    yield el;
+    el = el.previousSiblingElement;
+  }
+}
 
 // function* nextSiblingIterator(el) {
 //   while (el instanceof Element) {
@@ -184,6 +184,20 @@ function dirQuerySelector(dir, elQuery) {
     return e => e.currentElement.querySelector(query);
   }
   if (type === "m") {
+    if(isNaN(number) && !elQuery)
+        return e => e.currentElement.previousSiblingElement;
+    if(isNaN(number)/*&&elQuery*/){
+      return function(e) {
+        for (let p of previousSiblingIterator(e.currentElement.previousSiblingElement)) {
+          if (!p)
+            throw new DashRuleError("previousSibling direction with query didn't match");
+          if (p.matches(elQuery))
+            return p;
+        }
+        throw new DashRuleError("previousSibling direction with query didn't match");
+      }
+    }
+    //todo not sure that the support for :has() is big enough for this to work yet..
     const plusStar = number > 0 ? '+*'.repeat(number) + '+' : '+';
     const query = `${elQuery}:has(${plusStar}:root)`;
     return e => e.currentElement.querySelector(query);
