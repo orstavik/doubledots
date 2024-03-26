@@ -189,7 +189,7 @@ function dirQuerySelector(dir, elQuery) {
     return e => e.currentElement.querySelector(query);
   }
   if (type === "n") {
-    const plusStar = number > 0 ? '+*'.repeat(number) + '+' : '+';
+    const plusStar = number > 0 ? '+*'.repeat(number) + '+' : '~';
     const query = `:root ${plusStar} ${elQuery}`;
     return e => e.currentElement.querySelector(query);
   }
