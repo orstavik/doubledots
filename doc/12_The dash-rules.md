@@ -32,7 +32,7 @@ The direction query specify the *orientation* that the `-dash` rule should go. E
 3. `p` ("parent") goes *up* to the parentNode, and then upwards to other ancestor within the same document.
 4. `n` ("next") goes *sideways right* from the `currentElement` to the `nextSiblingElement` and its `nextSiblingElement` until the end. 
 5. `m` ("previous") goes *sideways left* from the `currentElement` to the `previousSiblingElement` and its `previousSiblingElement` until the end. 
-3. `t` ("target") goes *up* from the event's target in the DOM, and then upwards to the currentElement and beyond to its ancestors within the same document.
+6. `t` ("target") goes *up* from the event's target in the DOM, and then upwards to the currentElement and beyond to its ancestors within the same document.
 
 To each direction letter, the direction query can be given a number. This number specifies the exact child or ancestor queried based on position.
 
@@ -85,13 +85,12 @@ The element query will find the first element in the given direction. If the dir
 
 Examples of conversion:
 1. `:--input_type__checkbox.is-active` => `input[type="checkbox"].is-active`
-2. `:-m1--.bob` => `:has(+*+*:root(.bob))`
+2. `:-m1--.bob` => `:has(.bob+*+:root)`
 3. `:-n0--.hello-sunshine` => `:root + .hello-sunshine`
 4. `:-p--form_action` => iterateUpwards `.parentNode` to the first parentNode that `.match("form[action]")`.
 5. `:-c--pre` => `:root > pre`
 6. `:-c3` => `:root:nth-child(3)`
 7. `:-l3--i` => `:root > i:nth-last-child(3)`
-8. `input_type__radiobutton.top-button` => `input[type="radiobutton"].top-button`.
 
 The converted querySelector  can be applied to the currentElement. The direction and element query will in total produce only one element.
 
@@ -107,19 +106,6 @@ function attributeQuery(el, query){
 }
 ```
 
-
-
-
-## Problems 
-
-The syntax of the element query (and the `-dash` rule) is likely to annoy you. We feel ya. The reason it is like this is that we are restricted to a minimal character set. This is limiting. Sorry.
-
-many roads not taken. 
-1. No nesting of such queries. 
-2. No dynamic queries that allow you to build and branch from the current `this`.
-3. fails silently. we could make these queries throw an Error. Should we?
-
-
 ## Why is the `-dash` rule **static**?
 
 We want the relationship between the ownerElement and the reactions to be short. And we want them to have strong gravity towards the nexus of the reaction, the `currentElement` and `currentAttribute`. The static quality of the queries work this way. It makes the path go out like rays of sunshine from a single location. This helps make the path shorter, and when the position of the reaction is in the center of a more complex setup, this makes the reaction chain look much more readable. It leads to code hygiene.
@@ -132,75 +118,185 @@ Note. Static is a choice. It can cause confusion. The alternative to static inte
 ## Implementation
 
 ```js
-customReactions.defineRule("-", function(name) {
-  if (name==="-") {
-    return e => customReactions.origin(e.currentElement);
-  if (name==="-oi")
-    return function(e, oi){
-      if (oi instanceof Object)
-        return customReactions.origin(oi);
-      throw new DashReactionError(`"${oi}" is not an Object.`);
-    }
-  }
-  if (name==="-e")
-    return e => customReactions.origin(e);
-  if (name==="-a")
-    return e => customReactions.origin(e.currentAttribute);
-  if (name[1] !== "-") {
-    name = name.substring(1);
-    name.replaceAll("__", ".").replaceAll("_", "))
-    return e =>customReactions.origin(e.currentElement)
-  }
-  //todo here we need to add a simple querySelector
+function dashOi(e, oi){
+  if (oi instanceof Object)
+    return customReactions.origin(oi);
+  throw new DashReactionError(`"${oi}" is not an Object.`);
+}
 
-  function makeAttributeTraverser(name){
-    return function attributeTraverser(e) {
-      for (let attr of e.currentElement.attributes)
-        if (attr.name.replace(":", "_").startsWith(name))
-          return attr;
-      };
+function attributeQuery(query, el){
+  for (let a of el.attributes)
+    if (a.name.replaceAll(":", "_").startsWith(query))
+      return a;
+}
+
+function elQuerySelector(query){
+  let [typeAttr, ...classes] = query.split(".");
+  classes = classes.join(".");
+  let [type, ...attr] = typeAttr.split(/(?<!_)_(?!_)/); 
+  if(attr.length)
+    attr = attr.map(a => a.split("__")).map(([n,v]) => v ? `[${n}="${v}"]`: `[${n}]`);
+  return type + attr + classes;
+}
+
+function* upwardsIterator(el) {
+  while (el instanceof Element) {
+    yield el;
+    el = el.parentNode;
   }
-  //--multi-step--query--traverser
-  function makeElementTraverser(name){
-    return function elementTraverser(root, e) {
-      root = root.ownerElement || root;
-      if (name==="t")
-        return e.target;
-      if (name==="prev")
-        return root.previousSiblingElement;
-      if (name==="next")
-        return root.nextSiblingElement;
-      if (name==="pa")
-        return root.parentNode;
-      if (name==="papa")
-        return root.parentNode.parentNode;
-      const [_, child] = name.matches(/child(\-?[\d]+)/);
-      if (child !== undefined) 
-        root.children[child[0] === "-"? root.children.length + +child : +child];
-      //todo add attribute with value syntax for querySelector?
-      return root.querySelector(name); 
+}
+
+// function* previousSiblingIterator(el) {
+//   while (el instanceof Element) {
+//     el = el.previousSiblingElement;
+//     yield el;
+//   }
+// }
+
+// function* nextSiblingIterator(el) {
+//   while (el instanceof Element) {
+//     el = el.nextSiblingElement;
+//     yield el;
+//   }
+// }
+
+function upwardsNumber(number, root) {
+  for (let i = 0; i < number; i++) {
+    root = root.parentNode;
+    if (!(root instanceof Element))
+      throw new DashRuleError("iterating upwards index out of range");
+  } 
+  return root;
+}
+
+function dirQuerySelector(dir, elQuery) {
+  const type = dir[0];
+  const number = parseInt(dir.substring(1));
+  
+  if(type === "c") {
+    const tail = isNaN(number) ? "" : `:nth-child(${number})`;
+    const query = `:root > ${elQuery}${tail}`;
+    return e => e.currentElement.querySelector(query);
+  }
+  if(type === "l") {
+    const tail = isNaN(number) ? "" : `:nth-last-child(${number})`;
+    const query = `:root > ${elQuery}${tail}`;
+    return e => e.currentElement.querySelector(query);
+  }
+  if (type === "m") {
+    const plusStar = number > 0 ? '+*'.repeat(number) + '+' : '+';
+    const query = `${elQuery}:has(${plusStar}:root)`;
+    return e => e.currentElement.querySelector(query);
+  }
+  if (type === "n") {
+    const plusStar = number > 0 ? '+*'.repeat(number) + '+' : '+';
+    const query = `:root ${plusStar} ${elQuery}`;
+    return e => e.currentElement.querySelector(query);
+  }
+  if (type === "p") {
+    if ((isNaN(number) || number === 0) && !elQuery)
+      return e => e.currentElement.parentNode;
+    if(number && !elQuery){
+      const func = upwardsNumber.bind(null, number);
+      return e => func(e.currentElement.parentNode);
+    }
+    if(isNaN(number) && elQuery){
+      return function(e) {
+        for (let p of upwardsIterator(e.currentElement.parentNode)) {
+          if (!p || !(p instanceof Element))
+            throw new DashRuleError("parent direction with query didn't match");
+          if (p.matches(elQuery))
+            return p;
+        }
+      }
+    }
+    if(!isNaN(number) && elQuery){
+      const func = upwardsNumber.bind(null, number);
+      return function(e){
+        const el = func(e.currentElement.parentNode);
+        if(el.matches(elQuery))
+          return el;
+        throw new DashRuleError("parent direction with number and query didn't match");
+      }
     }
   }
-  const [_, paths] = name.split("--");
-  let queryAttr;
-  if (paths[-1][0] === "-")
-    queryAttr = makeAtributeTraverser(paths.pop().substring(1));
-  const calls = paths.map(name => makeElementTraverser(name));
-  return function(e, oi) {
-    //the dash-rule is interpreted equally regardless of position in the reaction chain. It is static
-    let root = e.currentElement;
-    //if the starting point for the -dash-rule was dynamic and 
-    //could change with the position in the reaction chain, we would do:
-    // let root = this;  
-    for (let queryE of calls)
-      root = queryE(root, e);
-    if(queryAttr)
-      root = queryAttr(root);
-    return customReactions.origin(root);
+  if (type === "t") {
+    if ((isNaN(number) || number === 0) && !elQuery)
+      return e => e.target;
+    if(number && !elQuery){
+      const func = upwardsNumber.bind(null, number);
+      return e => func(e.target);
+    }
+    if(isNaN(number) && elQuery){
+      return function(e) {
+        for (let p of upwardsIterator(e.target)) {
+          if (!p || !(p instanceof Element))
+            throw new DashRuleError("parent direction with query didn't match");
+          if (p.matches(elQuery))
+            return p;
+        }
+      }
+    }
+    if(!isNaN(number) && elQuery){
+      const func = upwardsNumber.bind(null, number);
+      return function(e){
+        const el = func(e.target);
+        if(!el.matches(elQuery))
+          return el;
+        throw new DashRuleError("parent direction with number and query didn't match");
+      }
+    }
+  }
+}
+
+//todo memoize dashRule function
+customReactions.defineRule("-", function dashRule(name) {
+  if (name==="")
+    return e => customReactions.origin(e.currentElement);
+  // if (name==="-") There is an opening for `:--`
+  //   return e => customReactions.origin(Free_notYetInUse);
+  if (name==="--") 
+    return e => customReactions.origin(e.currentAttribute);
+  if (name===".") 
+    return e => customReactions.origin(e);
+  if (name==="..")
+    return dashOi;
+  
+  //direct attribute query
+  if (name.startsWith("--")){
+    const funAttr = attributeQuery.bind(null, name.substring(2));
+    return e => funAttr(e.currentElement);
+  }
+  
+  const [dirEl, attr] = name.split("---");
+  const funAttr = attr ? attributeQuery.bind(null, attr) : undefined;
+  const [dir, el] = dirEl.split("--");
+  if(!dir)
+    return e => e.currentElement.querySelector("elQuery");
+  const elQS = elQuerySelector(el);
+  const funQS = dirQuerySelector(dir, elQS);
+  
+  return function dashReaction(e, oi){
+    let o = e.currentElement;
+    funQS && (o = funQS(e));
+    if (!o)
+      throw new DashRuleException("element not found");
+    funAttr && (o = funAttr(o));
+    if (!o)
+      throw new DashRuleException("attribute not found");
+    return customReactions.origin(o);
   }
 });
 ```
 
+## Problems 
+
+The syntax of the element query (and the `-dash` rule) is likely to annoy you. We feel ya. The reason it is like this is that we are restricted to a minimal character set. This is limiting. Sorry.
+
+many roads not taken. 
+1. No nesting of such queries. 
+2. No dynamic queries that allow you to build and branch from the current `this`.
+3. It could fail silently. Work as a filter. But, the `Error` will not halt propagation, and so we find adding an `Error` for dash rule failures appropriate. You don't want to have missing dash rules in your code. Then make a different rule for filtering on find.
 
 ## Have your cake and eat it
 
