@@ -23,8 +23,6 @@ Both examples follow established best practices. Yet, both examples FOUC up. Wha
 First. It is *nothing wrong* with your compliance with established standards. You are being a good boy when you `defer` the scripts that define your web components. The problem is that most scripts with web component definitions function as stylesheet. They *should be* blocking. So. We need to **rewrite** best practices to *fit* web component definitions (and dynamically loading content).
 
 For web component upgrades, we need to go back to sync `<script>`s. We move away from "upgrading" the `<web-comp>` from a `defer`red script. Instead, we ensure that `<web-comp>` is defined *before* the browser can render any `<web-comp>`s. This will ensure that the `shadowRoot` and `:host {...}` styles are ready before *first paint point*, avoiding any disorienting "empty `display: inline`" becoming "populated `display: grid`" FOUC sitautions. Using *parser blocking* `<script>` is currently the only way to do so.
- 
-> What we would like here is a *direct* way to declare a `<script defer>` to pause *first paint*. Imagine a `paint-point` attribute for `<scripts>`. I wonder if you can. If this attribute was added to a script, `<script defer paint-point>`, then the browser could be specifically told to delay paint until after this deferred script had started.
 
 ## `<script>` flux capacitors
 
@@ -63,7 +61,9 @@ How to handle the flux capacitors in DoubleDots?
 
 4. Else, you do *not* need to block rendering, then load `<script defer src="./DoubleDots.js">` at the `<head>` of the .html document.
 
-## `:paint-pause` and `:paint`
+## `:paint-pause`
+
+What we would like is an *explicit* way to declare a `<script defer>` to pause *first paint*. Imagine a `paint-pause` attribute for `<scripts>`. If this attribute was added to a script, as in `<script defer paint-pause>`, then the browser could be specifically told to pause the paint until after this deferred script was loaded.
 
 In DoubleDots we can pause the paint of the main document for individual defintions. This essentially takes manual control of the first paint point. We do this by creating a custom reaction pair called `:paint-pause` and `:paint`.
 
