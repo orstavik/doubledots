@@ -63,7 +63,7 @@ How to handle the flux capacitors in DoubleDots?
 
 4. Else, you do *not* need to block rendering, then load `<script defer src="./DoubleDots.js">` at the `<head>` of the .html document.
 
-## `:pause-paint` and `:paint`
+## `:paint-pause` and `:paint`
 
 In DoubleDots we can pause the paint of the main document for individual defintions. This essentially takes manual control of the first paint point. We do this by creating a custom reaction pair called `:paint-pause` and `:paint`.
 
