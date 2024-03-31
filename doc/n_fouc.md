@@ -73,9 +73,9 @@ In DoubleDots we can pause the paint of the main document for individual definti
 ```
 
 The above composition works by:
-1. `:pause-paint` sets `<body hidden>`. For each extra `:pause-paint` called, it essentially just ups a `ppc` counter.
+1. `:paint-pause` sets `<body hidden>`. For each extra `:paint-pause` called, it essentially just ups a `ppc` counter.
 2. `::import:define-element` then loads and defines the two different web components in async, thread mode. But because `<body hidden>`, no render will happen while this is going on.
-3. Then, when each definition ends, the `ppc` counts down 1. When all the `:pause-paint` are counted down, `hidden` is removed from the `<body>`.
+3. Then, when each definition ends, the `ppc` counts down 1. When all the `:paint-pause` are counted down, `hidden` is removed from the `<body>`.
 
 Below is the definitions for the :reactions.
 
