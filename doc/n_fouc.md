@@ -20,11 +20,11 @@ Both examples follow established best practices. Yet, both examples FOUC up. Wha
 
 ## Back to the future! `<script>` 
 
- First. It is *nothing wrong* with your compliance with established standards. You are being a good boy when you `defer` the scripts that define your web components. The problem is that most scripts with web component definitions function as stylesheet. They *should be* blocking. So. We need to **rewrite** best practices to *fit* web component definitions (and dynamically loading content).
+First. It is *nothing wrong* with your compliance with established standards. You are being a good boy when you `defer` the scripts that define your web components. The problem is that most scripts with web component definitions function as stylesheet. They *should be* blocking. So. We need to **rewrite** best practices to *fit* web component definitions (and dynamically loading content).
 
- For web component upgrades, we need to go back to sync `<script>`s. We move away from "upgrading" the `<web-comp>` from a `defer`red script. Instead, we ensure that `<web-comp>` is defined *before* the browser can render any `<web-comp>`s. This will ensure that the `shadowRoot` and `:host {...}` styles are ready before *first paint point*, avoiding any disorienting "empty `display: inline`" becoming "populated `display: grid`" FOUC sitautions. Using *parser blocking* `<script>` is currently the only way to do so.
+For web component upgrades, we need to go back to sync `<script>`s. We move away from "upgrading" the `<web-comp>` from a `defer`red script. Instead, we ensure that `<web-comp>` is defined *before* the browser can render any `<web-comp>`s. This will ensure that the `shadowRoot` and `:host {...}` styles are ready before *first paint point*, avoiding any disorienting "empty `display: inline`" becoming "populated `display: grid`" FOUC sitautions. Using *parser blocking* `<script>` is currently the only way to do so.
  
- > What we would like here is a *direct* way to declare a `<script defer>` to pause *first paint*. Imagine a `paint-point` attribute for `<scripts>`. I wonder if you can. If this attribute was added to a script, `<script defer paint-point>`, then the browser could be specifically told to delay paint until after this deferred script had started.
+> What we would like here is a *direct* way to declare a `<script defer>` to pause *first paint*. Imagine a `paint-point` attribute for `<scripts>`. I wonder if you can. If this attribute was added to a script, `<script defer paint-point>`, then the browser could be specifically told to delay paint until after this deferred script had started.
 
 ## `<script>` flux capacitors
 
@@ -63,12 +63,56 @@ How to handle the flux capacitors in DoubleDots?
 
 4. Else, you do *not* need to block rendering, then load `<script defer src="./DoubleDots.js">` at the `<head>` of the .html document.
 
-## Relationship between HTML and the DOM
+## `:pause-paint` and `:paint`
 
-HTML template is read left-right. This means that the human mind expects `<script>` elements (and empty, load `:reactions`) to be triggered in a depth-first sequence. The `async`/`defer` attributes and the `::` async reaction break this sequence.
+In DoubleDots we can pause the paint of the main document for individual defintions. This essentially takes manual control of the first paint point. We do this by creating a custom reaction pair called `:paint-pause` and `:paint`.
 
-1. We want to load all the HTML elements in the main DOM. This is the *view* that the HTML presents HTML developers. This is what expects. We don't expect load sequence in HTML.
+```html
+<web-comp :paint-pause::import:define-element:paint="./WebComp.js">hello</web-comp>
+<comp-web :paint-pause::import:define-element:paint="./CompWeb.js">sunshine</comp-web>
+```
 
-2. But. This means that we need to load all the definitions *before* the DOM is loaded. This causes a de  This gives a clear foundation of expected entities against which to  we have the possibility of running js *synchronously* while the parser is incrementally adding elements to the DOM.
+The above composition works by:
+1. `:pause-paint` sets `<body hidden>`. For each extra `:pause-paint` called, it essentially just ups a `ppc` counter.
+2. `::import:define-element` then loads and defines the two different web components in async, thread mode. But because `<body hidden>`, no render will happen while this is going on.
+3. Then, when each definition ends, the `ppc` counts down 1. When all the `:pause-paint` are counted down, `hidden` is removed from the `<body>`.
 
-1. The main usecase is to avoid flash of unstyled content. By loading the definition of a web component sync (pausing the parser while the definition loads), can ensure that the browser doesn't depict the web comp as completely different for some ms before the definition is loaded.
+Below is the definitions for the :reactions.
+
+```js
+(function(){
+  let ppc = 0;
+  customReactions.define("paint-pause", function(e, oi){
+    ppc++;
+    document.body.setAttribute("hidden");
+    return oi;
+  });
+  customReactions.define("paint", function(e, oi){
+    if(!(--ppc))
+      document.body.removeAttribute("hidden");
+    return oi;
+  });
+  customReactions.define("import", async function(e, oi){
+    if(this.value)
+      return await import(this.value);
+    if(typeof oi !== "string" || !(oi instanceof String))
+      throw new SyntaxError(":import require either a url value or text input")
+    const blob = new Blob([oi], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    return await import(url);
+  });
+  customReactions.define("define-element", function(e, oi){
+    const tagName = this.ownerElement.tagName;
+    const exportName = ("-" + tagName).replace(/-([a-z])/g, g => g[1].toUpperCase());
+    if(!(exportName in oi))
+      throw new SyntaxError(`:define-element for ${tagName} must get a valid oi with module['${exportName}'].\nOtherwise, use :define-element_tagName_exportNameKebabCase`);
+    customElements.define(tagName, oi[exportName]);
+  });
+})();
+```
+
+## Philosophy: when the "timeline" in HTML and the DOM diverge
+
+HTML template is read left-right (depth-first). This means that the human reader encounter `<script>` elements in the same chronological sequence, and so the human developer intuit the `<script>` elements are *called* by the machine in the same order. This left-right, depth-first chronological bias applies to other *immediate* callbacks in HTML such as the empty, load `:reactions`.
+
+The `async`/`defer` attributes on `<script>`s break this expectation. And the variety of alternative callback times, sync/async/defer, makes it hard for the human interlocutor to keep track of what happens when. We can think of these threads as causing conceptual fraying: instead of a solid line going left to right across the text, the text becomes a cactus with time vectors sticking out. The `::` async reaction in DoubleDots behaves in the same way (although the virtual event loop seeks to remedy this by keeping track of pins from within the solid thread).
