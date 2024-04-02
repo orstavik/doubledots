@@ -15,7 +15,8 @@
     Object.defineProperty(proto, prop, desc);
   }
 
-  //setAttribute
+  //remaining methods
+  //setAttribute, getAttribute, hasAttribute, getAttributeNode
   (function (Element_p, documentCreateAttributeOG) {
     const setAttributeNodeOG = Element_p.setAttributeNode;
     const setAttributeOG = Element_p.setAttribute;
@@ -31,7 +32,6 @@
     Element_p.getAttributeNS = deprecated.bind("Element.getAttributeNS");
     Element_p.setAttributeNS = deprecated.bind("Element.setAttributeNS");
     Element_p.removeAttributeNS = deprecated.bind("Element.removeAttributeNS");
-    Element_p.getAttributeNode = deprecated.bind("Element.getAttributeNode");
     Element_p.setAttributeNode = deprecated.bind("Element.setAttributeNode");
     Element_p.removeAttributeNode = deprecated.bind("Element.removeAttributeNode");
     Element_p.getAttributeNodeNS = deprecated.bind("Element.getAttributeNodeNS");
@@ -40,13 +40,13 @@
   })(Element.prototype, document.createAttribute);
 
   //adding elements. Can only be done via innerHTML/outerHTML, but js methods still allow moving elements inside the same document while if they are connected to the DOM when they are moved.
-  (function (Doc_p, Element_p, Node_p) {
-    Doc_p.createElement = deprecated.bind("Document.prototype.createElement");
-    Doc_p.createTextNode = deprecated.bind("Document.prototype.createElement");
-    Doc_p.createDocumentFragment = deprecated.bind("Document.prototype.createDocumentFragment");
-    Doc_p.importNode = deprecated.bind("Document.prototype.createElement");
+  (function (Document_p, Element_p, Node_p) {
+    Document_p.createElement = deprecated.bind("Document.prototype.createElement");
+    Document_p.createTextNode = deprecated.bind("Document.prototype.createElement");
+    Document_p.createDocumentFragment = deprecated.bind("Document.prototype.createDocumentFragment");
+    Document_p.importNode = deprecated.bind("Document.prototype.createElement");
     // Doc_p.createRange = deprecated.bind("Document.prototype.createRange"); //todo ivar research
-    Doc_p.createComment = deprecated.bind("Document.prototype.createElement");
+    Document_p.createComment = deprecated.bind("Document.prototype.createElement");
     Node_p.cloneNode = deprecated.bind("Node.prototype.cloneNode");
 
     const msg = "can only *move* elements within the same document, not append previously removed elements OR elements from another document";
@@ -88,7 +88,66 @@
       insertBeforeOG.call(this, newNode, referenceNode);
     }
     monkeyPatch(Node_p, "insertBefore", insertBeforeMonkey);
-  })(Document.prototype);
+
+    //append+prepend
+    const appendOGe = Element_p.append;
+    const prependOGe = Element_p.prepend;
+    function appendMonkeyE(...elements){
+      const root = this.getRoot();
+      for (let el of elements) 
+        if (root !== el.getRoot())
+          throw new SyntaxError("append " + msg);
+      appendOGe.call(this, ...elements);
+    }
+    function prependMonkeyE(...elements){
+      const root = this.getRoot();
+      for (let el of elements) 
+        if (root !== el.getRoot())
+          throw new SyntaxError("prepend " + msg);
+      prependOGe.call(this, ...elements);
+    }
+    monkeyPatch(Element_p, "append", appendMonkeyE);
+    monkeyPatch(Element_p, "prepend", prependMonkeyE);
+
+    const appendOGd = Document_p.append;
+    const prependOGd = Document_p.prepend;
+    function appendMonkeyD(...elements){
+      const root = this.getRoot();
+      for (let el of elements) 
+        if (root !== el.getRoot())
+          throw new SyntaxError("append " + msg);
+      appendOGd.call(this, ...elements);
+    }
+    function prependMonkeyD(...elements){
+      const root = this.getRoot();
+      for (let el of elements) 
+        if (root !== el.getRoot())
+          throw new SyntaxError("prepend " + msg);
+      prependOGd.call(this, ...elements);
+    }
+    monkeyPatch(Document_p, "append", appendMonkeyD);
+    monkeyPatch(Document_p, "prepend", prependMonkeyD);
+
+    const appendOGdf = DocumentFragment_p.append;
+    const prependOGdf = DocumentFragment_p.prepend;
+    function appendMonkeyDF(...elements){
+      const root = this.getRoot();
+      for (let el of elements) 
+        if (root !== el.getRoot())
+          throw new SyntaxError("append " + msg);
+      appendOGdf.call(this, ...elements);
+    }
+    function prependMonkeyDF(...elements){
+      const root = this.getRoot();
+      for (let el of elements) 
+        if (root !== el.getRoot())
+          throw new SyntaxError("prepend " + msg);
+      prependOGdf.call(this, ...elements);
+    }
+    monkeyPatch(DocumentFragment_p, "append", appendMonkeyDF);
+    monkeyPatch(DocumentFragment_p, "prepend", prependMonkeyDF);
+
+  })(Document.prototype, Element.prototype, Node.prototype);
 
   //shadowRoots => "open". Necessary to capture the full composedPath of customEvents.
   (function (HTMLElement_p) {
@@ -114,34 +173,3 @@
   })(Event.prototype);
 })();
 
-
-
-/*
-JavaScript provides a variety of methods for dynamically adding elements to the Document Object Model (DOM). These methods are available on different prototypes, such as Document, Element, and Node. Below is a categorized list of these functions based on the prototype they belong to:
-
-Document Prototype
-The Document object represents any web page loaded in the browser and serves as an entry point to the web page's content, which is the DOM tree.
-
-createElement(tagName): Creates a new element with the given tag name.
-createTextNode(data): Creates a new text node with the given data.
-createDocumentFragment(): Creates a new, empty DocumentFragment into which DOM nodes can be added to build an offscreen DOM tree.
-importNode(externalNode, deep): Imports a node from another document to this document.
-createRange(): Creates a new Range object.
-createComment(data): Creates a new comment node with the specified data.
-Element Prototype
-The Element interface represents an object within a document. This interface describes methods and properties common to all kinds of elements.
-
-appendChild(newNode): Adds a new child node to the end of the list of children of a specified parent node.
-insertBefore(newNode, referenceNode): Inserts a node before a reference node as a child of a specified parent node.
-insertAdjacentElement(position, element): Inserts a given element node at a given position relative to the element it is invoked upon.
-replaceChild(newChild, oldChild): Replaces one child node of the specified element with another.
-Node Prototype
-The Node interface is an abstract base class upon which many other DOM API objects are based, thus it might not directly appear in the DOM tree.
-
-cloneNode(deep): Creates a duplicate of the node on which this method was called.
-removeChild(child): Removes a child node from the DOM and returns the removed node.
-DocumentFragment Prototype
-DocumentFragment is a lightweight, minimal document object that can be used as a container to hold DOM elements in memory before appending them to a document.
-
-No specific methods for adding elements directly, but you can use appendChild() and insertBefore() (inherited from Node) to add elements to the fragment before adding the fragment to the DOM.
-*/
