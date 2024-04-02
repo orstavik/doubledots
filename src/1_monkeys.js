@@ -43,21 +43,22 @@
   (function (Doc_p, Element_p, Node_p) {
     Doc_p.createElement = deprecated.bind("Document.prototype.createElement");
     Doc_p.createTextNode = deprecated.bind("Document.prototype.createElement");
-    Doc_p.createDocumentFragment = deprecated.bind("Document.prototype.createElement");
+    Doc_p.createDocumentFragment = deprecated.bind("Document.prototype.createDocumentFragment");
     Doc_p.importNode = deprecated.bind("Document.prototype.createElement");
-    Doc_p.createRange = deprecated.bind("Document.prototype.createElement");
+    // Doc_p.createRange = deprecated.bind("Document.prototype.createRange"); //todo ivar research
     Doc_p.createComment = deprecated.bind("Document.prototype.createElement");
     Node_p.cloneNode = deprecated.bind("Node.prototype.cloneNode");
 
     const msg = "can only *move* elements within the same document, not append previously removed elements OR elements from another document";
 
+    //todo append/prepend
+
     const appendChildOG = Element_p.appendChild;
-    function appendChildMonkey(...args) {
+    function appendChildMonkey(aChild) {
       const root = this.getRoot();
-      for (let c of args)
-        if (c.getRoot() !== root)
-          throw new SyntaxError("appendChild " + msg);
-      appendChildOG.call(this, ...args);
+      if (aChild.getRoot() !== root)
+        throw new SyntaxError("appendChild " + msg);
+      appendChildOG.call(this, aChild);
     }
     monkeyPatch(Element_p, "appendChild", appendChildMonkey);
 
@@ -89,9 +90,9 @@
     monkeyPatch(Node_p, "insertBefore", insertBeforeMonkey);
   })(Document.prototype);
 
-    //shadowRoots => "open". Necessary to capture the full composedPath of customEvents.
-    (function (HTMLElement_p) {
-    const attachShadowOG = HTMLElement_p.attachShadow; 
+  //shadowRoots => "open". Necessary to capture the full composedPath of customEvents.
+  (function (HTMLElement_p) {
+    const attachShadowOG = HTMLElement_p.attachShadow;
     function attachShadowMonkey(options) {
       (options ??= {}).mode = "open";
       return attachShadowOG.call(this, options);
