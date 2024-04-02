@@ -51,7 +51,13 @@
 
     const msg = "can only *move* elements within the same document, not append previously removed elements OR elements from another document";
 
-    //todo append/prepend
+    //todo doc fragment append/prepend
+    Doc_p.append = deprecated.bind("Document.prototype.append")
+    Element_p.append = deprecated.bind("Element.prototype.append")
+    Doc_p.prepend = deprecated.bind("Document.prototype.prepend")
+    Element_p.prepend = deprecated.bind("Element.prototype.prepend")
+
+
 
     const appendChildOG = Element_p.appendChild;
     function appendChildMonkey(aChild) {
