@@ -36,10 +36,10 @@ _global triggers are:
 
 In Doubledots you can also define your own `trigger:`. Triggers are event factories, sort of. Some are atomic and simple, like `set-timeout_10:` or `attr-change_style:` for example. Others are complex state machines like `swipeable` and `drag-n-drop`. In this chapter we start with the simple ones.
 
-To define a trigger is very similar to defining a reaction rule, except that the definition is not a function, but a `class` that `extends Attr`. This is what it looks like:
+To define a trigger is very similar to defining a reaction rule, except that the definition is not a function, but a `class` that `extends CustomAttr`. This is what it looks like:
 
 ```js
-customReactions.defineTrigger("prefix", class MyTrigger extends Attr{
+customReactions.defineTrigger("prefix", class MyTrigger extends CustomAttr{
   upgrade(fullname) {
     this; //=> the attribute node
   }
@@ -89,7 +89,7 @@ Custom triggers replace all the native Observers in JS. In this example we use t
 
 ```html
 <script>
-  class AttrTrigger extends Attr{
+  class AttrTrigger extends CustomAttr{
 
     async upgrade(attr_xyz) {
       const [_, ...list] = attr_xyz.split("_");
@@ -108,7 +108,7 @@ Custom triggers replace all the native Observers in JS. In this example we use t
       mo.observe(this.ownerElement, settings);
     }
   }
-  customReactions.defineTrigger("attr_", IntervalAttr);
+  customReactions.defineTrigger("attr_", AttrTrigger);
   customReactions.defineReaction("log", console.log);
 </script>
 
@@ -121,7 +121,7 @@ In this example we use the `IntersectionObserver` to create a custom `inview:` t
 
 ```html
 <script>
-  class InviewTrigger extends Attr{
+  class InviewTrigger extends CustomAttr{
 
     async upgrade(inview_thresholdPerc) {
       const threshold = parseInt(inview_thresholdPerc.split("_")[1]) / 100;
@@ -134,7 +134,7 @@ In this example we use the `IntersectionObserver` to create a custom `inview:` t
       iso.observe(this.ownerElement, options);
     }
   }
-  customReactions.defineTrigger("inview_", IntervalAttr);
+  customReactions.defineTrigger("inview_", InviewAttr);
   customReactions.defineReaction("hello", _ => console.log("sunshine"));
 </script>
 
@@ -148,15 +148,15 @@ The atomic `timeout_x:` trigger dispatches an attribute event type `timeout` tha
 
 ```html
 <script>
-  class TimeoutTrigger extends Attr{
+  class TimeoutTrigger extends CustomAttr{
     async upgrade(timeout_time) {
       const delay = timeout_time.split("_")[1];
       await sleep(delay);
-      if(this.isConnected) //Doubledots adds this method to Attr too
+      if(this.isConnected) //Doubledots adds this method to CustomAttr too
         this.dispatchEvent(new Event("timeout"));
     }
   }
-  customReactions.defineTrigger("timeout_", TimeoutAttr);
+  customReactions.defineTrigger("timeout_", TimeoutTrigger);
   customReactions.defineReaction("log", console.log);
 </script>
 
@@ -192,7 +192,7 @@ The benefits of using the `::sleep_x` instead of a `timeout_x:` are:
 
 ```html
 <script>
-  class IntervalTrigger extends Attr{
+  class IntervalTrigger extends CustomAttr{
     async upgrade(timeout_time) {
       const delay = timeout_time.split("_")[1];
       while (true) {
@@ -203,7 +203,7 @@ The benefits of using the `::sleep_x` instead of a `timeout_x:` are:
       }
     }
   }
-  customReactions.defineTrigger("interval_", IntervalAttr);
+  customReactions.defineTrigger("interval_", IntervalTrigger);
   customReactions.defineReaction("log", console.log);
 </script>
 
@@ -244,7 +244,9 @@ This means that:
 
 
 
-## We skip `destructor()`
+## We skip `destructor()`? 
+
+No.. I think we include `.remove()` and make that overrideable.
 
 >> todo: can we skip this? Will MutationObserver work as a WeakSet allowing elements to be gc'ed? or is the 
 
