@@ -92,16 +92,16 @@
     //append+prepend
     const appendOGe = Element_p.append;
     const prependOGe = Element_p.prepend;
-    function appendMonkeyE(...elements){
+    function appendMonkeyE(...elements) {
       const root = this.getRoot();
-      for (let el of elements) 
+      for (let el of elements)
         if (root !== el.getRoot())
           throw new SyntaxError("append " + msg);
       appendOGe.call(this, ...elements);
     }
-    function prependMonkeyE(...elements){
+    function prependMonkeyE(...elements) {
       const root = this.getRoot();
-      for (let el of elements) 
+      for (let el of elements)
         if (root !== el.getRoot())
           throw new SyntaxError("prepend " + msg);
       prependOGe.call(this, ...elements);
@@ -111,16 +111,16 @@
 
     const appendOGd = Document_p.append;
     const prependOGd = Document_p.prepend;
-    function appendMonkeyD(...elements){
+    function appendMonkeyD(...elements) {
       const root = this.getRoot();
-      for (let el of elements) 
+      for (let el of elements)
         if (root !== el.getRoot())
           throw new SyntaxError("append " + msg);
       appendOGd.call(this, ...elements);
     }
-    function prependMonkeyD(...elements){
+    function prependMonkeyD(...elements) {
       const root = this.getRoot();
-      for (let el of elements) 
+      for (let el of elements)
         if (root !== el.getRoot())
           throw new SyntaxError("prepend " + msg);
       prependOGd.call(this, ...elements);
@@ -130,16 +130,16 @@
 
     const appendOGdf = DocumentFragment_p.append;
     const prependOGdf = DocumentFragment_p.prepend;
-    function appendMonkeyDF(...elements){
+    function appendMonkeyDF(...elements) {
       const root = this.getRoot();
-      for (let el of elements) 
+      for (let el of elements)
         if (root !== el.getRoot())
           throw new SyntaxError("append " + msg);
       appendOGdf.call(this, ...elements);
     }
-    function prependMonkeyDF(...elements){
+    function prependMonkeyDF(...elements) {
       const root = this.getRoot();
-      for (let el of elements) 
+      for (let el of elements)
         if (root !== el.getRoot())
           throw new SyntaxError("prepend " + msg);
       prependOGdf.call(this, ...elements);
