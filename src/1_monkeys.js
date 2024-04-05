@@ -172,4 +172,3 @@
     Event_p.stopImmediatePropagation = deprecated.bind("Event.stopImmediatePropagation");
   })(Event.prototype);
 })();
-
