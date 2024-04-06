@@ -2,10 +2,13 @@
 
 >> See the chapter of native event loop problems if you are uncertain as to why the native event loop is *ripe* for simplification and what issues we are trying to solve with a virtual event 
 
-Doubledots implements a virtual event loop. The virtual event loop captures and runs all* native events, all custom events, `MutationObserver`s and other observers, `setTimeout()` and other time callback triggers, `requestAnimationFrame()`, and the invocation of `<script>` tags.
+Doubledots implements a virtual event loop. The virtual event loop captures and runs all* native events, all custom events, observers such as `MutationObserver`, `setTimeout()`, `requestAnimationFrame()`, invocation of `<script>` tags, etc.
 
-There are several new rules for the virtual event loop in doubledots:
-1. The virtual event loop only triggers custom reaction attributes: No js event listeners, no `setTimeout` callbacks, no JS MutationObserver. The only callbacks that are not marked with an event are the web component  
+There are several new rules for the virtual event loop in DoubleDots:
+1. The virtual event loop only triggers custom reaction attributes: `addEventListener` is blocked.
+2. `setTimeout` is replaced by `sleep(ms)`.
+3. Observes such as MutationObserver are wrapped as triggers.
+4. The only callbacks that remain are the internal callbacks in WebComponents.
 
 >> * It would be too costly for the virtual event loop to add event listeners for all events, always. If we don't want to listen for `mousemove` for example, we do not want to add a listener for it. Similarly, if we only want to listen for `mousemove` events over a narrow branch of the DOM, we add the event listeners there, and not everywhere. Therefore, doubledots only add event listeners for native events when there is a custom reaction needed.
 
@@ -15,6 +18,7 @@ In HTML doubledots there are three types of events:
 1. single attribute events 
 2. "elements in all documents" events
 3. "elements in a single document" events
+4. "global" events
 
 The single attribute events are callbacks on *one* isolated custom reaction. They replace the need for `setTimeout()`, `MutationObserver`s, loading `<script>`s, and a few others.
 

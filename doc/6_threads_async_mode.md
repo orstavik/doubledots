@@ -2,7 +2,7 @@
 
 The ability to run functions such as network requests in the background without causing the entire functionality of the browser to freeze, is great. In JS anno 2024, this is done via `async function` s. `async functions` essentially start a thread that it will run in, so that the browser can continue performing other tasks.
 
-## Async race condition
+## 1. Problem: Async race condition
 
 To illustrate the problem with the threaded nature of JS, let us take a look at an example. 
 
@@ -21,7 +21,7 @@ We imagine that we have a `<web-comp>` that we only load and define the definiti
 
 Not quite. Many of you will probably have already seen the problem. Because the `:load:define_web-comp` listener is async, it will be threaded. This happens as soon as the browser encounters its first `await` (even when that `await` does not need to wait for a `Promise`). And this means that the event loop will spawn a micro task for the first event listener `:load:define_web-comp`, and hurry onwards to the next event listener *before* the resource has been loaded and defined. So. When the second listener is started, the definition of the `<web-comp>` has not yet been loaded, and `:call_web-comp_method` will fail. It is a race condition. Caused by a misunderstanding of the threaded nature of async event listeners. So. The event loop only fains single-threadedness. It isn't really.
 
-## The *sync* virtual event loop
+## 2. The *sync* virtual event loop
 
 At its core, the virtual event loop is *sync*. This means that any custom reaction will be completed *before* the any other custom reaction is run. Yes, you heard right! You *can* halt *all* execution of custom reactions if you need to wait for a `Promise` inside a custom reaction. You can force the browser to freeze and wait for something, when and if you really want.
 
@@ -33,9 +33,9 @@ At its core, the virtual event loop is *sync*. This means that any custom reacti
 
 If you did this, then the event loop would essentially *halt* all its other operations while waiting for `:load` to complete, thus ensuring that `:call_web-comp_method` would not be triggered until the definition was ready.
 
-## The *async*, threaded virtual event loop `::`
+## 3. The *async*, threaded virtual event loop `::`
 
-But, at its fringes, the virtual event loop is also *async*. If you add the empty reaction `":"` in your reaction chain, then the event loop will *not* pause and wait for any `Promise`s in the rest of that reaction chain, but allow the rest of that reaction chain to be run in a thread.
+But, at its fringes, the virtual event loop is also *async*. If you add the empty reaction `::` in your reaction chain, then the event loop will *not* pause and wait for any `Promise`s in the rest of that reaction chain, but allow the rest of that reaction chain to be run in a thread.
 
 The empty reaction looks like a double colon prefix: `::load`. Essentially the double colon says that if the virtual event loop encounters a `Promise` *after* the `::`, then it will not halt the progression of the event loop, but instead create a thread that the rest of this reaction chain can run in. Between events, the virtual event loop will process and complete these loose threads.
 
@@ -59,7 +59,7 @@ Furthermore, having the event loop work this way enables tooling to with great c
 1. the event loop as a stack of cards. 
 2. Each event is a card. Everything that happens is an event. And each event has finished propagating before the next one runs.
 3. For each event, you have a numbered list of reactionchains.
-4. Each reactionchain is divided into `:`-separated reactions.
+4. Each reactionchain is split in `:`-separated reactions.
 
 Furthermore, to make it easier to read:
 5. Every completed reaction that has completed is highlighted in green.
