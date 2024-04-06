@@ -18,29 +18,25 @@ To notify the developer about errors is super costly. It both takes a lot of res
 
 ## What types of errors occur in DoubleDots? 
 
-DoubleDots produce errors in *three* situations:
+DoubleDots produce errors in *two* situations:
 1. When an illegal attribute is added to the DOM. `DoubleDotsSyntaxError`s.
-2. when a reaction fails due to changed circumstances in the event loop. `DoubleDotsEventLoopErrors`.
-3. when a reaction fails due to problems in the code.
+2. when a reaction fails due to problems in the code.
+
+3. This is no longer true. The iteration will just ignore a reaction if the attribute(or owner element) is no longer connected to the DOM.
 4. Are there other scenarios?
 
-### Adding illegal attributes
+### 1. Adding illegal attributes
 
 There are some syntactic rules for what attributes should look like. Here is a **blacklist** of illegal reactionChain constructs (in `RegExp`):
 
-1. `::$` => Attributes cannot end with the empty attribute. It makes no sense.
+1. `(:|:try|:catch|:finally)$` => Attributes cannot end with `:` or one of `::`, `:try:catch:finally`. It makes no sense.
 2. `^[\.-]` => Attributes cannot begin with `.` or `-`. Many browsers do not allow it. The same rule is added to definition of triggers:.
 3. `:::` => Attribute cannot contain a double empty.
 4. `::*::` => Attribute cannot contain a two empties.
 
-### Changing circumstances in the queue
-
-Sometimes, circumstances might change before the reaction is triggered. This is a *design-time* error. The element or attribute or reactions are removed from the DOM after they were added to the queue, but before they are called. This is rare. This should not happen. You might have problems due to it.
-
-### reaction code fails
+### 2. the reaction js functions `throw`s
 
 A network request fails. Commonly, these sitaution threaten the sequentiality of the app state and/or the validity of data. They need to either be explicitly managed, or otherwise handled.
-
 
 ## `:try:...:catch:...:finally`
 
