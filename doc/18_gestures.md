@@ -220,3 +220,10 @@ When the `longpressable` statemachine begins, it starts with the `down` listener
 
 3. Swipe and fling and pinch and pan
 
+
+## How to tackle conflicts between overlapping gestures?
+
+1. When is something a drag and when is it a click?
+2. should both state machines produce events?
+3. use the native `click..` and default action 
+
