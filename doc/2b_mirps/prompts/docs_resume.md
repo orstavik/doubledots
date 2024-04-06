@@ -653,11 +653,11 @@ In Doubledots you can also define your own `trigger:`. Triggers are event factor
   3. the `:lt64_-2` will check that if the number is less than 64, it will go back two steps to `:n1`.
   4. This creates a loop, that multiplies a number, starting with 1, by 2, until the value is 64 or over.
 
-- 2. `customReactions.origin(obj)`
+- 2. `new EventLoop.ReactionOrigin(obj)`
 
   The `this` object for the custom reaction is by default, and at the start of *every* custom reaction chain, the current reaction attriubte. But. You can change this. In order to change this, you need to have a custom reaction that returns a special `origin` wrapped object.
 
-  If you for example have a customReaction that `return customReactions.origin(this.ownerElement)`, then for the next reaction, the `this` of the reaction function will be the element that the custom Reaction is attached to.
+  If you for example have a customReaction that `return new EventLoop.ReactionOrigin(this.ownerElement)`, then for the next reaction, the `this` of the reaction function will be the element that the custom Reaction is attached to.
 
 - 3. `customReactions.index`
 
@@ -737,29 +737,29 @@ customReactions.defineRule("-", function(name){
   if (name==="-") {
     return function(e, oi){
       if (oi instanceof Object)
-        return customReactions.origin(oi);
+        return new EventLoop.ReactionOrigin(oi);
       throw new DashReactionError(`"${oi}" is not an Object.`);
     }
   }
   if (name==="-e")
-    return e => customReactions.origin(e);
+    return e => new EventLoop.ReactionOrigin(e);
   if (name==="-t")
-    return e => customReactions.origin(e.target);
+    return e => new EventLoop.ReactionOrigin(e.target);
   if (name==="-a")
-    return e => customReactions.origin(e.currentAttribute);
+    return e => new EventLoop.ReactionOrigin(e.currentAttribute);
   if (name==="-el")
-    return e => customReactions.origin(e.currentElement);
+    return e => new EventLoop.ReactionOrigin(e.currentElement);
   if (name==="-p")
-    return e => customReactions.origin(e.currentElement.parentNode);
+    return e => new EventLoop.ReactionOrigin(e.currentElement.parentNode);
   if (name==="-pp")
-    return e => customReactions.origin(e.currentElement.parentNode.parentNode);
+    return e => new EventLoop.ReactionOrigin(e.currentElement.parentNode.parentNode);
   if (name[1] === "-")
     throw new ReactionError(`--something is not supported yet: ${name}`);
   name = name.substring(1);
   return function(e,oi) {
     for (let attr of e.currentElement.attributes)
       if (attr.name.replace(":", "_").startsWith(name))
-        return customReactions.origin(attr);
+        return new EventLoop.ReactionOrigin(attr);
   }
 });
 ```
@@ -806,7 +806,7 @@ customReactions.defineRule("-", function(name){
 
 - Have your cake and eat it
 
-  If you want, you can always create your own custom reactions that alters the origin of the reaction chain by returning an object wrapped in `customReactions.origin(obj)`. It is also possible to not implement the default `-` dash rule, or implement your own version of the `-` dash rule.
+  If you want, you can always create your own custom reactions that alters the origin of the reaction chain by returning an object wrapped in `new EventLoop.ReactionOrigin(obj)`. It is also possible to not implement the default `-` dash rule, or implement your own version of the `-` dash rule.
 
   Thus, different developers can use different objects as their origin root for their reaction chain. It is therefore possible to go to a more jQuery, Set/monadic style if you want. 
 
