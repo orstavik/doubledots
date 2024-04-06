@@ -9,7 +9,6 @@
   }
 
   class MicroFrame {
-    #at;
     #i = 0;
     #names;
     #inputs;
@@ -17,20 +16,24 @@
     #selves;
 
     constructor(at, event) {
-      this.#at = at;
+      this.at = at;
       this.event = event;
-      this.#names = this.#at.reactions;
+      this.#names = this.at.reactions;
       this.#selves = [at];
       this.#inputs = [event];
       this.#outputs = [];
     }
 
     isConnected() {
-      return this.#at.isConnected();
+      return this.at.isConnected();
     }
 
     getReaction() {
       return this.#i < this.#names.length ? this.#names[this.#i] : undefined;
+    }
+
+    getReactionIndex() {
+      return this.#i < this.#names.length ? this.#i : -1;
     }
 
     nextReaction() {
@@ -54,12 +57,12 @@
         }
 
         //2. check isConnected
-        if (!this.#at.isConnected) {
+        if (!this.at.isConnected) {
           this.outputs[this.#i] = new DoubleDotsReactionError("Disconnected");
           // this.#i = this.#names.length;
           return true;
         }
-        const func = this.#at.getRootNode().getReaction(re);
+        const func = this.at.getRootNode().getReaction(re);
         if (!func) {
           this.outputs[this.#i] = new DoubleDotsReactionError("No reaction definition.");
           // this.#i = this.#names.length;
@@ -102,29 +105,28 @@
     #runError(error) {
       this.#outputs[this.#i] = error;
       this.#i = this.#names.length;
-      const target = this.#at.isConnected ? this.#at : document.documentElement;
+      const target = this.at.isConnected ? this.at : document.documentElement;
       target.dispatchEvent(new DoubleDotsErrorEvent("error", { error }));
     }
 
     #runSuccess(res) {
-      const i = ++this.#i;
-      this.#outputs[i - 1] = res;
-      this.prepNextReaction(res);
-      if (i === this.#names.length)
+      const now = this.#i;
+      this.#outputs[now] = res;
+
+      const next = this.#i = res instanceof EventLoop.ReactionJump ? res.value : ++now;
+      if (next === this.#names.length)
         return;
-      //todo Need to implement this class
-      if (res instanceof TodoNewReactionTarget) {
-        this.#selves[i] = res.valueTargetSomethingTodo;
-        this.#inputs[i] = this.#inputs[i - 1];
+      if (res instanceof EventLoop.ReactionOrigin) {
+        this.#selves[next] = res.value;
+        this.#inputs[next] = this.#inputs[next - 1];
       } else {
-        this.#selves[i] = this.#selves[i - 1];
-        this.#inputs[i] = res;
+        this.#selves[next] = this.#selves[next - 1];
+        this.#inputs[next] = res;
       }
     }
   }
 
   class MacroFrame {
-    #event;
     #target;
 
     #elements;
@@ -135,14 +137,15 @@
 
     constructor(target, event) {
       this.#target = target;
-      this.#event = event;
+      this.event = event;
     }
 
     freeze() {
       if (this.#elements) //happens when waiting for sync
         return this;
       this.#elements = [];
-      for (let el = this.#target; el; el = el.assignedSlot || el.parentElement || el.parentNode?.host)
+      //iterates both composed:true and composed:false paths.
+      for (let el = this.#target; el; el = this.event.composed ? el.assignedSlot || el.parentElement || el.parentNode?.host : el.parentElement)
         this.#elements.push(el);
       this.#microFrames = new Array(this.#elements.length);
       return this;
@@ -154,7 +157,7 @@
 
     get #currentMicroFrames() {
       return this.#i >= this.#microFrames.length ? undefined :
-        this.#microFrames[this.#i] ??= [...this.currentElement.attributes].filter(at => at.trigger === type).map(at => new MicroFrame(at, this.#event));
+        this.#microFrames[this.#i] ??= [...this.currentElement.attributes].filter(at => at.trigger === this.event.type).map(at => new MicroFrame(at, this.event));
     }
 
     get currentMicroFrame() {
@@ -203,6 +206,45 @@
 
   __eventLoop = new __EventLoop();
 
+  //external interface
+  window.EventLoop = class EventLoop {
+    ReactionJump = class ReactionJump {
+      constructor(n) {
+        n = parseInt(n);
+        if (!n || isNaN(n))
+          throw new DoubleDotsErrorEvent("ReactionJump must be done using a positive or negative integer.");
+        this.value = n;
+      }
+    };
+
+    ReactionOrigin = class ReactionOrigin {
+      constructor(obj) {
+        if (!obj || !(obj instanceof Object))
+          throw new DoubleDotsErrorEvent("ReactionOrigin must be an object not null.");
+        this.value = obj;
+      }
+    };
+
+    get event() {
+      return __eventLoop.getMacro()?.event;
+    }
+    get attribute() {
+      return __eventLoop.currentMicroFrame()?.at;
+    }
+    get reaction() {
+      return __eventLoop.currentMicroFrame()?.getReaction();
+    }
+    get reactionIndex() {
+      return __eventLoop.currentMicroFrame()?.getReactionIndex();
+    }
+  }
+  Object.defineProperty(window, "eventLoop",
+    { value: new EventLoop(), configurable: false });
+
+  (function (Document_p) {
+    //it is impossible to override the window.event property..
+    Document_p.currentScript = deprecated.bind("Document.prototype.currentScript");
+  })(Document.prototype);
 
   (function (EventTarget_p) {
 
