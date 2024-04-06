@@ -21,21 +21,9 @@ customReactions.defineRule(".", function(name){
   if (name === "..0")
     throw new DotReactionRuleError("`:..0` is an illegal jump.");
 
-  const [_, negI] = name.matches(/^\.(\-[0-9]+)$/) || [];
-  if(negI)
-    return function(){
-      return this[this.length + parseInt(negI)];
-    }
-
-  const [_, posI] = name.matches(/^\.(\-[0-9]+)$/) || [];
-  if(posI)
-    return function(){
-      return this[parseInt(posI)]; //todo not sure if posI is necessary here
-    }
-
   const [_, jump] = name.matches(/^\.\.([-]?[1-9][\d]*)$/) || [];
   if (jump)
-    return (e, oi) => oi ? customReactions.goto(jump) : oi;
+    return (e, oi) => oi ? new EventLoop.ReactionJump(jump) : oi;
 
   const [_, kebab] = name.matches(/\.([a-z][a-z0-9_-]*)/) || [];
   if (kebab) {
@@ -68,6 +56,7 @@ The `:..` works the same way, but in reverse. If the `oi` is `falsy`, the reacti
 
 The `:..` specifies a jump. It is useful to implement control structures. The `:..X` where X must be a positive or negative integer. If the `oi` is falsy, then the jump will not happen.
 
+>> todo! when we have negative jumps, ie. looping, then we are going to be writing in space. We would need to stash the content overwritten somewhere else. We don't like loops..
 >> todo? add a falsy jump? `:.._-3` for example?
 
 ## To `:.kebab-reflection_arg_arg` is to `this.kebabReflection("arg", "arg")`

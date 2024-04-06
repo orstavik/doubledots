@@ -1,5 +1,10 @@
 # The `-dash` rule
 
+> TODO!! make the `t` able to get all the directions as the event listener root.
+> TODO!! we should probably also have the `rt` as the `relatedTarget` and maybe even `all`
+> TODO!! so there is an origin. And that might be the root of the listener (normal). But we should also be able to set the root as the target and the relatedTarget. 
+> TODO!! there is also the possibility of having a set of roots (all targets.). This is jQuery like. But i think that this is more complex than we want. I think in the mind of the programmer there is only a pinpoint `:root`.. But if we have a radio-button, then the `:root` could be *all* the `button`s or something. Or *all* the `input`s of a `<form>`. Or *all* `<span>`s with a specific .class inside a `<div>`. Jquery here we come.
+
 > Hey jQuery! Long time no hear:) Me? I'm doing good, thanks for asking :) But sorry for coming at you out the blue like this. I know it was a long time ago. And we didn't really have a clean break. I just started looking at some other frameworks, and then one thing led to another.. it just happened.. But I wanted to tell you that.. I see now that I was wrong. That you were right. And that we were good together, just like you said. I wish I hadn't left you the way I did. I see that now. I am truly sorry about that. But. What I waaant to say is.. I just really wanted to thank you for a really good time back then. I really enjoyed myself when I was with you. It was real. I meant all the things I wrote. I just wanted you to know that.. Anyways, I just want to say thank you, jQuery. For everything.
 
 The purpose of the dash reaction is to move the origin of the reaction chain to a new HTML node (elements or attributes). The dash rule is like a special DoubleDots query selector, that sets the `this` to a new origin.
@@ -120,7 +125,7 @@ Note. Static is a choice. It can cause confusion. The alternative to static inte
 ```js
 function dashOi(e, oi){
   if (oi instanceof Object)
-    return customReactions.origin(oi);
+    return new EventLoop.ReactionOrigin(oi);
   throw new DashReactionError(`"${oi}" is not an Object.`);
 }
 
@@ -266,13 +271,13 @@ function dirQuerySelector(dir, elQuery) {
 //todo memoize dashRule function
 customReactions.defineRule("-", function dashRule(name) {
   if (name==="")
-    return e => customReactions.origin(e.currentElement);
+    return e => new EventLoop.ReactionOrigin(e.currentElement);
   // if (name==="-") There is an opening for `:--`
-  //   return e => customReactions.origin(Free_notYetInUse);
+  //   return e => new EventLoop.ReactionOrigin(Free_notYetInUse);
   if (name==="--") 
-    return e => customReactions.origin(e.currentAttribute);
+    return e => new EventLoop.ReactionOrigin(e.currentAttribute);
   if (name===".") 
-    return e => customReactions.origin(e);
+    return e => new EventLoop.ReactionOrigin(e);
   if (name==="..")
     return dashOi;
   
@@ -298,7 +303,7 @@ customReactions.defineRule("-", function dashRule(name) {
     funAttr && (o = funAttr(o));
     if (!o)
       throw new DashRuleException("attribute not found");
-    return customReactions.origin(o);
+    return new EventLoop.ReactionOrigin(o);
   }
 });
 ```
@@ -314,7 +319,7 @@ many roads not taken.
 
 ## Have your cake and eat it
 
-If you want, you can always create your own custom reactions that alters the origin of the reaction chain by returning an object wrapped in `customReactions.origin(obj)`. It is also possible to not implement the default `-` dash rule, or implement your own version of the `-` dash rule.
+If you want, you can always create your own custom reactions that alters the origin of the reaction chain by returning an object wrapped in `new EventLoop.ReactionOrigin(obj)`. It is also possible to not implement the default `-` dash rule, or implement your own version of the `-` dash rule.
 
 Thus, different developers can use different objects as their origin root for their reaction chain. It is therefore possible to go to a more jQuery, Set/monadic style if you want. 
 
