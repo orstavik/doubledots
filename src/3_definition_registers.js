@@ -10,7 +10,7 @@ DoubleDots.TriggerMap = class TriggerMap {
     for (let tr of Object.keys(this.#triggers))
       if (tr.startsWith(trigger) || trigger.startsWith(tr))
         throw new DoubleDotsError(`${trigger}: conflicts with trigger: ${tr}:.`);
-    this.#triggers[trigger]= Class;
+    this.#triggers[trigger] = Class;
   }
 
   get(fullname) {
@@ -46,7 +46,7 @@ DoubleDots.ReactionsMap = class ReactionsMap {
 
   #checkViaRule(fullname) {
     for (let [rule, FunFun] of Object.entries(this.#rules))
-      if (fullname.startsWith(rule)) 
+      if (fullname.startsWith(rule))
         return this.#reactions[fullname] = FunFun(fullname);
   }
 
@@ -70,7 +70,7 @@ DoubleDots.ReactionsMap = class ReactionsMap {
     const roots = [root];
     while (root !== document)
       roots.push(root = root.host.getRootNode());
-    return [roots, roots.map(r=>r.host)];
+    return [roots, roots.map(r => r.host)];
   }
 
   const rootsAndHosts = memoizeSingleArgFun(rootsAndHostsTopDown);
@@ -110,21 +110,21 @@ DoubleDots.ReactionsMap = class ReactionsMap {
     const triggerLocks = new WeakSet();
     Object.defineProperty(DocumentFragment_p, "defineReaction", {
       value: function (name, Fun) {
-        if(reactionLocks.has(this))
+        if (reactionLocks.has(this))
           throw new DoubleDotsError("You cannot define a reaction in a shadowRoot until *after* a reaction has been queried from that root.");
         return ReactionMaps(this).setReaction(name, Fun);
       }
     });
     Object.defineProperty(DocumentFragment_p, "defineReactionRule", {
       value: function (prefix, FunFun) {
-        if(reactionLocks.has(this))
+        if (reactionLocks.has(this))
           throw new DoubleDotsError("You cannot define a reaction rule in a shadowRoot until *after* a reaction has been queried from that root.");
         return ReactionMaps(this).setRule(prefix, FunFun);
       }
     });
     Object.defineProperty(DocumentFragment_p, "defineTrigger", {
       value: function (prefix, Class) {
-        if(triggerLocks.has(this))
+        if (triggerLocks.has(this))
           throw new DoubleDotsError("You cannot define a trigger in a shadowRoot until *after* a trigger has been queried from that root.");
         return TriggerMap(this).setTrigger(prefix, Class);
       }
