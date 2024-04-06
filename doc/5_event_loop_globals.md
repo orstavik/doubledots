@@ -16,9 +16,8 @@ There are several new rules for the virtual event loop in DoubleDots:
 
 In HTML doubledots there are three types of events:
 1. single attribute events 
-2. "elements in all documents" events
-3. "elements in a single document" events
-4. "global" events
+2. "elements in all documents" events (cf. `click` and `composed: true`)
+3. "elements in a single document" events (cf. `toogle` and `composed: false`)
 
 The single attribute events are callbacks on *one* isolated custom reaction. They replace the need for `setTimeout()`, `MutationObserver`s, loading `<script>`s, and a few others.
 
