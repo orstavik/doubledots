@@ -62,7 +62,7 @@ To illustrate how we can change the DOM, we will make a TODO list. If  you `clic
     const parent = el.parentNode;
     parent.prepend(el);
   });
-  customReactions.define("move", function(e){
+  customReactions.define("done", function(e){
     const el = this.ownerElement;
     const parent = el.parentNode;
     const uncle = parent.nextElementSibling || parent.previousElementSibling;
@@ -72,9 +72,9 @@ To illustrate how we can change the DOM, we will make a TODO list. If  you `clic
 
 <ol>
   <lh>TODO</lh>
-  <li>buy milk</li>
-  <li>cut the grass</li>
-  <li>walk the dog</li>
+  <li click:up contextmenu:done>buy milk</li>
+  <li click:up contextmenu:done>cut the grass</li>
+  <li click:up contextmenu:done>walk the dog</li>
 </ol>
 <ol>
   <lh>DONE</lh>

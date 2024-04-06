@@ -1,8 +1,8 @@
-## Basic concept of _HTML doubledots_ (or `HTML:` or just "doubledots")
+# Basic concept of _HTML doubledots_ (or `HTML:` or just "doubledots")
 
-This framework enables you to write a full web application using only html. It does so by extending html attributes, so that they can represent event listeners.
+This framework enables you to write a full web application using only html. It does so by extending html attributes using `:` so that they can function as for example small event listeners.
 
-### Example 1: `event:reaction`
+## Example 1: `event:reaction`
 
 In simplified terms, the `href` attribute of the `<a>` element acts as an event listener. When you wrap text or other elements in your code as 
 
@@ -18,7 +18,11 @@ Keeping things simple for now, we illustrate this "event" => "reaction function"
 <div click:open="bbc.com">hello bbc</div>
 ```
 
-### Example 2: `customReactions.define("open", ...)`
+## What about normal, native attributes?
+
+DoubleDots *only* work with attributes with `:`. All other attributes such as `src`, `href`, `class`, `id`, etc., that do not include the `:` character are simply ignored by DoubleDots.
+
+## Example 2: `document.defineReaction("open", ...)`
 
 That sounds nice, you say. But how in the world would this work in practice? Well, to make this work is actually quite simple. You need only to do two steps:
 1. load `<script src="html_doubledots.js">` at the top of your `.html` file, and
@@ -27,7 +31,7 @@ That sounds nice, you say. But how in the world would this work in practice? Wel
 ```html
 <script src="www.htmldoubledots.com/topdoubledots.js"></script>
 <script>
-  customReactions.define("open", function(e){
+  document.defineReaction("open", function(e){
     window.open(this.value);
   });
 </script>
@@ -41,7 +45,7 @@ Ok, still a little fudgy. No problem! It is quite easy:)
 
 2. The `topdoubledots.js` file  implements the special `attribute` => `eventListener` functionality. Now, you can listen for events via attributes by writing `click:do_something`, `offline:do_something_else`, `mousemove:another_action`, etc. etc. All the native events, or custom events, will now find and trigger the new `<element event:reaction>` attributes in your `.html` document.
 
-### Example 3: how to filter and chain reactions
+## Example 3: how to filter and chain reactions
 
 Now, in our .html document, we can add event listeners for any event (such as `click:`) and react to them (such as `open`). That is nice. But what else can we do?
 
@@ -58,11 +62,11 @@ We can implement this as follows:
 ```html
 <script src="www.htmldoubledots.com/topdoubledots.js"></script>
 <script>
-  customReactions.define("open", e => window.open(this.value));
-  customReactions.define("is_active", function(e) {
+  document.defineReaction("open", e => window.open(this.value));
+  document.defineReaction("is_active", function(e) {
     if (this.ownerElement.hasAttribute("off"))
       throw customReactions.break;
-  }
+  });
 </script>
 
 <div click:is_active:open="bbc.com">hello bbc</div>

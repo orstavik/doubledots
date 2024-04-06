@@ -1,8 +1,8 @@
 # Chain reactions and custom reaction definitions (part 1)
 
-Custom reaction (and trigger) names can only be composed of **lowercase** english letters and `.`, `-`, and `_`. In regex `/[a-z_\.-]/`. This is because the reaction and trigger names will be written as HTML attributes in the DOM, separated by `:`, and these are then the only characters that are legal.
+The **name** of custom reactions and triggers can only contain: a) **lowercase** english letters, `.`, `-`, and `_` (regex `/[a-z_\.-]/`). This is because the reaction and trigger names will be written as HTML attributes in the DOM, separated by `:`, and these are then the only characters left that are legal in HTML attribute names.
 
->> NO capital letters! `<h1 inView>hello</h1>` is exactly the same as `<h1 inview>hello</h1>`.
+>> NO capital letters! `<h1 inView:>hello</h1>` is exactly the same as `<h1 inview:>hello</h1>`. This means that you *can* write capital letters in your DoubleDots HTML template, but the machine will treat it as if it were in lowercase only.
 
 ## 1. Chain reactions
 
