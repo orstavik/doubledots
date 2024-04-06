@@ -58,11 +58,11 @@ The above example will run
 3. the `:lt64_-2` will check that if the number is less than 64, it will go back two steps to `:n1`.
 4. This creates a loop, that multiplies a number, starting with 1, by 2, until the value is 64 or over.
 
-## 2. `customReactions.origin(obj)`
+## 2. `new EventLoop.ReactionOrigin(obj)`
 
 The `this` object for the custom reaction is by default, and at the start of *every* custom reaction chain, the current reaction attriubte. But. You can change this. In order to change this, you need to have a custom reaction that returns a special `origin` wrapped object.
 
-If you for example have a customReaction that `return customReactions.origin(this.ownerElement)`, then for the next reaction, the `this` of the reaction function will be the element that the custom Reaction is attached to.
+If you for example have a customReaction that `return new EventLoop.ReactionOrigin(this.ownerElement)`, then for the next reaction, the `this` of the reaction function will be the element that the custom Reaction is attached to.
 
 ## 3. `customReactions.index`
 

@@ -1,6 +1,6 @@
-# custom `trigger:`
+# Custom `trigger:`s
 
-## Listener triggers: `click:`
+## 1. Listener triggers: `click:`
 
 The trigger is primarily event listeners. Whenever an event propagates in the DOM, any trigger with the *same name* as the event type, will trigger its reaction chain. For example, if the user `click` on an element inside another element that has a `click:` trigger, then the reaction chain behind the `click:` trigger will run when the event bubbles past the `ownerElement`.
 
@@ -10,7 +10,7 @@ The trigger is primarily event listeners. Whenever an event propagates in the DO
 <div>
 ```
 
-## _global listener triggers:  `_click:`
+## 2. _global listener triggers:  `_click:`
 
 If you prefix the trigger name with an `_`, you turn the event listener into a ***_global trigger*** (aka global event listener). For example:
 
@@ -46,7 +46,7 @@ customReactions.defineTrigger("prefix", class MyTrigger extends CustomAttr{
 });
 ```
 
-## The `upgrade(fullname){...}` constructor
+## 3. The `upgrade(fullname){...}` constructor
 
 Inside the trigger `class` you must implement *one* function called `upgrade(fullname)`. The `upgrade(fullname){...}` function is the constructor of the trigger (and if it wasn't impossible to invoke constructors using reflection in JS, it would have been called the `constructor(...)` too). 
 
@@ -156,8 +156,8 @@ The atomic `timeout_x:` trigger dispatches an attribute event type `timeout` tha
         this.dispatchEvent(new Event("timeout"));
     }
   }
-  customReactions.defineTrigger("timeout_", TimeoutTrigger);
-  customReactions.defineReaction("log", console.log);
+  document.defineTrigger("timeout_", TimeoutTrigger);
+  document.defineReaction("log", console.log);
 </script>
 
 <h1 timeout_1000:log>hello sunshine</h1>
@@ -171,14 +171,14 @@ However. In Doubledots, it is recommended to use `::sleep_x:` reaction rule inst
 
 ```html
 <script>
-  customReactions.defineReactionRule(":sleep_", function(sleep_x){
+  document.defineReactionRule("sleep_", function(sleep_x){
     const delay = parseInt(sleep_x.split("_")[1]);
     return async function(e, oi){
       await sleep(delay);
       return oi;
     }
   });
-  customReactions.defineReaction("log", console.log);
+  document.defineReaction("log", console.log);
 </script>
 
 <h1 ::sleep_1000:log>hello sunshine</h1>
@@ -203,8 +203,8 @@ The benefits of using the `::sleep_x` instead of a `timeout_x:` are:
       }
     }
   }
-  customReactions.defineTrigger("interval_", IntervalTrigger);
-  customReactions.defineReaction("log", console.log);
+  document.defineTrigger("interval_", IntervalTrigger);
+  document.defineReaction("log", console.log);
 </script>
 
 <h1 timeout_1000:log>hello sunshine</h1>
@@ -214,15 +214,15 @@ The `interval_x:` works better than `timeout_x:` as a trigger. But, we can also 
 
 ```html
 <script>
-  //customReactions.defineReactionRule(".", dotReactionRule) //see later chapter
-  customReactions.defineReactionRule("sleep_", function(sleep_x){
+  //document.defineReactionRule(".", dotReactionRule) //see later chapter
+  document.defineReactionRule("sleep_", function(sleep_x){
     const delay = parseInt(sleep_x.split("_")[1]);
     return async function(e, oi){
       await sleep(delay);
       return oi;
     }
   });
-  customReactions.defineReaction("log", console.log);
+  document.defineReaction("log", console.log);
 </script>
 
 <h1 ::sleep_1000:log:..-2>hello sunshine</h1>
