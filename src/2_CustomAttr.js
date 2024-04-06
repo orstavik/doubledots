@@ -4,24 +4,28 @@ window.CustomAttr = class CustomAttr extends Attr {
     return this.trigger;
   }
 
-  get reactions(){
+  get reactions() {
     this.#updateTriggerReactions();
     return this.reactions;
   }
 
-  isConnected(){
+  isConnected() {
     return this.ownerElement.isConnected();
   }
-  
+
+  getRootNode(...args) {
+    return this.ownerElement?.getRootNode(...args);
+  }
+
   remove() {
     return this.ownerElement.removeAttribute(this.name);
   }
 
-  #updateTriggerReactions(){
+  #updateTriggerReactions() {
     const [trigger, ...reactions] = this.name.split(":");
     Object.defineProperties(this, {
-      "trigger": {value: trigger, enumerable: true, configurable: false},
-      "reactions": {value: reactions, enumerable: true, configurable: false},
+      "trigger": { value: trigger, enumerable: true, configurable: false },
+      "reactions": { value: reactions, enumerable: true, configurable: false },
     });
   }
-}
+};
