@@ -22,36 +22,36 @@ DoubleDots.TriggerMap = class TriggerMap {
 
 DoubleDots.ReactionsMap = class ReactionsMap {
 
-  #reactions = {};
+  #definitions = {};
   #rules = {};
 
   setRule(rule, FunFun) {
     for (let ru of Object.keys(this.#rules))
       if (ru.startsWith(rule) || rule.startsWith(ru))
         throw new DoubleDotsError(`:${rule} conflicts with rule: :${ru}.`);
-    for (let re of Object.keys(this.#reactions))
+    for (let re of Object.keys(this.#definitions))
       if (re.startsWith(rule))
         throw new DoubleDotsError(`:${rule} conflicts with reaction: :${re}.`);
     this.#rules[rule] = FunFun;
   }
 
-  setReaction(reaction, Fun) {
-    if (this.#reactions.has(reaction))
+  setDefinition(reaction, Fun) {
+    if (this.#definitions.has(reaction))
       throw new DoubleDotsError(`:${reaction} already defined.`);
     for (let ru of Object.keys(this.#rules))
       if (reaction.startsWith(ru))
         throw new DoubleDotsError(`:${reaction} already defined by rule: :${ru}.`);
-    this.#reactions[reaction] = Fun;
+    this.#definitions[reaction] = Fun;
   }
 
   #checkViaRule(fullname) {
     for (let [rule, FunFun] of Object.entries(this.#rules))
       if (fullname.startsWith(rule))
-        return this.#reactions[fullname] = FunFun(fullname);
+        return this.#definitions[fullname] = FunFun(fullname);//todo what if FunFun throws an error here?
   }
 
   get(fullname) {
-    return this.#reactions[fullname] || this.#checkViaRule(fullname);
+    return this.#definitions[fullname] || this.#checkViaRule(fullname);
   }
 };
 
@@ -80,7 +80,7 @@ DoubleDots.ReactionsMap = class ReactionsMap {
   (function (Document_p) {
     Object.defineProperty(Proto, "defineReaction", {
       value: function (name, Fun) {
-        return ReactionMaps(this).setReaction(name, Fun);
+        return ReactionMaps(this).setDefinition(name, Fun);
       }
     });
     Object.defineProperty(Proto, "defineReactionRule", {
@@ -111,21 +111,21 @@ DoubleDots.ReactionsMap = class ReactionsMap {
     Object.defineProperty(DocumentFragment_p, "defineReaction", {
       value: function (name, Fun) {
         if (reactionLocks.has(this))
-          throw new DoubleDotsError("You cannot define a reaction in a shadowRoot until *after* a reaction has been queried from that root.");
-        return ReactionMaps(this).setReaction(name, Fun);
+          throw new DoubleDotsError("You cannot define a reaction in a shadowRoot *after* a reaction has been queried from that root.");
+        return ReactionMaps(this).setDefinition(name, Fun);
       }
     });
     Object.defineProperty(DocumentFragment_p, "defineReactionRule", {
       value: function (prefix, FunFun) {
         if (reactionLocks.has(this))
-          throw new DoubleDotsError("You cannot define a reaction rule in a shadowRoot until *after* a reaction has been queried from that root.");
+          throw new DoubleDotsError("You cannot define a reaction rule in a shadowRoot *after* a reaction has been queried from that root.");
         return ReactionMaps(this).setRule(prefix, FunFun);
       }
     });
     Object.defineProperty(DocumentFragment_p, "defineTrigger", {
       value: function (prefix, Class) {
         if (triggerLocks.has(this))
-          throw new DoubleDotsError("You cannot define a trigger in a shadowRoot until *after* a trigger has been queried from that root.");
+          throw new DoubleDotsError("You cannot define a trigger in a shadowRoot *after* a trigger has been queried from that root.");
         return TriggerMap(this).setTrigger(prefix, Class);
       }
     });
