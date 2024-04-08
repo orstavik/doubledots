@@ -1,4 +1,7 @@
 (function () {
+  window.DoubleDots ??= {};
+  window.DoubleDots.native = {};
+
   function deprecated() {
     throw `${this}() is deprecated`;
   }
@@ -168,6 +171,8 @@
 
   //Event.stopPropagation()
   (function (Event_p) {
+    DoubleDots.native.stopPropagation = Event_p.stopPropagation;
+    DoubleDots.native.stopImmediatePropagation = Event_p.stopImmediatePropagation;
     Event_p.stopPropagation = deprecated.bind("Event.stopPropagation");
     Event_p.stopImmediatePropagation = deprecated.bind("Event.stopImmediatePropagation");
   })(Event.prototype);

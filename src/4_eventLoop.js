@@ -237,7 +237,7 @@
     get reactionIndex() {
       return __eventLoop.currentMicroFrame()?.getReactionIndex();
     }
-  }
+  };
   Object.defineProperty(window, "eventLoop",
     { value: new EventLoop(), configurable: false });
 
@@ -245,6 +245,9 @@
     //it is impossible to override the window.event property..
     Document_p.currentScript = deprecated.bind("Document.prototype.currentScript");
   })(Document.prototype);
+
+  window.DoubleDots ??= {};
+  DoubleDots.native ??= {};
 
   (function (EventTarget_p) {
 
@@ -256,9 +259,12 @@
         error = new DoubleDotsReactionError("dispatchEvent only works for connected CustomAttr or Element");
       if (error)
         return document.documentElement.dispatchEvent(new ErrorEvent("error", { error }));
-      __eventLoop.addTask(this, event);
+      eventLoop.addTask(this, event);
     }
+
     monkeyPatch(EventTarget_p, "dispatchEvent", dispatchEventDD);
+    DoubleDots.native.addEventListener = EventTarget_p.addEventListener;
+    DoubleDots.native.removeEventListener = EventTarget_p.removeEventListener;
     EventTarget_p.addEventListener = deprecated.bind("EventTarget.addEventListener");
     EventTarget_p.removeEventListener = deprecated.bind("EventTarget.removeEventListener");
   })(EventTarget.prototype);
