@@ -19,13 +19,13 @@ class WeakRefSet extends Set {
   }
 }
 
-class NativeEventSyntaxErrorTrigger extends CustomAttr {
-  upgrade(name) {
-    throw `${name} is only a document or window event, and so cannot be listened for on the element itself.`;
-  }
-}
-
 function makeNativeTriggerClasses(type, winDoc, globalsOnly) {
+
+  class NativeEventSyntaxErrorTrigger extends CustomAttr {
+    upgrade(name) {
+      throw `${name} is only a document or window event, and so cannot be listened for on the element itself.`;
+    }
+  }
 
   const global = new WeakRefSet();
   const global_p = new WeakRefSet();
@@ -147,7 +147,82 @@ function makeNativeTriggerClasses(type, winDoc, globalsOnly) {
     }
   }
 
+  if (globalsOnly)
+    NativeEventTrigger = LocalTrigger = PostLocalTrigger = NativeEventSyntaxErrorTrigger;
+
   return { NativeEventTrigger, GlobalTrigger, PostGlobalTrigger, LocalTrigger, PostLocalTrigger };
 }
 
-  
+(function (Event, HTMLElementProto, ElementProto, DocumentProto) {
+  Event.isNative = function isNative(type) {
+    const prop = "on" + type;
+    if (prop in HTMLElementProto || prop in ElementProto ||
+      ["touchstart", "touchmove", "touchend", "touchcancel"].indexOf(type) >= 0)
+      return "Element";
+    if (prop in window)
+      return "window";
+    if (prop in DocumentProto)
+      return "document";
+  };
+})(Event, HTMLElement.prototype, Element.prototype, Document.prototype);
+
+
+(function (Document_p) {
+
+  const defineTriggerOG = Document_p.defineTrigger;
+  const defineTriggerRuleOG = Document_p.defineTriggerRule;
+  const getTriggerOG = Document_p.getTrigger;
+
+  function checkNativeEventOverlap(name) {
+    for (let post of ["", "_g", "_pg", "_l", "_pl"])
+      if (Event.isNative(name + post))
+        throw new DoubleDotsSyntaxError(name + post + ": is a native event trigger, it is builtin, you cannot define it.");
+  }
+
+  Object.defineProperty(Proto, "defineTrigger", {
+    value: function (name, Class) {
+      checkNativeEventOverlap(name);
+      return defineTriggerOG.call(this, name, Class);
+    }
+  });
+  Object.defineProperty(Proto, "defineTriggerRule", {
+    value: function (prefix, FunClass) {
+      checkNativeEventOverlap(prefix);
+      return defineTriggerRuleOG.call(this, prefix, FunClass);
+    }
+  });
+  Object.defineProperty(Document_p, "getTrigger", {
+    value: function (name) {
+      const old = getTriggerOG.call(this, name);
+      if (old)
+        return old;
+      let [_, type, mode, type2] = name.match(/^(.*)_(g|pg|l|pl)$|(.*)/);
+      type ??= type2;
+      const eventClass = Event.isNative(type);
+      if (!eventClass)
+        return;
+      const winDoc = eventClass === "window" ? window : document;
+      const globalsOnly = eventClass !== "Element";
+      let {
+        NativeEventTrigger,
+        GlobalTrigger,
+        PostGlobalTrigger,
+        LocalTrigger,
+        PostLocalTrigger
+      } = makeNativeTriggerClasses(type, winDoc, globalsOnly);
+
+      defineTriggerOG.call(this, type, NativeEventTrigger);
+      defineTriggerOG.call(this, type + "_g", GlobalTrigger);
+      defineTriggerOG.call(this, type + "_l", LocalTrigger);
+      defineTriggerOG.call(this, type + "_pg", PostGlobalTrigger);
+      defineTriggerOG.call(this, type + "_pl", PostLocalTrigger);
+
+      return !mode ? NativeEventTrigger :
+        mode === "g" ? GlobalTrigger :
+          mode === "l" ? LocalTrigger :
+            mode === "pg" ? PostGlobalTrigger :
+              mode === "pl" ? PostLocalTrigger :
+                undefined;
+    }
+  });
+})(Document.prototype);

@@ -2,42 +2,42 @@ window.DoubleDots ??= {};
 
 DoubleDots.DoubleDotsError = class DoubleDotsError extends Error { };
 
-DoubleDots.DefinitionsMap = class DefinitionsMap {
-
-  #definitions = {};
-  #rules = {};
-
-  setRule(rule, FunFun) {
-    for (let ru of Object.keys(this.#rules))
-      if (ru.startsWith(rule) || rule.startsWith(ru))
-        throw new DoubleDotsError(`:${rule} conflicts with rule: :${ru}.`);
-    for (let re of Object.keys(this.#definitions))
-      if (re.startsWith(rule))
-        throw new DoubleDotsError(`:${rule} conflicts with reaction: :${re}.`);
-    this.#rules[rule] = FunFun;
-  }
-
-  setDefinition(reaction, Fun) {
-    if (this.#definitions.has(reaction))
-      throw new DoubleDotsError(`:${reaction} already defined.`);
-    for (let ru of Object.keys(this.#rules))
-      if (reaction.startsWith(ru))
-        throw new DoubleDotsError(`:${reaction} already defined by rule: :${ru}.`);
-    this.#definitions[reaction] = Fun;
-  }
-
-  #checkViaRule(fullname) {
-    for (let [rule, FunFun] of Object.entries(this.#rules))
-      if (fullname.startsWith(rule))
-        return this.#definitions[fullname] = FunFun(fullname);//todo what if FunFun throws an error here?
-  }
-
-  get(fullname) {
-    return this.#definitions[fullname] || this.#checkViaRule(fullname);
-  }
-};
-
 (function () {
+
+  class DefinitionsMap {
+
+    #definitions = {};
+    #rules = {};
+
+    setRule(rule, FunFun) {
+      for (let ru of Object.keys(this.#rules))
+        if (ru.startsWith(rule) || rule.startsWith(ru))
+          throw new DoubleDotsError(`:${rule} conflicts with rule: :${ru}.`);
+      for (let re of Object.keys(this.#definitions))
+        if (re.startsWith(rule))
+          throw new DoubleDotsError(`:${rule} conflicts with reaction: :${re}.`);
+      this.#rules[rule] = FunFun;
+    }
+
+    setDefinition(reaction, Fun) {
+      if (this.#definitions.has(reaction))
+        throw new DoubleDotsError(`:${reaction} already defined.`);
+      for (let ru of Object.keys(this.#rules))
+        if (reaction.startsWith(ru))
+          throw new DoubleDotsError(`:${reaction} already defined by rule: :${ru}.`);
+      this.#definitions[reaction] = Fun;
+    }
+
+    #checkViaRule(fullname) {
+      for (let [rule, FunFun] of Object.entries(this.#rules))
+        if (fullname.startsWith(rule))
+          return this.#definitions[fullname] = FunFun(fullname);//todo what if FunFun throws an error here?
+    }
+
+    get(fullname) {
+      return this.#definitions[fullname] || this.#checkViaRule(fullname);
+    }
+  };
 
   function memoizeSingleArgFun(fun) {
     const cache = new WeakMap();
