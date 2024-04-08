@@ -2,25 +2,7 @@ window.DoubleDots ??= {};
 
 DoubleDots.DoubleDotsError = class DoubleDotsError extends Error { };
 
-DoubleDots.TriggerMap = class TriggerMap {
-
-  #triggers = {};
-
-  setTrigger(trigger, Class) {
-    for (let tr of Object.keys(this.#triggers))
-      if (tr.startsWith(trigger) || trigger.startsWith(tr))
-        throw new DoubleDotsError(`${trigger}: conflicts with trigger: ${tr}:.`);
-    this.#triggers[trigger] = Class;
-  }
-
-  get(fullname) {
-    for (let [trigger, Class] of Object.entries(this.#triggers))
-      if (fullname.startsWith(trigger))
-        return Class;
-  }
-};
-
-DoubleDots.ReactionsMap = class ReactionsMap {
+DoubleDots.DefinitionsMap = class DefinitionsMap {
 
   #definitions = {};
   #rules = {};
@@ -74,8 +56,8 @@ DoubleDots.ReactionsMap = class ReactionsMap {
   }
 
   const rootsAndHosts = memoizeSingleArgFun(rootsAndHostsTopDown);
-  const ReactionMaps = memoizeSingleArgFun(_ => new ReactionsMap());
-  const TriggerMaps = memoizeSingleArgFun(_ => new TriggerMap());
+  const ReactionMaps = memoizeSingleArgFun(_ => new DefinitionsMap());
+  const TriggerMaps = memoizeSingleArgFun(_ => new DefinitionsMap());
 
   (function (Document_p) {
     Object.defineProperty(Proto, "defineReaction", {
@@ -89,8 +71,13 @@ DoubleDots.ReactionsMap = class ReactionsMap {
       }
     });
     Object.defineProperty(Proto, "defineTrigger", {
-      value: function (prefix, Class) {
-        return TriggerMap(this).setTrigger(prefix, Class);
+      value: function (name, Class) {
+        return TriggerMaps(this).setDefinition(name, Class);
+      }
+    });
+    Object.defineProperty(Proto, "defineTriggerRule", {
+      value: function (prefix, FunClass) {
+        return TriggerMaps(this).setRule(prefix, FunClass);
       }
     });
     Object.defineProperty(Document_p, "getReaction", {
@@ -123,10 +110,17 @@ DoubleDots.ReactionsMap = class ReactionsMap {
       }
     });
     Object.defineProperty(DocumentFragment_p, "defineTrigger", {
-      value: function (prefix, Class) {
+      value: function (name, Class) {
         if (triggerLocks.has(this))
           throw new DoubleDotsError("You cannot define a trigger in a shadowRoot *after* a trigger has been queried from that root.");
-        return TriggerMap(this).setTrigger(prefix, Class);
+        return TriggerMaps(this).setDefinition(name, Class);
+      }
+    });
+    Object.defineProperty(DocumentFragment_p, "defineTriggerRule", {
+      value: function (prefix, FunClass) {
+        if (triggerLocks.has(this))
+          throw new DoubleDotsError("You cannot define a trigger rule in a shadowRoot *after* a trigger has been queried from that root.");
+        return TriggerMaps(this).setRule(prefix, FunClass);
       }
     });
     Object.defineProperty(DocumentFragment_p, "getReaction", {
