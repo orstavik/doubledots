@@ -67,7 +67,7 @@ function makeNativeTriggerClasses(type, winDoc, globalsOnly) {
   function runTriggers(e) {
     if (!this.isConnected)
       return this.remove();
-    e.stopImmediatePropagation();
+    DoubleDots.native.stopImmediatePropagation.call(e);
     propagate(e);
   }
 
