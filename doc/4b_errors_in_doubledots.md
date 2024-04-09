@@ -29,7 +29,7 @@ DoubleDots produce errors in *two* situations:
 
 There are some syntactic rules for what attributes should look like. Here is a **blacklist** of illegal reactionChain constructs (in `RegExp`):
 
-1. `(:|:try|:catch|:finally)$` => Attributes cannot end with `:` or one of `::`, `:try:catch:finally`. It makes no sense.
+1. `:$` => Attributes cannot end with `:`. Attributes *can* end with `:catch` as this will prevent the the error event from being dispatched.
 2. `^[\.-]` => Attributes cannot begin with `.` or `-`. Many browsers do not allow it. The same rule is added to definition of triggers:.
 3. `:::` => Attribute cannot contain a double empty.
 4. `::*::` => Attribute cannot contain a two empties.
@@ -38,16 +38,14 @@ There are some syntactic rules for what attributes should look like. Here is a *
 
 A network request fails. Commonly, these sitaution threaten the sequentiality of the app state and/or the validity of data. They need to either be explicitly managed, or otherwise handled.
 
-## `:try:...:catch:...:finally`
+## the builtin `:catch` reaction rule
 
-DoubleDots provide builtin reactions to handle errors. They all concern run-time reaction errors only.
+DoubleDots provide builtin reaction `:catch` to handle errors. `:catch` handle run-time reaction errors only, of course. If there is a `:catch`, then there was an implied `:try`. You can also `:catch` an error thrown in another `:catch` => `:throw_a:catch_a:throw_b:catch_b`. If you have a `:catch` at the end of the reaction chain, then that will simply cause the `error` not to be thrown.
 
-`:try` means that all errors in the subsequent reaction chain will not spawn an `error` event, but only cause a `console.warn` message instead.
+You can specify the error type to be captured. This will `:catch_-syntax-error` will only capture `SyntaxError` errors. `:catch` catches everything.
 
-If there is a `:catch` after the `:try` reaction, then the event loop will run to the reaction after `:catch` when an error occurs. If there are no errors, then any :reaction after `:catch` will not run.
+Errors caught will not produce error messages nor error events. They will only leave an error trace in eventloop register.
 
-If there is a `:finally` after the `:try` (and `:catch`), then the event loop will always do those reactions in the end.
+## List of `error`s
 
-You cannot *nest* `:try:catch` in DoubleDots. This means you cannot `:try` inside the `:catch`. If you want this kind of complexity, you must use `error` events. The `:try:catch:finally` are only meant for simple *blocking* of non-critical errors that are easy to handle.
-
-Note also that a simple `:try` is quite ok. It will essentially just prevent `error` events from being spawned.
+add number for dates and versions.
