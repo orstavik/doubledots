@@ -51,6 +51,8 @@
           threadMode = true;
           continue;
         }
+        if (re.startsWith("catch"))
+          continue;
 
         //2. check isConnected
         try {
@@ -141,6 +143,11 @@
         if (this.task.run()) //when task.run() returns true it is awaiting promise in sync mode.
           return;
     }
+
+    batch(event, attrs){
+      this.#stack.push(...attrs.map(at => new MicroFrame(at, event)));
+      this.#i === this.#stack.length - attrs.length && this.loop();
+    }
   }
 
   __eventLoop = new __EventLoop();
@@ -178,14 +185,21 @@
     get event() {
       return __eventLoop.task.event;
     }
+    
     get attribute() {
       return __eventLoop.task.at;
     }
+
     get reaction() {
       return __eventLoop.task.getReaction();
     }
+
     get reactionIndex() {
       return __eventLoop.task.getReactionIndex();
+    }
+
+    dispatch(event, ...attrs){
+      __eventLoop.batch(event, attrs);
     }
   };
   Object.defineProperty(window, "eventLoop",
