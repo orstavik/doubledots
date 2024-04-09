@@ -65,7 +65,7 @@
 
           const input = this.#inputs[this.#i];
           const self = this.#selves[this.#i];
-          const res = this.#outputs[this.#i] = func.call(self, this.event, input);
+          const res = this.#outputs[this.#i] = func.call(self, input);
           if (res instanceof Promise) {
             if (threadMode) {
               res.then(oi => this.#runSuccess(oi))
@@ -185,7 +185,7 @@
     get event() {
       return __eventLoop.task.event;
     }
-    
+
     get attribute() {
       return __eventLoop.task.at;
     }
