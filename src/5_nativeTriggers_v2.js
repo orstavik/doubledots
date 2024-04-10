@@ -1,153 +1,9 @@
-class WeakRefSet extends Set {
-
-  add(at) {
-    super.add(new WeakRef(at));
-    return this;
-  }
-
-  delete(at) {
-    for (let ref of super.values())
-      if (ref.deref() === at)
-        return super.delete(ref);
-  }
-
-  * iterate() {
-    for (let ref of this) {
-      const at = ref.deref();
-      at?.isConnected ? yield at : super.delete(ref);
-    }
-  }
-}
-
-function makeNativeTriggerClasses(type, winDoc, globalsOnly) {
-
-  class NativeEventSyntaxErrorTrigger extends CustomAttr {
-    upgrade(name) {
-      throw `${name} is only a document or window event, and so cannot be listened for on the element itself.`;
-    }
-  }
-
-  const global = new WeakRefSet();
-  const global_p = new WeakRefSet();
-  const locals = new WeakMap();
-  const locals_p = new WeakMap();
-
-  function propagateAll(e) {
-    const path = e.composedPath();
-    const roots = path.filter(n => n instanceof ShadowRoot);
-    const elements = path.filter(n => n instanceof Element);
-    const hosts = path.filter(_=>false)//todo make a function that finds the host nodes in the shadowRoot (that are not slotting host nodes.)
-    const rootsDown = roots.filter(r => locals.get(r)?.length);
-    rootsDown.reverse();
-    const rootsUp = roots.filter(r => locals_p.get(r)?.length);
-    const targets = hosts.map(el => el.attributes.filter(at => at.trigger === type + "_t")).flatten();
-    //should targets go top-down? capture style?
-    const bubbles = elements.map(el => el.attributes.filter(at => at.trigger === type)).flatten();
-    const attrs = [...global, ...rootsDown, ...targets, ...bubbles, ...rootsUp, ...global_p];
-    eventLoop.dispatchEvent(e, ...attrs);
-  }
-
-  function propagateGlobals(e) {
-    eventLoop.dispatchEvent(e, ...global, ...global_p);
-  }
-
-  const propagate = globalsOnly ? propagateGlobals : propagateAll;
-
-  function runTriggers(e) {
-    if (!this.isConnected)
-      return this.remove();
-    DoubleDots.native.stopImmediatePropagation.call(e);
-    propagate(e);
-  }
-
-
-  class NativeEventTrigger extends CustomAttr {
-
-    upgrade() {
-      this.__l = runTriggers.bind(this);
-      DoubleDots.native.addEventListener.call(this.ownerElement, type, this.__l, true);
-    }
-
-    remove() {
-      DoubleDots.native.removeEventListener.call(this.ownerElement, type, this.__l, true);
-      super.remove();
-    }
-  }
-
-  class GlobalTrigger extends CustomAttr {
-    upgrade() {
-      this.__l = runTriggers.bind(this);
-      global.put(this);
-      DoubleDots.native.addEventListener.call(winDoc, type, this.__l, true);
-    }
-
-    remove() {
-      DoubleDots.native.removeEventListener.call(winDoc, type, this.__l, true);
-      global.delete(this);
-      super.remove();
-    }
-  }
-
-  class PostGlobalTrigger extends CustomAttr {
-    upgrade() {
-      this.__l = runTriggers.bind(this);
-      global_p.put(this);
-      DoubleDots.native.addEventListener.call(winDoc, type, this.__l, true);
-    }
-
-    remove() {
-      DoubleDots.native.removeEventListener.call(winDoc, type, this.__l, true);
-      global_p.delete(this);
-      super.remove();
-    }
-  }
-
-  class LocalTrigger extends CustomAttr {
-    upgrade() {
-      this.__l = runTriggers.bind(this);
-      let reg = locals.get(this.getRootNode());
-      if (!reg)
-        locals.set(this.getRootNode(), reg = new WeakRefSet());
-      reg.put(this);
-      DoubleDots.native.addEventListener.call(winDoc, type, this.__l, true);
-    }
-
-    remove() {
-      DoubleDots.native.removeEventListener.call(winDoc, type, this.__l, true);
-      locals.get(this.getRootNode()).delete(this);
-      super.remove();
-    }
-  }
-
-  class PostLocalTrigger extends CustomAttr {
-    upgrade() {
-      this.__l = runTriggers.bind(this);
-      let reg = locals_p.get(this.getRootNode());
-      if (!reg)
-        locals_p.set(this.getRootNode(), reg = new WeakRefSet());
-      reg.put(this);
-      DoubleDots.native.addEventListener.call(winDoc, type, this.__l, true);
-    }
-
-    remove() {
-      DoubleDots.native.removeEventListener.call(winDoc, type, this.__l, true);
-      locals_p.get(this.getRootNode()).delete(this);
-      super.remove();
-    }
-  }
-
-  if (globalsOnly)
-    NativeEventTrigger = LocalTrigger = PostLocalTrigger = NativeEventSyntaxErrorTrigger;
-
-  return { NativeEventTrigger, GlobalTrigger, PostGlobalTrigger, LocalTrigger, PostLocalTrigger };
-}
-
 (function (Event, HTMLElementProto, ElementProto, DocumentProto) {
   Event.isNative = function isNative(type) {
     const prop = "on" + type;
     if (prop in HTMLElementProto || prop in ElementProto ||
       ["touchstart", "touchmove", "touchend", "touchcancel"].indexOf(type) >= 0)
-      return "Element";
+      return "element";
     if (prop in window)
       return "window";
     if (prop in DocumentProto)
@@ -155,6 +11,185 @@ function makeNativeTriggerClasses(type, winDoc, globalsOnly) {
   };
 })(Event, HTMLElement.prototype, Element.prototype, Document.prototype);
 
+function AttrArray(GC) {
+  const attrs = [];
+  setInterval(_ => attrs.forEach(at => !at.isConnected && at.remove()), GC);
+  return attrs;
+}
+
+/**
+ * Used for native events such as:
+ *   window
+ *     appinstalled
+ *     beforeinstallprompt
+ *     afterprint
+ *     beforeprint
+ *     beforeunload
+ *     hashchange
+ *     languagechange
+ *     message
+ *     messageerror
+ *     offline
+ *     online
+ *     pagehide
+ *     pageshow
+ *     popstate
+ *     rejectionhandled
+ *     storage
+ *     unhandledrejection
+ *     unload
+ * 
+ *   document
+ *     DOMContentLoaded
+ *     readystatechange
+ *     pointerlockchange
+ *     pointerlockerror
+ *     freeze
+ *     prerenderingchange
+ *     resume
+ *     visibilitychange
+ * 
+ * @param {string} type the native event type name
+ * @param {window} target set target to document or window nodes
+ * @param {number} [GC=10000] 
+ * @returns class GlobalOnlyEventTrigger extends CustomAttr
+ */
+function globalEventTrigger(type, target, GC = 10000) {
+
+  class SyntaxErrorNativeEventTrigger extends CustomAttr {
+    upgrade() {
+      throw DoubleDots.SyntaxError(`"${type}" is a native global event on ${target}. In DoubleDots you refer to it directly as "${type}:". To avoid confusion with the triggers for "normal" native events, "${this.trigger}:" throws a SyntaxError.`);
+    }
+  }
+
+  const attrs = AttrArray(GC);
+
+  function run(e) {
+    if (!this.isConnected)
+      return this.remove();
+    e.stopImmediatePropagation();
+    eventLoop.batch(e, attrs);
+  }
+
+  class GlobalOnlyEventTrigger extends CustomAttr {
+    upgrade() {
+      attrs.push(this);
+      Object.defineProperty(this, "__l", { value: run.bind(this), configurable: false });
+      DoubleDots.native.addEventListener.call(target, type, this.__l, true);
+    }
+
+    remove() {
+      DoubleDots.native.removeEventListener.call(target, type, this.__l, true);
+      attrs.splice(attrs.indexOf(this), 1);
+      super.remove();
+    }
+  };
+  return {
+    "": GlobalOnlyEventTrigger,
+    "_t": SyntaxErrorNativeEventTrigger,
+    "_g": SyntaxErrorNativeEventTrigger,
+    "_pg": SyntaxErrorNativeEventTrigger,
+    "_l": SyntaxErrorNativeEventTrigger,
+    "_pl": SyntaxErrorNativeEventTrigger
+  };
+}
+
+function processPath(type, path) {
+  const d = "__" + type;
+  const u = d + "_post";
+  const type_t = type + "_t";
+
+  const elems = [], downs = [], ups = [], targets = [];
+  let slotLevel = 0, prev;
+  for (let n of path) {
+    if (n instanceof Element) {
+      for (let at of n.attributes) {
+        at.trigger === type && elems.unshift(at);
+        at.trigger === type_t && targets.push(at);
+      }
+      prev.assignedSlot === n && slotLevel++; /*n instanceof HTMLSlotElement &&*/
+    }
+    else {
+      d in n && downs.push(...n[d]);
+      u in n && ups.unshift(...n[u]);
+    }
+    if (prev.host === n)  /*prev instanceof ShadowRoot &&*/
+      slotLevel ? slotLevel-- : targets.push(n);
+    prev = n;
+  }
+  return [...downs, ...targets, ...elems, ...ups];
+}
+
+function nativeEventTrigger(type, GC = 10000) {
+
+  function run(e) {
+    if (!this.isConnected)
+      return this.remove();
+    DoubleDots.native.stopImmediatePropagation.call(e);
+    eventLoop.batch(e, processPath(type, e.composedPath()));
+  }
+
+  /**
+   * @param {string} type 
+   * @param {window|document|ShadowRoot} node  _g => window; _l => falsy
+   * @param {boolean} post true for _pg and _pl
+   * @returns 
+   */
+  function globalLocalTrigger(type, node, post) {
+    post = post ? "_post" : "";
+    const listName = `__${type}${post}`;
+    return class GlobalLocalNativeEventTrigger extends CustomAttr {
+      upgrade() {
+        Object.defineProperties(this, {
+          "__l": { value: run.bind(this), configurable: false },
+          "__n": { value: node || this.getRootNode(), configurable: false }
+        });
+        if (!(listName in this.__n))
+          Object.defineProperty(this.__n, listName, { value: AttrArray(GC), configurable: false });
+        this.__n[listName].push(this);
+        DoubleDots.native.addEventListener.call(this.__n, type, this.__l, true);
+      }
+
+      remove() {
+        DoubleDots.native.removeEventListener.call(this.__n, type, this.__l, true);
+        this.__n[listName].splice(this.__n[listName].indexOf(this), 1);
+        super.remove();
+      }
+    };
+  }
+
+  class NativeEventTrigger extends CustomAttr {
+    upgrade() {
+      Object.defineProperties(this, {
+        "__l": { value: run.bind(this), configurable: false },
+        "__t": { value: this.ownerElement, configurable: false }
+      });
+      DoubleDots.native.addEventListener.call(this.__t, type, this.__l, true);
+    }
+
+    remove() {
+      DoubleDots.native.removeEventListener.call(this.__t, type, this.__l, true);
+      super.remove();
+    }
+  }
+
+  return {
+    "": NativeEventTrigger,
+    "_t": NativeEventTrigger,
+    "_g": globalLocalTrigger(type, window),
+    "_pg": globalLocalTrigger(type, window, true),
+    "_l": globalLocalTrigger(type),
+    "_pl": globalLocalTrigger(type, false, true),
+  };
+}
+
+function getBuiltinDefs(name) {
+  const type = name.match(/^(.*?)(?:_g|_pg|_l|_pl|_t)?$/)[1];
+  const nType = Event.isNative(type);
+  return nType === "element" ? nativeEventTrigger(type) :
+    nType === "window" ? globalEventTrigger(type, window) :
+      nType === "document" && globalEventTrigger(type, document);
+}
 
 (function (Document_p) {
 
@@ -163,9 +198,9 @@ function makeNativeTriggerClasses(type, winDoc, globalsOnly) {
   const getTriggerOG = Document_p.getTrigger;
 
   function checkNativeEventOverlap(name) {
-    for (let post of ["", "_g", "_pg", "_l", "_pl"])
-      if (Event.isNative(name + post))
-        throw new DoubleDotsSyntaxError(name + post + ": is a native event trigger, it is builtin, you cannot define it.");
+    const type = name.match(/^(.*?)(?:_g|_pg|_l|_pl|_t)?$/)?.[1];
+    if (Event.isNative(type))
+      throw new DoubleDots.SyntaxError(`${name}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
   }
 
   Object.defineProperty(Proto, "defineTrigger", {
@@ -182,36 +217,15 @@ function makeNativeTriggerClasses(type, winDoc, globalsOnly) {
   });
   Object.defineProperty(Document_p, "getTrigger", {
     value: function (name) {
-      const old = getTriggerOG.call(this, name);
-      if (old)
-        return old;
-      let [_, type, mode, type2] = name.match(/^(.*)_(g|pg|l|pl)$|(.*)/);
-      type ??= type2;
-      const eventClass = Event.isNative(type);
-      if (!eventClass)
+      const Def = getTriggerOG.call(this, name);
+      if (Def)
+        return Def;
+      const Defs = getBuiltinDefs(name);
+      if (!Defs)
         return;
-      const winDoc = eventClass === "window" ? window : document;
-      const globalsOnly = eventClass !== "Element";
-      let {
-        NativeEventTrigger,
-        GlobalTrigger,
-        PostGlobalTrigger,
-        LocalTrigger,
-        PostLocalTrigger
-      } = makeNativeTriggerClasses(type, winDoc, globalsOnly);
-
-      defineTriggerOG.call(this, type, NativeEventTrigger);
-      defineTriggerOG.call(this, type + "_g", GlobalTrigger);
-      defineTriggerOG.call(this, type + "_l", LocalTrigger);
-      defineTriggerOG.call(this, type + "_pg", PostGlobalTrigger);
-      defineTriggerOG.call(this, type + "_pl", PostLocalTrigger);
-
-      return !mode ? NativeEventTrigger :
-        mode === "g" ? GlobalTrigger :
-          mode === "l" ? LocalTrigger :
-            mode === "pg" ? PostGlobalTrigger :
-              mode === "pl" ? PostLocalTrigger :
-                undefined;
+      for (const [postFix, def] of Object.entries(Defs))
+        defineTriggerOG.call(this, type + postFix, def);
+      return getTriggerOG.call(this, name);
     }
   });
 })(Document.prototype);
