@@ -19,6 +19,7 @@ function AttrArray(GC) {
 
 /**
  * Used for native events such as:
+ * 
  *   window
  *     appinstalled
  *     beforeinstallprompt
@@ -104,14 +105,14 @@ function processPath(type, path) {
   for (let n of path) {
     if (n instanceof Element) {
       for (let at of n.attributes) {
-        at.trigger === type && elems.unshift(at);  //todo trøbbel
-        at.trigger === type_t && targets.push(at);
+        at.trigger === type && elems.push(at); 
+        at.trigger === type_t && targets.push(at); //todo trøbbel
       }
       prev.assignedSlot === n && slotLevel++; /*n instanceof HTMLSlotElement &&*/
     }
     else {
-      d in n && downs.push(...n[d]);
-      u in n && ups.unshift(...n[u]);       //todo trøbbel
+      d in n && downs.push(...n[d]);   //todo trøbbel
+      u in n && ups.push(...n[u]);       
     }
     if (prev.host === n)  /*prev instanceof ShadowRoot &&*/
       slotLevel ? slotLevel-- : targets.push(n);

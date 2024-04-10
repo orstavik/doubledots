@@ -242,7 +242,7 @@
     Element_p.bubble = function bubble(e, composed) {
       if (!target.isConnected)
         throw new DoubleDots.ReactionError("dispatchEvent on disconnected Element");
-      eventLoop.batch(e, ...(composed ? path(this, e.type) : localPath(this, e.type)));
+      eventLoop.batch(e, (composed ? [...path(this, e.type)] : [...localPath(this, e.type)]));
     };
     
   })(Element.prototype);
