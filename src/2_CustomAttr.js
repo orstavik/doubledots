@@ -28,4 +28,10 @@ window.CustomAttr = class CustomAttr extends Attr {
       "reactions": { value: reactions, enumerable: true, configurable: false },
     });
   }
+
+  dispatchEvent(e) {
+    if (!target.isConnected)
+      throw new DoubleDots.ReactionError("dispatch on disconnected attribute.");
+    eventLoop.addTask(this, e);
+  }
 };
