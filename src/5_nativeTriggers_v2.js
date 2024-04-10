@@ -104,14 +104,14 @@ function processPath(type, path) {
   for (let n of path) {
     if (n instanceof Element) {
       for (let at of n.attributes) {
-        at.trigger === type && elems.unshift(at);
+        at.trigger === type && elems.unshift(at);  //todo trøbbel
         at.trigger === type_t && targets.push(at);
       }
       prev.assignedSlot === n && slotLevel++; /*n instanceof HTMLSlotElement &&*/
     }
     else {
       d in n && downs.push(...n[d]);
-      u in n && ups.unshift(...n[u]);
+      u in n && ups.unshift(...n[u]);       //todo trøbbel
     }
     if (prev.host === n)  /*prev instanceof ShadowRoot &&*/
       slotLevel ? slotLevel-- : targets.push(n);

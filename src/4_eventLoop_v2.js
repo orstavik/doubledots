@@ -144,7 +144,7 @@
           return;
     }
 
-    batch(event, attrs){
+    batch(event, attrs) {
       this.#stack.push(...attrs.map(at => new MicroFrame(at, event)));
       this.#i === this.#stack.length - attrs.length && this.loop();
     }
@@ -198,7 +198,7 @@
       return __eventLoop.task.getReactionIndex();
     }
 
-    dispatch(event, ...attrs){
+    dispatch(event, ...attrs) {
       __eventLoop.batch(event, attrs);
     }
   };
@@ -214,23 +214,36 @@
   DoubleDots.native ??= {};
 
   (function (EventTarget_p) {
-
-    function dispatchEventDD(event) {
-      let error;
-      if (!(this instanceof CustomAttr || this instanceof Element))
-        error = new DoubleDotsSyntaxError("dispatchEvent only works for CustomAttr and Element");
-      if (!target.isConnected)
-        error = new DoubleDotsReactionError("dispatchEvent only works for connected CustomAttr or Element");
-      if (error)
-        return document.documentElement.dispatchEvent(new ErrorEvent("error", { error }));
-      eventLoop.addTask(this, event);
-    }
-
-    monkeyPatch(EventTarget_p, "dispatchEvent", dispatchEventDD);
     DoubleDots.native.addEventListener = EventTarget_p.addEventListener;
     DoubleDots.native.removeEventListener = EventTarget_p.removeEventListener;
+    DoubleDots.native.dispatchEvent = EventTarget_p.dispatchEvent;
     EventTarget_p.addEventListener = deprecated.bind("EventTarget.addEventListener");
     EventTarget_p.removeEventListener = deprecated.bind("EventTarget.removeEventListener");
+    EventTarget_p.dispatchEvent = deprecated.bind("EventTarget.dispatchEvent");
   })(EventTarget.prototype);
 
+
+
+  (function (Element_p) {
+    function* path(t, type) {
+      for (; t; t = t.assignedSlot || t.parentElement || t.parentNode.host)
+        for (let at of t.attributes)
+          if (at.trigger === type)
+            yield at;
+    }
+
+    function* localPath(target, type) {
+      for (let t = target; t; t.parentElement)
+        for (let at of n.attributes)
+          if (at.trigger === type)
+            yield at;
+    }
+
+    Element_p.bubble = function bubble(e, composed) {
+      if (!target.isConnected)
+        throw new DoubleDots.ReactionError("dispatchEvent on disconnected Element");
+      eventLoop.batch(e, ...(composed ? path(this, e.type) : localPath(this, e.type)));
+    };
+    
+  })(Element.prototype);
 })();
