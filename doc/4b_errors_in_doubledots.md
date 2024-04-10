@@ -16,10 +16,23 @@ To notify the developer about errors is super costly. It both takes a lot of res
 
 **Non critical run-time errors** are errors that don't really require notifying the user nor the developer about run-time. They are only relevant for adding the `console.error` for the developer when he/she test-runs his system.
 
+## `warn` events
+
+1. alert the user of something causing the program to misbehave. So the user knows something is wrong, doesn't just get confused.
+2. alert the developer of something wrong run-time. logging on the server. These errors should cause a reaction either in bugfixing or follow on the user using the app.
+
+1 and 2 require an `error` event because we need to side-effect to the visible dom or to network logging. This cannot happen in client-side console.log, because this is not visible to user nor developer.
+
+3. alert developer of something wrong during development. This can be console.logged, but should likely also be an `error` event, because they are difficult to say for certain will not suddenly occcur run-time.
+
+If the error is neither 1,2,3, then we can do console.log. But then it is also likely to just be something to squash.
+
+But. Warn. We might want to have errors that should warn, and errors that should alert. This can be used to have a select test user (or say random()/100 of users send warnings to server. This will enable serious errors to always be logged, while not so serious errors can be sampled. For perfection.)
+
 ## What types of errors occur in DoubleDots? 
 
 DoubleDots produce errors in *two* situations:
-1. When an illegal attribute is added to the DOM. `DoubleDotsSyntaxError`s.
+1. When an illegal attribute is added to the DOM. `DoubleDots.SyntaxError`s.
 2. when a reaction fails due to problems in the code.
 
 3. This is no longer true. The iteration will just ignore a reaction if the attribute(or owner element) is no longer connected to the DOM.
@@ -45,6 +58,8 @@ DoubleDots provide builtin reaction `:catch` to handle errors. `:catch` handle r
 You can specify the error type to be captured. This will `:catch_-syntax-error` will only capture `SyntaxError` errors. `:catch` catches everything.
 
 Errors caught will not produce error messages nor error events. They will only leave an error trace in eventloop register.
+
+`:do-something:catch:do-something-else:catch:this-is-run-finally`.
 
 ## List of `error`s
 
