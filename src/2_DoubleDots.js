@@ -1,8 +1,23 @@
 (function () {
+
+  const isNativeEvent = (function (HTMLElement_p, Element_, Document_p) {
+    return function isNative(type) {
+      const prop = "on" + type;
+      if (prop in HTMLElement_p || prop in Element_ ||
+        ["touchstart", "touchmove", "touchend", "touchcancel"].indexOf(type) >= 0)
+        return "element";
+      if (prop in window)
+        return "window";
+      if (prop in Document_p)
+        return "document";
+    };
+  })(HTMLElement.prototype, Element.prototype, Document.prototype); 
+
   window.DoubleDots = {
+    isNativeEvent,
     DoubleDotsError: class DoubleDotsError extends Error { },
     DeprecationError: class DeprecationError extends Error { },
-    native: {}
+    native: {},
   };
 
   //.attachShadow(/*always open*/);   

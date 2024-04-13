@@ -1,16 +1,3 @@
-(function (Event, HTMLElementProto, ElementProto, DocumentProto) {
-  Event.isNative = function isNative(type) {
-    const prop = "on" + type;
-    if (prop in HTMLElementProto || prop in ElementProto ||
-      ["touchstart", "touchmove", "touchend", "touchcancel"].indexOf(type) >= 0)
-      return "element";
-    if (prop in window)
-      return "window";
-    if (prop in DocumentProto)
-      return "document";
-  };
-})(Event, HTMLElement.prototype, Element.prototype, Document.prototype);
-
 (function (nativeNameSpace) {
   
   const nativeAddEventListener = nativeNameSpace.EventTarget.prototype.addEventListener;
@@ -192,7 +179,7 @@
 
   function getBuiltinDefs(name) {
     const type = name.match(/^(.*?)(?:_g|_pg|_l|_pl|_t)?$/)[1];
-    const nType = Event.isNative(type);
+    const nType = DoubleDots.isNativeEvent(type);
     return nType === "element" ? nativeEventTrigger(type) :
       nType === "window" ? globalEventTrigger(type, window) :
         nType === "document" && globalEventTrigger(type, document);
@@ -200,7 +187,7 @@
 
 })(DoubleDots.native);
 
-(function (Document_p) {
+(function (Document_p) { //todo we should do this in the DocumentFragment_p too?
 
   const defineTriggerOG = Document_p.defineTrigger;
   const defineTriggerRuleOG = Document_p.defineTriggerRule;
@@ -208,7 +195,7 @@
 
   function checkNativeEventOverlap(name) {
     const type = name.match(/^(.*?)(?:_g|_pg|_l|_pl|_t)?$/)?.[1];
-    if (Event.isNative(type))
+    if (DoubleDots.isNativeEvent(type))
       throw new DoubleDots.SyntaxError(`${name}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
   }
 
