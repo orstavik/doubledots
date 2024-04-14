@@ -35,3 +35,5 @@ window.CustomAttr = class CustomAttr extends Attr {
     eventLoop.addTask(this, e);
   }
 };
+
+//todo we MUST make the value of override-trigger and override-reaction immutable.

@@ -1,24 +1,6 @@
 (function () {
 
-  const isNativeEvent = (function (HTMLElement_p, Element_, Document_p) {
-    return function isNative(type) {
-      const prop = "on" + type;
-      if (prop in HTMLElement_p || prop in Element_ ||
-        ["touchstart", "touchmove", "touchend", "touchcancel"].indexOf(type) >= 0)
-        return "element";
-      if (prop in window)
-        return "window";
-      if (prop in Document_p)
-        return "document";
-    };
-  })(HTMLElement.prototype, Element.prototype, Document.prototype); 
-
-  window.DoubleDots = {
-    isNativeEvent,
-    DoubleDotsError: class DoubleDotsError extends Error { },
-    DeprecationError: class DeprecationError extends Error { },
-    native: {},
-  };
+  window.DoubleDots.nativeMethods = {};
 
   //.attachShadow(/*always open*/);   
   //Needed to capture the full composedPath of customEvents.
@@ -124,7 +106,7 @@
   for (let [path, objMask] of Object.entries(mask)) {
     path = path.split(".");
     const obj = getObj(window, path);
-    const nativeObj = getObj(DoubleDots.native, path);
+    const nativeObj = getObj(DoubleDots.nativeMethods, path);
     for (let [prop, verifyMethod] of objMask) {
       nativeObj[prop] = obj[prop];
       const monkey = patchMethod(nativeObj[prop], verifyMethod);
