@@ -247,4 +247,6 @@ const getBuiltinDefs = (function (nativeMethods) {
       return super.get(name) || this.#builtinDefs(name);
     }
   }
+
+  document.Definitions.trigger = new NativeEventDefinitionMap();
 })();
