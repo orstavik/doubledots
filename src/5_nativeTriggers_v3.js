@@ -1,4 +1,4 @@
-const getBuiltinDefs = (function (nativeMethods) {
+const { nativeEventTrigger, globalEventTrigger } = (function (nativeMethods) {
 
   const nativeAddEventListener = nativeMethods.EventTarget.prototype.addEventListener;
   const nativeRemoveEventListener = nativeMethods.EventTarget.prototype.removeEventListener;
@@ -22,19 +22,6 @@ const getBuiltinDefs = (function (nativeMethods) {
     setOfSet.add(attrs);
     return attrs;
   }
-
-  const isNativeEvent = (function (HTMLElement_p, Element_, Document_p) {
-    return function isNative(type) {
-      const prop = "on" + type;
-      if (prop in HTMLElement_p || prop in Element_ ||
-        ["touchstart", "touchmove", "touchend", "touchcancel"].indexOf(type) >= 0)
-        return "element";
-      if (prop in window)
-        return "window";
-      if (prop in Document_p)
-        return "document";
-    };
-  })(HTMLElement.prototype, Element.prototype, Document.prototype);
 
   /**
    * Used for native events such as:
@@ -75,12 +62,6 @@ const getBuiltinDefs = (function (nativeMethods) {
    * @returns class GlobalOnlyEventTrigger extends CustomAttr
    */
   function globalEventTrigger(type, target, GC = 10000) {
-
-    class SyntaxErrorNativeEventTrigger extends CustomAttr {
-      upgrade() {
-        throw DoubleDots.SyntaxError(`"${type}" is a native global event on ${target}. In DoubleDots you refer to it directly as "${type}:". To avoid confusion with the triggers for "normal" native events, "${this.trigger}:" throws a SyntaxError.`);
-      }
-    }
 
     const attrs = AttrWeakSet(GC);
 
@@ -203,44 +184,64 @@ const getBuiltinDefs = (function (nativeMethods) {
     };
   }
 
-  return function getBuiltinDefs(name) {
-    const type = name.match(/^(.*?)(?:_g|_pg|_l|_pl|_t)?$/)[1];
-    const nType = DoubleDots.isNativeEvent(type);
-    return nType === "element" ? nativeEventTrigger(type) :
-      nType === "window" ? globalEventTrigger(type, window) :
-        nType === "document" && globalEventTrigger(type, document);
-  };
+  return { nativeEventTrigger, globalEventTrigger };
 
 })(DoubleDots.nativeMethods);
 
 (function () {
   //todo we should do this in the DocumentFragment_p too? The inheritance of the DOMDefinitionMap should handle it ok.
 
+  const nativeEventType = (function (HTMLElement_p, Element_, Document_p) {
+    return function nativeEventType(type) {
+      const prop = "on" + type;
+      if (prop in HTMLElement_p || prop in Element_ ||
+        ["touchstart", "touchmove", "touchend", "touchcancel"].indexOf(type) >= 0)
+        return "element";
+      if (prop in window)
+        return "window";
+      if (prop in Document_p)
+        return "document";
+    };
+  })(HTMLElement.prototype, Element.prototype, Document.prototype);
+
   class NativeEventDefinitionMap extends DefinitionsMap {
 
-    static checkNativeEventOverlap(name) {
+    static #syntaxCheckNativeEvent(name) {
       const type = name.match(/^(.*?)(?:_g|_pg|_l|_pl|_t)?$/)?.[1];
-      if (DoubleDots.isNativeEvent(type))
-        throw new DoubleDots.SyntaxError(`${name}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
+      const target = nativeEventType(type);
+      if (!target)
+        return;
+      if (target !== "element" && name !== type)
+        throw DoubleDots.SyntaxError(`"${type}" is a native global event on ${target}. In DoubleDots you refer to it directly as "${type}:". To avoid confusion with the triggers for "normal" native events, "${name}:" throws a SyntaxError.`);
+      return { type, target };
     }
 
     setDefintion(name, Class) {
-      NativeEventDefinitionMap.checkNativeEventOverlap(name);
-      return super.setDefintion(name, Class);
+      if (!NativeEventDefinitionMap.#syntaxCheckNativeEvent(name))
+        return super.setDefintion(name, Class);
+      throw new DoubleDots.SyntaxError(`${name}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
     }
 
     setRule(prefix, FunClass) {
-      NativeEventDefinitionMap.checkNativeEventOverlap(prefix);
-      return super.setRule(prefix, FunClass);
+      if (!NativeEventDefinitionMap.#syntaxCheckNativeEvent(prefix))
+        return super.setRule(prefix, FunClass);
+      throw new DoubleDots.SyntaxError(`${name}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
     }
 
     #builtinDefs(name) {
-      const type = name.match(/^(.*?)(?:_g|_pg|_l|_pl|_t)?$/)?.[1];
-      const Defs = getBuiltinDefs(name); //todo here we can pass in only the simple type now.
-      if (Defs)
+      const { type, target } = NativeEventDefinitionMap.#syntaxCheckNativeEvent(name);
+      if (!type)
+        return;
+      if (target === "element") {
+        const Defs = nativeEventTrigger(type);
         for (const [postFix, def] of Object.entries(Defs))
           super.setDefintion(type + postFix, def);
-      return Defs[name];
+        return Defs[name.substring(type.length)];
+      }
+      // target === "window" || "document"
+      const Def = globalEventTrigger(type, window[target]);
+      super.setDefintion(name, Def);
+      return Def;
     }
 
     get(name) {
