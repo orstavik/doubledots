@@ -1,13 +1,4 @@
 (function () {
-  function deprecated() {
-    throw `${this}() is deprecated`;
-  }
-  function monkeyPatch(proto, prop, monkey) {
-    const desc = Object.getOwnPropertyDescriptor(proto, prop);
-    desc.value = monkey;
-    Object.defineProperty(proto, prop, desc);
-  }
-
   class MicroFrame {
     #i = 0;
     #names;
@@ -145,8 +136,10 @@
     }
 
     batch(event, attrs) {
-      this.#stack.push(...attrs.map(at => new MicroFrame(at, event)));
-      this.#i === this.#stack.length - attrs.length && this.loop();
+      const ready = this.#i === this.#stack.length;
+      for (let at of attrs)
+        this.#stack.push(new MicroFrame(at, event));
+      ready && this.loop();
     }
   }
 
@@ -205,25 +198,6 @@
   Object.defineProperty(window, "eventLoop",
     { value: new EventLoop(), configurable: false });
 
-  (function (Document_p) {
-    //it is impossible to override the window.event property..
-    Document_p.currentScript = deprecated.bind("Document.prototype.currentScript");
-  })(Document.prototype);
-
-  window.DoubleDots ??= {};
-  DoubleDots.native ??= {};
-
-  (function (EventTarget_p) {
-    DoubleDots.native.addEventListener = EventTarget_p.addEventListener;
-    DoubleDots.native.removeEventListener = EventTarget_p.removeEventListener;
-    DoubleDots.native.dispatchEvent = EventTarget_p.dispatchEvent;
-    EventTarget_p.addEventListener = deprecated.bind("EventTarget.addEventListener");
-    EventTarget_p.removeEventListener = deprecated.bind("EventTarget.removeEventListener");
-    EventTarget_p.dispatchEvent = deprecated.bind("EventTarget.dispatchEvent");
-  })(EventTarget.prototype);
-
-
-
   (function (Element_p) {
     function* path(t, type) {
       for (; t; t = t.assignedSlot || t.parentElement || t.parentNode.host)
@@ -244,6 +218,6 @@
         throw new DoubleDots.ReactionError("dispatchEvent on disconnected Element");
       eventLoop.batch(e, (composed ? [...path(this, e.type)] : [...localPath(this, e.type)]));
     };
-    
+
   })(Element.prototype);
 })();
