@@ -184,6 +184,8 @@
         return "window";
       if (prop in Document_p)
         return "document";
+      if (type === "domcontentloaded")
+        return "domcontentloaded";
     };
   })(HTMLElement.prototype, Element.prototype, Document.prototype);
 
@@ -216,19 +218,17 @@
       if (!native)
         return;
       const { type, target, postfix } = native;
-      if (target === "element" && name === type)
-        super.setDefintion(name, NativeEventTrigger);
-      else if (target === "element" && postfix === "_t")
-        super.setDefintion(name, TargetNativeEventTrigger);
-      else if (target === "element" && postfix === "_g" || postfix === "_gp")
-        super.setDefintion(name, WindowNativeEventTrigger);
-      else if (target === "element" && postfix === "_l" || postfix === "_lp")
-        super.setDefintion(name, RootNativeEventTrigger);
-      else if (target === "window")
-        super.setDefintion(name, OnlyWindowNativeEventTrigger);
-      else if (target === "document")
-        super.setDefintion(name, OnlyWindowNativeEventTrigger);
-      return super.get(name);
+      const Def =
+        target === "element" && postfix === "_g" || postfix === "_gp" ? WindowNativeEventTrigger :
+          target === "element" && postfix === "_l" || postfix === "_lp" ? RootNativeEventTrigger :
+            target === "element" && postfix === "_t" ? TargetNativeEventTrigger :
+              target === "element" && name === type ? NativeEventTrigger :
+                target === "window" ? OnlyWindowNativeEventTrigger :
+                  target === "document" ? OnlyDocumentNativeEventTrigger :
+                    target === "domcontentloaded" ? DCLNativeEventTrigger :
+                      null;
+      super.setDefintion(name, Def);
+      return Def;
     }
 
     get(name) {
