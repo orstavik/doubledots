@@ -193,7 +193,7 @@
     };
   })(HTMLElement.prototype, Element.prototype, Document.prototype);
 
-  class NativeEventDefinitionMap extends DefinitionsMap {
+  class NativeEventDefinitionMap extends UnknownAttrDefinitionsMap {
 
     static #syntaxCheckNativeEvent(name) {
       const [_, type, postfix] = name.match(/^(.*?)(_g|_pg|_l|_pl|_t)?$/);

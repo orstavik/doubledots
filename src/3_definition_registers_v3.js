@@ -37,6 +37,21 @@
     }
   }
 
+  class UnknownAttrDefinitionsMap extends DefinitionsMap {
+
+    setDefinition(fullname, Def) {
+      super.setDefinition(fullname, Def);
+      for (let at of UnknownAttr.matchesDefinition(fullname)) 
+        at.upgradeUpgrade(Def);
+    }
+
+    setRule(rule, FunClass) {
+      super.setRule(rule, FunClass);
+      for (let at of UnknownAttr.matchesRule(rule)) 
+        at.upgradeUpgrade(this.get(fullname));
+    }
+  }
+
   class LockedDefinitionsMap extends DefinitionsMap {
     #lock;
     setRule(rule, FunFun) {
@@ -125,7 +140,7 @@
     },
     Triggers: {
       get: function () {
-        const map = new DefinitionsMap();
+        const map = new UnknownAttrDefinitionsMap();
         Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
         return map;
       }
