@@ -1,11 +1,5 @@
 (function (nativeMethods) {
 
-  //todo should I add this to window, document, ShadowRoot.prototype, Document.prototype?
-  //todo should we do this for the "Definitions" property too?? 
-  //todo This might be good, it will make the code much easier to understand?
-  Object.defineProperty(window, "triggers", { value: {}, configurable: false });
-  Object.defineProperty(document, "triggers", { value: {}, configurable: false });
-
   const nativeAddEventListener = nativeMethods.EventTarget.prototype.addEventListener;
   const nativeRemoveEventListener = nativeMethods.EventTarget.prototype.removeEventListener;
   const nativeStopImmediatePropagation = nativeMethods.Event.prototype.stopImmediatePropagation;
@@ -22,7 +16,7 @@
     }
 
     get __type() {
-      return this.trigger.split("_")[0];
+      return this.trigger;
     }
 
     get __target() {
@@ -87,6 +81,12 @@
     }
   }
 
+  class TargetNativeEventTrigger extends NativeEventTrigger {
+    get __type() {
+      return this.trigger.split("_")[0];
+    }
+  }
+
   class RootNativeEventTrigger extends NativeEventTrigger {
     upgrade() {
       super.upgrade();
@@ -135,6 +135,10 @@
   class OnlyWindowNativeEventTrigger extends WindowNativeEventTrigger {
     get __target() {
       return window;
+    }
+
+    get __type() {
+      return this.trigger;
     }
 
     propagate(e) {
@@ -186,13 +190,13 @@
   class NativeEventDefinitionMap extends DefinitionsMap {
 
     static #syntaxCheckNativeEvent(name) {
-      const type = name.match(/^(.*?)(?:_g|_pg|_l|_pl|_t)?$/)?.[1];
+      const [_, type, postfix] = name.match(/^(.*?)(_g|_pg|_l|_pl|_t)?$/);
       const target = nativeEventType(type);
       if (!target)
         return;
       if (target !== "element" && name !== type)
         throw DoubleDots.SyntaxError(`"${type}" is a native global event on ${target}. In DoubleDots you refer to it directly as "${type}:". To avoid confusion with the triggers for "normal" native events, "${name}:" throws a SyntaxError.`);
-      return { type, target };
+      return { type, target, postfix };
     }
 
     setDefintion(name, Class) {
@@ -204,23 +208,27 @@
     setRule(prefix, FunClass) {
       if (!NativeEventDefinitionMap.#syntaxCheckNativeEvent(prefix))
         return super.setRule(prefix, FunClass);
-      throw new DoubleDots.SyntaxError(`${name}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
+      throw new DoubleDots.SyntaxError(`${prefix}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
     }
 
     #builtinDefs(name) {
-      const { type, target } = NativeEventDefinitionMap.#syntaxCheckNativeEvent(name);
-      if (!type)
+      const native = NativeEventDefinitionMap.#syntaxCheckNativeEvent(name);
+      if (!native)
         return;
-      if (target === "element") {
-        const Defs = nativeEventTrigger(type);
-        for (const [postFix, def] of Object.entries(Defs))
-          super.setDefintion(type + postFix, def);
-        return Defs[name.substring(type.length)];
-      }
-      // target === "window" || "document"
-      const Def = globalEventTrigger(type, window[target]);
-      super.setDefintion(name, Def);
-      return Def;
+      const { type, target, postfix } = native;
+      if (target === "element" && name === type)
+        super.setDefintion(name, NativeEventTrigger);
+      else if (target === "element" && postfix === "_t")
+        super.setDefintion(name, TargetNativeEventTrigger);
+      else if (target === "element" && postfix === "_g" || postfix === "_gp")
+        super.setDefintion(name, WindowNativeEventTrigger);
+      else if (target === "element" && postfix === "_l" || postfix === "_lp")
+        super.setDefintion(name, RootNativeEventTrigger);
+      else if (target === "window")
+        super.setDefintion(name, OnlyWindowNativeEventTrigger);
+      else if (target === "document")
+        super.setDefintion(name, OnlyWindowNativeEventTrigger);
+      return super.get(name);
     }
 
     get(name) {
@@ -228,5 +236,11 @@
     }
   }
 
-  document.Definitions.trigger = new NativeEventDefinitionMap();
+  Object.defineProperty(Document.prototype, "Triggers", {
+    get: function () {
+      const map = new NativeEventDefinitionMap();
+      Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
+      return map;
+    }
+  });
 })(DoubleDots.nativeMethods);

@@ -75,7 +75,7 @@
     }
 
     get parentMap() {
-      return this.root.host?.getRootNode()?.Definitions[this.type];
+      return this.root.host?.getRootNode()?.[this.type];
     }
 
     get(name) {
@@ -93,7 +93,7 @@
      * and is simply wrapped in ^(...) to complete the regex query.
      */
     get rule() {
-      return this.#rule ??= `^(${this.root.host.getAttribute("override-" + this.type)})`;
+      return this.#rule ??= `^(${this.root.host.getAttribute("override-" + this.type.toLowercase())})`;
     }
 
     /**
@@ -115,34 +115,36 @@
     }
   }
 
-  //todo why go via .Definitions.trigger instead of simply .Triggers and .Reactions ?
-  // document.Reactions.define()
-  // ShadowRoot.Reactions.defineRule()
-  // document.Triggers.get()
-
-  Document.prototype.getDefinitions = function (type) {
-    return this.Definitions[type] ??= new DefinitionsMap(this, type);
-  };
-  DocumentFragment.prototype.getDefinitions = function (type) {
-    return this.Definitions[type] ??= new OverrideDOMDefinitionsMap(this, type);
-  };
-  for (let Proto of [Document.prototype, DocumentFragment.prototype]) {
-    Object.defineProperty(Proto, "Definitions", {
+  Object.defineProperties(Document.prototype, {
+    Reactions: {
       get: function () {
-        Object.defineProperty(this, "Definitions", { value: {}, enumerable: true, configurable: false });
+        const map = new DefinitionsMap();
+        Object.defineProperty(this, "Reactions", { value: map, enumerable: true, configurable: false });
+        return map;
       }
-    });
-    for (let Type of ["Reaction", "Trigger"]) {//todo type convert to lowercase in the DefinitionsMap
-      const type = Type.toLowerCase();
-      Proto[`define${Type}`] = function (name, Fun) {
-        return this.getDefinitions(type).setDefinition(name, Fun);
-      };
-      Proto[`define${Type}Rule`] = function (prefix, FunFun) {
-        return this.getDefinitions(type).setRule(prefix, FunFun);
-      };
-      Proto[`get${Type}`] = function (name) {
-        return this.getDefinitions(type).get(name);
-      };
+    },
+    Triggers: {
+      get: function () {
+        const map = new DefinitionsMap();
+        Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
+        return map;
+      }
     }
-  }
+  });
+  Object.defineProperties(DocumentFragment.prototype, {
+    Reactions: {
+      get: function () {
+        const map = new OverrideDOMDefinitionsMap(this, "Reactions");
+        Object.defineProperty(this, "Reactions", { value: map, enumerable: true, configurable: false });
+        return map;
+      }
+    },
+    Triggers: {
+      get: function () {
+        const map = new OverrideDOMDefinitionsMap(this, "Triggers");
+        Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
+        return map;
+      }
+    }
+  });
 })();
