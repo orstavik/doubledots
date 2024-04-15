@@ -90,13 +90,17 @@
   class RootNativeEventTrigger extends NativeEventTrigger {
     upgrade() {
       super.upgrade();
+      this.__triggerList.add(this);
+    }
+
+    get __triggerList() {
       if (!this.__target.triggers)
-        Object.defineProperties(this.__target, "triggers", { value: {}, configurable: false });
-      (this.__target.triggers[this.__type] ??= new DoubleDots.AttrWeakSet()).add(this);
+        Object.defineProperties(this.__target, "triggers", { value: {}, enumerable: true, configurable: false });
+      return this.__target.triggers[this.__type] ??= new DoubleDots.AttrWeakSet();
     }
 
     remove() {
-      this.__target.triggers[this.__type].delete(this);
+      this.__triggerList.delete(this);
       super.remove();
     }
 
