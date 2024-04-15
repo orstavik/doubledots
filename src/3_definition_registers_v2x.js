@@ -1,11 +1,12 @@
 (function () {
-
   const DefinitionError = DoubleDots.DefinitionError;
 
   class DefinitionsMap {
 
     #definitions = {};
     #rules = {};
+
+    constructor(root, type) { }
 
     setRule(prefix, FunFun) {
       for (let r of Object.keys(this.#rules))
@@ -35,35 +36,29 @@
     get(fullname) {
       return this.#definitions[fullname] || this.#checkViaRule(fullname);
     }
-  }
+  };
 
-  class LockedDefinitionsMap extends DefinitionsMap {
+  class DOMDefinitionsMap extends DefinitionsMap {
     #lock;
+    #root;
+    #type;
+
+    constructor(root, type) {
+      super(root, type);
+      this.#root = root;
+      this.#type = type;
+    }
+
     setRule(rule, FunFun) {
       if (this.#lock)
-        throw new DefinitionError("ShadowRoot too-late definition error for rule: " + rule);
-      return super.setRule(rule, FunFun);
+        throw new DefinitionError(`too late rule definition error: ${rule}`);
+      super.setRule(rule, FunFun);
     }
 
     setDefinition(name, Def) {
       if (this.#lock)
-        throw new DefinitionError("ShadowRoot too-late definition error for definition: " + name);
-      return super.setDefinition(name, Def);
-    }
-
-    get(name) {
-      this.#lock = true;
-      return super.get(name);
-    }
-  }
-
-  //this map inherits
-  class DOMDefinitionsMap extends LockedDefinitionsMap {
-    #root;
-    #type;
-    constructor(root, type) {
-      this.#root = root;
-      this.#type = type;
+        throw new DefinitionError(`too late definition error: ${name}`);
+      super.setDefinition(name, Def);
     }
 
     get root() {
@@ -74,64 +69,71 @@
       return this.#type;
     }
 
+    get parentRoot() {
+      return this.#root.host?.getRootNode().Definitions[this.#type];
+    }
+
     get parentMap() {
-      return this.root.host?.getRootNode()?.Definitions[this.type];
+      return this.parentRoot?.Definitions[this.#type];
     }
 
-    get(name) {
-      return super.get(name) || this.parentMap.get(name);
+    get documentMap(){
+      return document.Definitions[this.#type];
+    }
+
+    get(name) {     //todo this goes upwards.
+      this.#lock = true;
+      let Def = super.get(name);
+      if (Def)
+        return Def;
+      Def = this.parentMap?.get(name);
+      if (Def)
+        this.setDefinition(name, Def);
+      return Def;
     }
   }
 
-  class OverrideDOMDefinitionsMap extends DOMDefinitionsMap {
-
+  class OverridableDefinitionsMap extends DOMDefinitionsMap {
+    #overrides; //entries map
     #cache = {};
-    #rule;
 
-    /**
-     * "name|prefix.*|another-name|prefix2_.*"
-     * and is simply wrapped in ^(...) to complete the regex query.
-     */
-    get rule() {
-      return this.#rule ??= `^(${this.root.host.getAttribute("override-" + this.type)})`;
+    get overrides() {
+      if (this.#overrides)
+        return this.#overrides;
+      this.#overrides = this.parentMap?.overrides || new Map();
+      const override = this.root.host?.getAttribute("override-" + this.type);
+      !(override in this.#overrides) && this.#overrides.set(override, this);
+      return this.#overrides;
     }
 
-    /**
-     * @param {string} name 
-     * @returns {DefinitionsMap|false} if the name has been overridden above.
-     */
-    overrides(name) {
-      return this.#cache[name] ??= this.parentMap?.overrides?.(name) || this.rule.matches(name) && this.parentMap;
-    }
-
-    /**
-     * First, we check if there is an override root. If there is, we redirect the query directly to that root instead.
-     * Second, we try to use our own definitions, and then inherited definitions.
-     * @param {string} name 
-     * @returns DefinitionsMap from the document that overrides the definition name 
-     */
     get(name) {
-      return this.overrides(name)?.get(name) || super.get(name);
+      let res = this.#cache[name];
+      if (res)
+        return res;
+      //was in override map, but didn't fulfill a definition? ok, but then only the main document can provide new definition post query
+      if (name in this.#cache)
+        return this.documentMap.get(name);
+
+      //if override match, we MUST use the override root.
+      for (let [override, root] of this.#overrides.entries())
+        if (override.matches(name))
+          return this.#cache[name] = root.get(name);
+      for (let root = this; root; root = root.parentMap) 
+        
+      return this.#cache[name] = super.get(name);
     }
   }
 
-  //todo why go via .Definitions.trigger instead of simply .Triggers and .Reactions ?
-  // document.Reactions.define()
-  // ShadowRoot.Reactions.defineRule()
-  // document.Triggers.get()
-
+  Object.defineProperty(document, "Definitions", { value: {}, configurable: false });
+  //this doesn't really work. We need to do this the same way we do with CustomAttr.prototype.trigger and .reactions.
+  Object.defineProperty(DocumentFragment.prototype, "Definitions", { value: {}, configurable: false });
   Document.prototype.getDefinitions = function (type) {
     return this.Definitions[type] ??= new DefinitionsMap(this, type);
   };
   DocumentFragment.prototype.getDefinitions = function (type) {
-    return this.Definitions[type] ??= new OverrideDOMDefinitionsMap(this, type);
+    return this.Definitions[type] ??= new DomDefinitionsMap(this, type);
   };
   for (let Proto of [Document.prototype, DocumentFragment.prototype]) {
-    Object.defineProperty(Proto, "Definitions", {
-      get: function () {
-        Object.defineProperty(this, "Definitions", { value: {}, enumerable: true, configurable: false });
-      }
-    });
     for (let Type of ["Reaction", "Trigger"]) {//todo type convert to lowercase in the DefinitionsMap
       const type = Type.toLowerCase();
       Proto[`define${Type}`] = function (name, Fun) {
