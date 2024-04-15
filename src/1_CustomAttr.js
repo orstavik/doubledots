@@ -36,7 +36,7 @@ window.CustomAttr = class CustomAttr extends Attr {
   }
 
   static upgrade(Def, at) {
-//todo
+    //todo
   }
 };
 
@@ -48,7 +48,7 @@ window.UnknownAttr = class UnknownAttr extends CustomAttr {
     UnknownAttr.#unknowns.add(this);
   }
 
-  upgradeUpgrade(Def){
+  upgradeUpgrade(Def) {
     UnknownAttr.#unknowns.delete(this);
     CustomAttr.upgrade(Def, this);
   }
@@ -58,17 +58,15 @@ window.UnknownAttr = class UnknownAttr extends CustomAttr {
     super.remove();
   }
 
-  static *matchesDefinition(name, root) {
-    for (let r = root; r; r = r.host.getRootNode())
-      for (let at of UnknownAttr.#unknowns)
-        if (name === at.trigger) 
-          yield at;
+  static *matchesDefinition(name) {
+    for (let at of UnknownAttr.#unknowns)
+      if (name === at.trigger)
+        yield at;
   }
 
-  static *matchesRule(rule, root) {
-    for (let r = root; r; r = r.host.getRootNode())
-      for (let at of UnknownAttr.#unknowns)
-        if (at.trigger.startsWith(rule))
-          yield at;
+  static *matchesRule(rule) {
+    for (let at of UnknownAttr.#unknowns)
+      if (at.trigger.startsWith(rule))
+        yield at;
   }
 };
