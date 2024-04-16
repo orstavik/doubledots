@@ -1,5 +1,7 @@
 (function () {
 
+  //todo deprecate the setter of outerHTML
+
   window.DoubleDots.nativeMethods = {};
 
   //.attachShadow(/*always open*/);   
@@ -45,6 +47,12 @@
       removeAttributeNode: deprecated,
       getAttributeNodeNS: deprecated,
       setAttributeNodeNS: deprecated,
+      // remaining API surface
+      //  el.setAttribute(name, value)
+      //  el.hasAttribute(name)
+      //  el.getAttribute(name)
+      //  el.getAttributeNode(name)
+      //  el.attributes
     },
     "Event.prototype": {
       stopPropagation: deprecated,

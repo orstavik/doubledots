@@ -8,6 +8,8 @@
     #rules = {};
 
     setRule(prefix, FunFun) {
+      //FunFun can be either a Function that given the prefix will produce either a class or a Function.
+      //FunFun can also be a Promise.
       for (let r of Object.keys(this.#rules))
         if (r.startsWith(prefix) || prefix.startsWith(r))
           throw new DefinitionError(`rule/rule conflict: trying to add '${prefix}' when '${r}' exists.`);
@@ -18,6 +20,8 @@
     }
 
     setDefinition(fullname, Def) {
+      //Def can be either a class or a Function.
+      //Def can also be a Promise.
       if (this.#definitions.has(fullname))
         throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
       for (let r of Object.keys(this.#rules))

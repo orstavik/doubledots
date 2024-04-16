@@ -1,8 +1,21 @@
+//todo no, we don't need to do this.
+// (function (Element_p) {  
+//   const removeOG = Element_p.removeAttribute;
+//   Attr.prototype.remove = function () {
+//     removeOG.call(this.ownerElement, this.name);
+//   };
+// })(Element.prototype);
+
 window.CustomAttr = class CustomAttr extends Attr {
   get trigger() {
     this.#updateTriggerReactions();
     return this.trigger;
   }
+
+  //to catch value changes in a trigger, override the set value()
+  // set value(newValue) {
+  //   super.value = newValue;
+  // }
 
   get reactions() {
     this.#updateTriggerReactions();
@@ -35,10 +48,29 @@ window.CustomAttr = class CustomAttr extends Attr {
     eventLoop.addTask(this, e);
   }
 
-  static upgrade(Def, at) {
-    //todo
+  static upgradeBranch(...els) {
+    for (let el of els)
+      for (let desc of el.querySelectorAll("*"))
+        for (let at of desc.attributes)
+          if (at.name.indexOf(":"))
+            CustomAttr.upgrade(at);
+  }
+
+  static upgrade(at, Def) {
+    if (!Def)
+      Def = el.getRootNode().Triggers.get(at.name.split(":")[0]);
+    if (!Def)
+      Def = UnknownAttr;
+    if (Def instanceof Promise) {
+      Def.resolve(Def => this.upgrade(Def, at));
+      Def = WaitForItAttr;
+    }
+    Object.setPrototypeOf(at, Def);
+    at.upgrade();
   }
 };
+
+window.WaitForItAttr = class WaitForItAttr extends CustomAttr { };
 
 window.UnknownAttr = class UnknownAttr extends CustomAttr {
 
@@ -50,7 +82,7 @@ window.UnknownAttr = class UnknownAttr extends CustomAttr {
 
   upgradeUpgrade(Def) {
     UnknownAttr.#unknowns.delete(this);
-    CustomAttr.upgrade(Def, this);
+    CustomAttr.upgrade(this, Def);
   }
 
   remove() {
