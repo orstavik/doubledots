@@ -46,6 +46,7 @@ window.CustomAttr = class CustomAttr extends Attr {
         for (let at of desc.attributes)
           if (at.name.indexOf(":"))
             CustomAttr.upgrade(at);
+    //todo we don't want to run the eventLoop until all the attr are upgraded.
   }
 
   static upgrade(at, Def) {
@@ -57,8 +58,12 @@ window.CustomAttr = class CustomAttr extends Attr {
       Def.resolve(Def => this.upgrade(Def, at));
       Def = WaitForItAttr;
     }
-    Object.setPrototypeOf(at, Def);
-    at.upgrade?.();
+    try {
+      Object.setPrototypeOf(at, Def);
+      at.upgrade?.();
+    } catch (err) {
+      throw new DoubleDots.TriggerUpgradeError(Def.name + ".upgrade() caused an error. Triggers shouldn't cause errors.");
+     }
   }
 };
 

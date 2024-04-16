@@ -10,16 +10,6 @@
 //      This is because the shadowRoot.Triggers are locked post register time.
 //5. WaitForItAttr. Promise Definitions.
 
-//todo move this as a static method inside CustomAttr?
-function upgradeBranch(...roots) {
-  for (let root of roots)
-    for (let desc of root.querySelectorAll("*"))
-      for (let at of desc.attributes)
-        if (at.name.indexOf(":"))
-          CustomAttr.upgrade(at);
-  //todo we don't want to run the eventLoop until all the attr are upgraded.
-}
-
 function monkeyPatchSetter(proto, prop, fun) {
   const desc = Object.getOwnPropertyDescriptor(proto, prop);
   desc.set = fun;
