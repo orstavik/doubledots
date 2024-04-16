@@ -62,12 +62,10 @@
             }
         }
         else {
-          const localsGlobals = n.triggers?.[type];
-          if (localsGlobals) {
-            let t = 0;
-            for (let at in localsGlobals)
-              at.trigger.endsWith("p") ? ups.push(at) : downs.splice(t++, 0, at);
-          }
+          const _g = n.triggers?.[type + "_g"];
+          const _gp = n.triggers?.[type + "_gp"];
+          _g && ups.push(..._g);
+          _gp && downs.unshift(..._gp);
         }
         prev = n;
       }
@@ -96,7 +94,7 @@
     get __triggerList() {
       if (!this.__target.triggers)
         Object.defineProperties(this.__target, "triggers", { value: {}, enumerable: true, configurable: false });
-      return this.__target.triggers[this.__type] ??= new DoubleDots.AttrWeakSet();
+      return this.__target.triggers[this.trigger] ??= new DoubleDots.AttrWeakSet();
     }
 
     remove() {
@@ -176,7 +174,7 @@
     }
   }
 
-  //todo we should do this in the DocumentFragment_p too? The inheritance of the DOMDefinitionMap should handle it ok.
+  //todo we should do this in the ShadowRoot_p too? The inheritance of the DOMDefinitionMap should handle it ok.
 
   const nativeEventType = (function (HTMLElement_p, Element_, Document_p) {
     return function nativeEventType(type) {

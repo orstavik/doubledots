@@ -1,11 +1,3 @@
-//todo no, we don't need to do this.
-// (function (Element_p) {  
-//   const removeOG = Element_p.removeAttribute;
-//   Attr.prototype.remove = function () {
-//     removeOG.call(this.ownerElement, this.name);
-//   };
-// })(Element.prototype);
-
 window.CustomAttr = class CustomAttr extends Attr {
   get trigger() {
     this.#updateTriggerReactions();
@@ -66,7 +58,7 @@ window.CustomAttr = class CustomAttr extends Attr {
       Def = WaitForItAttr;
     }
     Object.setPrototypeOf(at, Def);
-    at.upgrade();
+    at.upgrade?.();
   }
 };
 
