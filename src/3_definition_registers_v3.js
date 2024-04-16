@@ -130,7 +130,8 @@
      * @returns DefinitionsMap from the document that overrides the definition name 
      */
     get(name) {
-      return this.overrides(name)?.get(name) || super.get(name);
+      const overrider = this.overrides(name);
+      return overrider ? overrider.get(name) : super.get(name);
     }
   }
 
@@ -150,7 +151,7 @@
       }
     }
   });
-  Object.defineProperties(DocumentFragment.prototype, {
+  Object.defineProperties(ShadowRoot.prototype, {
     Reactions: {
       get: function () {
         const map = new OverrideDOMDefinitionsMap(this, "Reactions");
