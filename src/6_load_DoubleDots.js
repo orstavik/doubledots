@@ -72,8 +72,8 @@ function monkeyPatch(proto, prop, fun) {
     CustomAttr.upgrade(at);
   }
 
-  monkeyPatchSetter(Element_p, "innerHTML", Element_innerHTML_OG);
-  monkeyPatchSetter(ShadowRoot_p, "innerHTML", ShadowRoot_innerHTML_OG);
+  monkeyPatchSetter(Element_p, "innerHTML", innerHTML_DD_el);
+  monkeyPatchSetter(ShadowRoot_p, "innerHTML", innerHTML_DD_sr);
   monkeyPatch(Element_p, "insertAdjacentHTML", insertAdjacentHTML_DD);
   monkeyPatch(Element_p, "setAttribute", setAttribute_DD);
 })(Element.prototype, ShadowRoot.prototype);
@@ -82,5 +82,5 @@ function monkeyPatch(proto, prop, fun) {
   if (document.readyState !== "loading")
     return CustomAttr.upgradeBranch(document.htmlElement);
   const aelOG = DoubleDots.nativeMethods.EventTarget.prototype.addEventListener;
-  aelOG.call(document, "DOMContentLoaded", _ => CustomAttr.upgradeBranch(document.htmlElement));
+  aelOG.call(document, "DOMContentLoaded", _ => CustomAttr.upgradeBranch(document.documentElement));
 })();
