@@ -87,7 +87,7 @@
 
       this.#i = this.#names.length;
       const target = this.at.isConnected ? this.at : document.documentElement;
-      target.dispatchEvent(new DoubleDotsErrorEvent("error", { error }));
+      target.dispatchEvent(new ErrorEvent("error", { error }));
     }
 
     #runSuccess(res) {

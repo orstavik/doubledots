@@ -7,7 +7,7 @@
     #definitions = {};
     #rules = {};
 
-    setRule(prefix, FunFun) {
+    defineRule(prefix, FunFun) {
       //FunFun can be either a Function that given the prefix will produce either a class or a Function.
       //FunFun can also be a Promise.
       for (let r of Object.keys(this.#rules))
@@ -19,10 +19,10 @@
       this.#rules[prefix] = FunFun;
     }
 
-    setDefinition(fullname, Def) {
+    define(fullname, Def) {
       //Def can be either a class or a Function.
       //Def can also be a Promise.
-      if (this.#definitions.has(fullname))
+      if (fullname in this.#definitions)
         throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
       for (let r of Object.keys(this.#rules))
         if (fullname.startsWith(r))
@@ -43,14 +43,14 @@
 
   class DefinitionsMapUnknownAttr extends DefinitionsMap {
 
-    setDefinition(fullname, Def) {
-      super.setDefinition(fullname, Def);
+    define(fullname, Def) {
+      super.define(fullname, Def);
       for (let at of UnknownAttr.matchesDefinition(fullname))
         at.upgradeUpgrade(Def);
     }
 
-    setRule(rule, FunClass) {
-      super.setRule(rule, FunClass);
+    defineRule(rule, FunClass) {
+      super.defineRule(rule, FunClass);
       for (let at of UnknownAttr.matchesRule(rule))
         at.upgradeUpgrade(this.get(fullname));
     }
@@ -58,16 +58,16 @@
 
   class DefinitionsMapLock extends DefinitionsMap {
     #lock;
-    setRule(rule, FunFun) {
+    defineRule(rule, FunFun) {
       if (this.#lock)
         throw new DefinitionError("ShadowRoot too-late definition error for rule: " + rule);
-      return super.setRule(rule, FunFun);
+      return super.defineRule(rule, FunFun);
     }
 
-    setDefinition(name, Def) {
+    define(name, Def) {
       if (this.#lock)
         throw new DefinitionError("ShadowRoot too-late definition error for definition: " + name);
-      return super.setDefinition(name, Def);
+      return super.define(name, Def);
     }
 
     get(name) {

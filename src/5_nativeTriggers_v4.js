@@ -75,7 +75,7 @@
     propagate(e) {
       let path = e.composedPath();
       !e.composed && (path = NativeEventTrigger.fixNonComposedPaths(path));
-      eventLoop.batch(e, NativeEventTrigger.getAttributes(this.__type, path));
+      eventLoop.dispatch(e, ...NativeEventTrigger.getAttributes(this.__type, path));
     }
   }
 
@@ -203,15 +203,15 @@
       return { type, target, postfix };
     }
 
-    setDefintion(name, Class) {
+    define(name, Class) {
       if (!NativeEventDefinitionMap.#syntaxCheckNativeEvent(name))
-        return super.setDefintion(name, Class);
+        return super.define(name, Class);
       throw new DoubleDots.SyntaxError(`${name}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
     }
 
-    setRule(prefix, FunClass) {
+    defineRule(prefix, FunClass) {
       if (!NativeEventDefinitionMap.#syntaxCheckNativeEvent(prefix))
-        return super.setRule(prefix, FunClass);
+        return super.defineRule(prefix, FunClass);
       throw new DoubleDots.SyntaxError(`${prefix}: is a native event trigger for event type "${type}", it is builtin, you cannot define it.`);
     }
 
@@ -229,7 +229,7 @@
                   target === "document" ? OnlyDocumentNativeEventTrigger :
                     target === "domcontentloaded" ? DCLNativeEventTrigger :
                       null;
-      super.setDefintion(name, Def);
+      super.define(name, Def);
       return Def;
     }
 

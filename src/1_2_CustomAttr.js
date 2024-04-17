@@ -1,16 +1,25 @@
 window.CustomAttr = class CustomAttr extends Attr {
+
+  // Interface
+  // set value(newValue) { const oldValue = super.value; super.value = newValue; ... }
+  // upgrade(){ super.upgrade(); ... }
+  // remove(){ ...; super.remove() }
+
   get trigger() {
-    this.#updateTriggerReactions();
+    const [trigger, ...reactions] = this.name.split(":");
+    Object.defineProperties(this, {
+      "trigger": { value: trigger, enumerable: true },
+      "reactions": { value: reactions, enumerable: true },
+    });
     return this.trigger;
   }
 
-  //to catch value changes in a trigger, override the set value()
-  // set value(newValue) {
-  //   super.value = newValue;
-  // }
-
   get reactions() {
-    this.#updateTriggerReactions();
+    const [trigger, ...reactions] = this.name.split(":");
+    Object.defineProperties(this, {
+      "trigger": { value: trigger, enumerable: true },
+      "reactions": { value: reactions, enumerable: true },
+    });
     return this.reactions;
   }
 
@@ -26,16 +35,8 @@ window.CustomAttr = class CustomAttr extends Attr {
     return this.ownerElement.removeAttribute(this.name);
   }
 
-  #updateTriggerReactions() {
-    const [trigger, ...reactions] = this.name.split(":");
-    Object.defineProperties(this, {
-      "trigger": { value: trigger, enumerable: true },
-      "reactions": { value: reactions, enumerable: true },
-    });
-  }
-
   dispatchEvent(e) {
-    if (!target.isConnected)
+    if (!at.isConnected)
       throw new DoubleDots.ReactionError("dispatch on disconnected attribute.");
     eventLoop.addTask(this, e);
   }
