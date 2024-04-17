@@ -191,7 +191,7 @@
     };
   })(HTMLElement.prototype, Element.prototype, Document.prototype);
 
-  class NativeEventDefinitionMap extends UnknownAttrDefinitionsMap {
+  class NativeEventDefinitionMap extends DoubleDots.DefinitionsMapUnknownAttr {
 
     static #syntaxCheckNativeEvent(name) {
       const [_, type, postfix] = name.match(/^(.*?)(_g|_pg|_l|_pl|_t)?$/);

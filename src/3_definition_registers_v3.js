@@ -41,22 +41,22 @@
     }
   }
 
-  class UnknownAttrDefinitionsMap extends DefinitionsMap {
+  class DefinitionsMapUnknownAttr extends DefinitionsMap {
 
     setDefinition(fullname, Def) {
       super.setDefinition(fullname, Def);
-      for (let at of UnknownAttr.matchesDefinition(fullname)) 
+      for (let at of UnknownAttr.matchesDefinition(fullname))
         at.upgradeUpgrade(Def);
     }
 
     setRule(rule, FunClass) {
       super.setRule(rule, FunClass);
-      for (let at of UnknownAttr.matchesRule(rule)) 
+      for (let at of UnknownAttr.matchesRule(rule))
         at.upgradeUpgrade(this.get(fullname));
     }
   }
 
-  class LockedDefinitionsMap extends DefinitionsMap {
+  class DefinitionsMapLock extends DefinitionsMap {
     #lock;
     setRule(rule, FunFun) {
       if (this.#lock)
@@ -77,7 +77,7 @@
   }
 
   //this map inherits
-  class DOMDefinitionsMap extends LockedDefinitionsMap {
+  class DefinitionsMapDOM extends DefinitionsMapLock {
     #root;
     #type;
     constructor(root, type) {
@@ -102,7 +102,7 @@
     }
   }
 
-  class OverrideDOMDefinitionsMap extends DOMDefinitionsMap {
+  class DefinitionsMapDOMOverride extends DefinitionsMapDOM {
 
     #cache = {};
     #rule;
@@ -145,7 +145,8 @@
     },
     Triggers: {
       get: function () {
-        const map = new UnknownAttrDefinitionsMap();
+        debugger
+        const map = new DefinitionsMapUnknownAttr();
         Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
         return map;
       }
@@ -154,17 +155,24 @@
   Object.defineProperties(ShadowRoot.prototype, {
     Reactions: {
       get: function () {
-        const map = new OverrideDOMDefinitionsMap(this, "Reactions");
+        const map = new DefinitionsMapDOMOverride(this, "Reactions");
         Object.defineProperty(this, "Reactions", { value: map, enumerable: true, configurable: false });
         return map;
       }
     },
     Triggers: {
       get: function () {
-        const map = new OverrideDOMDefinitionsMap(this, "Triggers");
+        const map = new DefinitionsMapDOMOverride(this, "Triggers");
         Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
         return map;
       }
     }
+  });
+  Object.assign(DoubleDots, {
+    DefinitionsMap,
+    DefinitionsMapLock,
+    DefinitionsMapDOM,
+    DefinitionsMapDOMOverride,
+    DefinitionsMapUnknownAttr
   });
 })();

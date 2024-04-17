@@ -99,15 +99,21 @@
     }
   };
 
-  function patchMethod(OG, verify) {
-    return function DoubleDotsArgumentVerifier(...args) {
+  function monkeyPatch(proto, prop, value) {
+    Object.defineProperty(proto, prop, {
+      ...Object.getOwnPropertyDescriptor(proto, prop), value
+    });
+  }
+
+  function injectArgumentVerifier(OG, verify) {
+    return function (...args) {
       return OG.apply(this, verify.call(this, ...args) || args);
     };
   }
 
   function getObj(obj, path) {
-    for (let i = 0; i < path.length - 1; i++)
-      obj = obj[path.shift()] || {};
+    for (let i = 0; i < path.length; i++)
+      obj = (obj[path[i]] ??= {});
     return obj;
   }
 
@@ -115,10 +121,10 @@
     path = path.split(".");
     const obj = getObj(window, path);
     const nativeObj = getObj(DoubleDots.nativeMethods, path);
-    for (let [prop, verifyMethod] of objMask) {
-      nativeObj[prop] = obj[prop];
-      const monkey = patchMethod(nativeObj[prop], verifyMethod);
-      Object.defineProperty(proto, p, { ...Object.getOwnPropertyDescriptor(proto, p), value: monkey });
+    for (let [prop, verifyMethod] of Object.entries(objMask)) {
+      const OG = nativeObj[prop] = obj[prop];
+      const newFunc = injectArgumentVerifier(OG, verifyMethod);
+      monkeyPatch(obj, prop, newFunc);
     }
   }
 })();
