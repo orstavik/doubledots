@@ -63,12 +63,16 @@
       removeEventListener: deprecated,
       dispatchEvent: deprecated
     },
+    "window": {
+      setTimeout: deprecated,
+      clearTimeout: deprecated,
+      setInterval: deprecated,
+      clearInterval: deprecated,
+      // event: deprecated, //todo this is impossible. It will always remain.
+    },
     "document": {
       write: deprecated,
     },
-    // "window": {
-    //   event: deprecated, //todo this is impossible. It will always remain.
-    // },
     "Document.prototype": {
       appendChild: sameRootFirstArg,
       insertBefore: sameRootFirstArg,
