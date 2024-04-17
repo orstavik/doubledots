@@ -3,6 +3,8 @@ window.DoubleDots = {
   DoubleDotsError: class DoubleDotsError extends Error { },
   DeprecationError: class DeprecationError extends Error { },
   DefinitionError: class DefinitionError extends Error { },
+  MissingReaction: class MissingReaction extends Error { },
+  DisconnectedError: class DisconnectedError extends Error { },
   
   AttrWeakSet: class AttrWeakSet extends Set {
     static #bigSet = new Set(); //wr => AttrWeakSet

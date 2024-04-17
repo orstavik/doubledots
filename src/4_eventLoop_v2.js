@@ -36,7 +36,8 @@
      * @returns true if the loop can continue, false if the loop should abort
      */
     run(threadMode = false) {
-      for (const re = this.getReaction(); re; re = this.nextReaction()) {
+      for (let re = this.getReaction(); re; re = this.nextReaction()) {
+        console.log(re);
         //1. process native reactions
         if (re === "") {
           threadMode = true;
@@ -48,11 +49,11 @@
         //2. check isConnected
         try {
           if (!this.at.isConnected)
-            throw new DoubleDotsReactionError("Disconnected"); //todo should this be an error??
+            throw new DoubleDots.DisconnectedError("Disconnected"); //todo should this be an error??
 
-          const func = this.at.getRootNode().getReaction(re);
+          const func = this.at.getRootNode().Reactions.get(re);
           if (!func)
-            throw new DoubleDotsReactionError("No reaction definition.");
+            throw new DoubleDots.MissingReaction("No reaction definition.");
 
           const input = this.#inputs[this.#i];
           const self = this.#selves[this.#i];
@@ -70,10 +71,10 @@
               return true; //abort outside loop
             }
           }
+          this.#runSuccess(res);
         } catch (error) {
           this.#runError(error);
         }
-        this.#runSuccess(res);
       }
       __eventLoop.task = undefined; //todo is it necessary?
     }
@@ -86,8 +87,9 @@
           return;
 
       this.#i = this.#names.length;
-      const target = this.at.isConnected ? this.at : document.documentElement;
-      target.dispatchEvent(new ErrorEvent("error", { error }));
+      const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
+      //todo add the attribute to the ErrorEvent, so that we know which attribute caused the error
+      target.bubble(new ErrorEvent("error", { error }));
     }
 
     #runSuccess(res) {
@@ -206,16 +208,18 @@
     }
 
     function* localPath(target, type) {
-      for (let t = target; t; t.parentElement)
-        for (let at of n.attributes)
+      for (let t = target; t; t = t.parentElement)
+        for (let at of t.attributes)
           if (at.trigger === type)
             yield at;
     }
 
-    Element_p.bubble = function bubble(e, composed) {
-      if (!target.isConnected)
-        throw new DoubleDots.ReactionError("dispatchEvent on disconnected Element");
-      eventLoop.batch(e, (composed ? [...path(this, e.type)] : [...localPath(this, e.type)]));
+    //todo this needs a WIDE and NARROW alternative.
+    //todo we have a problem here. We need to build in the error_g and error_l ++ as rules, so that we can add these types of triggers to discover them elsewhere. 
+    Element_p.bubble = function bubble(e) {
+      if (!this.isConnected)
+        throw new DoubleDots.DisconnectedError("bubble on disconnected Element");
+      eventLoop.dispatch(e, ...(e.composed ? path(this, e.type) : localPath(this, e.type)));
     };
 
   })(Element.prototype);

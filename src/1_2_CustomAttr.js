@@ -36,9 +36,9 @@ window.CustomAttr = class CustomAttr extends Attr {
   }
 
   dispatchEvent(e) {
-    if (!at.isConnected)
+    if (!this.isConnected)
       throw new DoubleDots.ReactionError("dispatch on disconnected attribute.");
-    eventLoop.addTask(this, e);
+    eventLoop.dispatch(e, this);
   }
 
   static upgradeBranch(...els) {
