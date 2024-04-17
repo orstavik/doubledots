@@ -195,8 +195,7 @@
       __eventLoop.batch(event, attrs);
     }
   };
-  Object.defineProperty(window, "eventLoop",
-    { value: new EventLoop(), configurable: false });
+  Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
 
   (function (Element_p) {
     function* path(t, type) {

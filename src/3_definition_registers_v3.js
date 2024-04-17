@@ -139,31 +139,33 @@
     Reactions: {
       get: function () {
         const map = new DefinitionsMap();
-        Object.defineProperty(this, "Reactions", { value: map, enumerable: true, configurable: false });
+        Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
         return map;
       }
     },
     Triggers: {
+      configurable: true,
       get: function () {
-        debugger
         const map = new DefinitionsMapUnknownAttr();
-        Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
+        Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
         return map;
       }
     }
   });
   Object.defineProperties(ShadowRoot.prototype, {
     Reactions: {
+      configurable: true,
       get: function () {
         const map = new DefinitionsMapDOMOverride(this, "Reactions");
-        Object.defineProperty(this, "Reactions", { value: map, enumerable: true, configurable: false });
+        Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
         return map;
       }
     },
     Triggers: {
+      configurable: true,
       get: function () {
         const map = new DefinitionsMapDOMOverride(this, "Triggers");
-        Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
+        Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
         return map;
       }
     }

@@ -6,7 +6,7 @@
 
   class NativeEventTrigger extends CustomAttr {
     upgrade() {
-      Object.defineProperty(this, "__l", { value: this.run.bind(this), configurable: false });
+      Object.defineProperty(this, "__l", { value: this.run.bind(this) });
       nativeAddEventListener.call(this.__target, this.__type, this.__l, true);
     }
 
@@ -93,7 +93,7 @@
 
     get __triggerList() {
       if (!this.__target.triggers)
-        Object.defineProperties(this.__target, "triggers", { value: {}, enumerable: true, configurable: false });
+        Object.defineProperties(this.__target, "triggers", { value: {}, enumerable: true });
       return this.__target.triggers[this.trigger] ??= new DoubleDots.AttrWeakSet();
     }
 
@@ -239,9 +239,10 @@
   }
 
   Object.defineProperty(Document.prototype, "Triggers", {
+    configurable: true,
     get: function () {
       const map = new NativeEventDefinitionMap();
-      Object.defineProperty(this, "Triggers", { value: map, enumerable: true, configurable: false });
+      Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
       return map;
     }
   });
