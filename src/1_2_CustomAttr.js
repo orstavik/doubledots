@@ -29,8 +29,8 @@ window.CustomAttr = class CustomAttr extends Attr {
   #updateTriggerReactions() {
     const [trigger, ...reactions] = this.name.split(":");
     Object.defineProperties(this, {
-      "trigger": { value: trigger, enumerable: true, configurable: false },
-      "reactions": { value: reactions, enumerable: true, configurable: false },
+      "trigger": { value: trigger, enumerable: true },
+      "reactions": { value: reactions, enumerable: true },
     });
   }
 
@@ -44,14 +44,14 @@ window.CustomAttr = class CustomAttr extends Attr {
     for (let el of els)
       for (let desc of el.querySelectorAll("*"))
         for (let at of desc.attributes)
-          if (at.name.indexOf(":"))
+          if (at.name.indexOf(":") >= 0)
             CustomAttr.upgrade(at);
     //todo we don't want to run the eventLoop until all the attr are upgraded.
   }
 
   static upgrade(at, Def) {
     if (!Def)
-      Def = el.getRootNode().Triggers.get(at.name.split(":")[0]);
+      Def = at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0]);
     if (!Def)
       Def = UnknownAttr;
     if (Def instanceof Promise) {
@@ -59,11 +59,11 @@ window.CustomAttr = class CustomAttr extends Attr {
       Def = WaitForItAttr;
     }
     try {
-      Object.setPrototypeOf(at, Def);
+      Object.setPrototypeOf(at, Def.prototype);
       at.upgrade?.();
     } catch (err) {
       throw new DoubleDots.TriggerUpgradeError(Def.name + ".upgrade() caused an error. Triggers shouldn't cause errors.");
-     }
+    }
   }
 };
 
