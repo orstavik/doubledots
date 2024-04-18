@@ -58,11 +58,12 @@
       stopPropagation: deprecated,
       stopImmediatePropagation: deprecated,
     },
-    "EventTarget.prototype": {
-      addEventListener: deprecated,
-      removeEventListener: deprecated,
-      dispatchEvent: deprecated
-    },
+    // todo this should likely not be hidden. Used by lots of triggers.
+    // "EventTarget.prototype": {
+    //   addEventListener: deprecated,
+    //   removeEventListener: deprecated,
+    //   dispatchEvent: deprecated
+    // },
     "window": {
       setTimeout: deprecated,
       clearTimeout: deprecated,

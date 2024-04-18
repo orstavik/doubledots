@@ -4,7 +4,7 @@
   const nativeRemoveEventListener = nativeMethods.EventTarget.prototype.removeEventListener;
   const nativeStopImmediatePropagation = nativeMethods.Event.prototype.stopImmediatePropagation;
 
-  class NativeEventTrigger extends CustomAttr {
+  class NativeEventTrigger extends AttrCustom {
     upgrade() {
       Object.defineProperty(this, "__l", { value: this.run.bind(this) });
       nativeAddEventListener.call(this.__target, this.__type, this.__l, true);
@@ -191,7 +191,7 @@
     };
   })(HTMLElement.prototype, Element.prototype, Document.prototype);
 
-  class NativeEventDefinitionMap extends DoubleDots.DefinitionsMapUnknownAttr {
+  class NativeEventDefinitionMap extends DoubleDots.DefinitionsMapAttrUnknown {
 
     static #syntaxCheckNativeEvent(name) {
       const [_, type, postfix] = name.match(/^(.*?)(_g|_pg|_l|_pl|_t)?$/);

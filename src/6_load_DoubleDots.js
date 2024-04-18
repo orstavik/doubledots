@@ -5,7 +5,7 @@
 //2. the adding HTML template methods. innerHTML + insertAdjacentHTML.
 //3. setAttribute.
 //   remember to disallow override-x attribute names immutable. Anything that starts with `override-` is illegal from setAttribute? yes.
-//4. UnknownAttr upgradeUpgrade
+//4. AttrUnknown upgradeUpgrade
 //   1. It can only happen when new Trigger Defs are added to the main document.Triggers. 
 //      This is because the shadowRoot.Triggers are locked post register time.
 //5. WaitForItAttr. Promise Definitions.
@@ -29,13 +29,13 @@ function monkeyPatch(proto, prop, fun) {
   const Element_innerHTML_OG = Object.getOwnPropertyDescriptor(Element_p, "innerHTML").set;
   const innerHTML_DD_el = function innerHTML_DD(val) {
     Element_innerHTML_OG.call(this, val);
-    CustomAttr.upgradeBranch(this);
+    AttrCustom.upgradeBranch(this);
   };
 
   const ShadowRoot_innerHTML_OG = Object.getOwnPropertyDescriptor(ShadowRoot_p, "innerHTML").set;
   const innerHTML_DD_sr = function innerHTML_DD(val) {
     ShadowRoot_innerHTML_OG.call(this, val);
-    CustomAttr.upgradeBranch(this);
+    AttrCustom.upgradeBranch(this);
   };
 
   const insertAdjacentHTMLOG = Element_p.insertAdjacentHTML;
@@ -49,7 +49,7 @@ function monkeyPatch(proto, prop, fun) {
     const length2 = root.children.length;
     const added = length2 - length;
     const newRoots = root.children.slice(index, length); //, added);? not length?
-    CustomAttr.upgradeBranch(...newRoots);
+    AttrCustom.upgradeBranch(...newRoots);
   }
 
   const setAttributeOG = Element_p.setAttribute;
@@ -69,7 +69,7 @@ function monkeyPatch(proto, prop, fun) {
     }
     setAttributeOG.call(this, name, value);
     at = getAttributeNodeOG.call(this, name);
-    CustomAttr.upgrade(at);
+    AttrCustom.upgrade(at);
   }
 
   monkeyPatchSetter(Element_p, "innerHTML", innerHTML_DD_el);
@@ -80,7 +80,7 @@ function monkeyPatch(proto, prop, fun) {
 
 (function () {
   if (document.readyState !== "loading")
-    return CustomAttr.upgradeBranch(document.htmlElement);
+    return AttrCustom.upgradeBranch(document.htmlElement);
   const aelOG = DoubleDots.nativeMethods.EventTarget.prototype.addEventListener;
-  aelOG.call(document, "DOMContentLoaded", _ => CustomAttr.upgradeBranch(document.documentElement));
+  aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));
 })();

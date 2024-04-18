@@ -1,64 +1,18 @@
-class WindowTrigger extends CustomAttr {
-  upgrade() {
-    Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-    window.addEventListener(this.trigger, this.__l);
-  }
-
-  remove() {
-    window.removeEventListener(this.trigger, this.__l);
-    super.remove();
-  }
-
-  run(e) {
-    this.isConnected ? eventLoop.dispatch(e, this) : this.remove();
+class WindowTrigger extends AttrListener {
+  get target() {
+    return window;
   }
 }
 
-class DocumentTrigger extends CustomAttr {
-  upgrade() {
-    Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-    document.addEventListener(this.trigger, this.__l);
-  }
-
-  remove() {
-    document.removeEventListener(this.trigger, this.__l);
-    super.remove();
-  }
-
-  run(e) {
-    this.isConnected ? eventLoop.dispatch(e, this) : this.remove();
+class DocumentTrigger extends AttrListener {
+  get target() {
+    return document;
   }
 }
 
-class DCLTrigger extends CustomAttr {
-  upgrade() {
-    Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-    document.addEventListener("DOMContentLoaded", this.__l);
-  }
-
-  remove() {
-    document.removeEventListener("DOMContentLoaded", this.__l);
-    super.remove();
-  }
-
-  run(e) {
-    this.isConnected ? eventLoop.dispatch(e, this) : this.remove();
-  }
-}
-
-class ElementTrigger extends CustomAttr {
-  upgrade() {
-    Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-    this.ownerElement.addEventListener(this.trigger, this.__l);
-  }
-
-  remove() {
-    this.ownerElement.removeEventListener(this.trigger, this.__l);
-    super.remove();
-  }
-
-  run(e) {
-    this.isConnected ? eventLoop.dispatch(e, this) : this.remove();
+class DCLTrigger extends DocumentTrigger {
+  get type() {
+    return "DOMContentLoaded";
   }
 }
 
@@ -86,11 +40,39 @@ const nativeEventType = (function (HTMLElement_p, Element_p, Document_p) {
   onDocument = onDocument.difference(onElement).difference(onWindow);
 
   for (let type of onElement)
-    document.Triggers.define(type, ElementTrigger);
+    document.Triggers.define(type, AttrListener);
   for (let type of onWindow)
     document.Triggers.define(type, WindowTrigger);
   for (let type of onDocument)
     document.Triggers.define(type, DocumentTrigger);
   document.Triggers.define("domcontentloaded", DCLTrigger);
 
+  //1. global element listeners: "_click" and "click_":
+  class GlobalPreElementTrigger extends WindowTrigger {
+    get type() {
+      return this.trigger.slice(1); //removes the prefix "_"
+    }
+    get options() {
+      return true;
+    }
+  }
+
+  class GlobalPostElementTrigger extends WindowTrigger {
+    get type() {
+      return this.trigger.slice(-1); //removes the postfix "_"
+    }
+  }
+
+  for (let type of onElement) {
+    document.Triggers.define("_" + type, GlobalPreElementTrigger);
+    document.Triggers.define(type + "_", GlobalPostElementTrigger);
+  }
+
 })(HTMLElement.prototype, Element.prototype, Document.prototype);
+
+//2. custom events must be added as `AttrListener`.
+document.Triggers.define("my-event", AttrListener);
+
+//the problem here is that we struggle controlling the default action.
+//if we only want to use the preventDefault(), then this is not a problem.
+//but, if we need to add our own default actions, then this is a problem.

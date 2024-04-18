@@ -1,4 +1,4 @@
-window.CustomAttr = class CustomAttr extends Attr {
+window.AttrCustom = class AttrCustom extends Attr {
 
   // Interface
   // set value(newValue) { const oldValue = super.value; super.value = newValue; ... }
@@ -46,7 +46,7 @@ window.CustomAttr = class CustomAttr extends Attr {
       for (let desc of el.querySelectorAll("*"))
         for (let at of desc.attributes)
           if (at.name.indexOf(":") >= 0)
-            CustomAttr.upgrade(at);
+            AttrCustom.upgrade(at);
     //todo we don't want to run the eventLoop until all the attr are upgraded.
   }
 
@@ -54,7 +54,7 @@ window.CustomAttr = class CustomAttr extends Attr {
     if (!Def)
       Def = at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0]);
     if (!Def)
-      Def = UnknownAttr;
+      Def = AttrUnknown;
     if (Def instanceof Promise) {
       Def.resolve(Def => this.upgrade(Def, at));
       Def = WaitForItAttr;
@@ -68,35 +68,77 @@ window.CustomAttr = class CustomAttr extends Attr {
   }
 };
 
-window.WaitForItAttr = class WaitForItAttr extends CustomAttr { };
+window.WaitForItAttr = class WaitForItAttr extends AttrCustom { };
 
-window.UnknownAttr = class UnknownAttr extends CustomAttr {
+window.AttrUnknown = class AttrUnknown extends AttrCustom {
 
   static #unknowns = new DoubleDots.AttrWeakSet();
 
   upgrade() {
-    UnknownAttr.#unknowns.add(this);
+    AttrUnknown.#unknowns.add(this);
   }
 
   upgradeUpgrade(Def) {
-    UnknownAttr.#unknowns.delete(this);
-    CustomAttr.upgrade(this, Def);
+    AttrUnknown.#unknowns.delete(this);
+    AttrCustom.upgrade(this, Def);
   }
 
   remove() {
-    UnknownAttr.#unknowns.delete(this);
+    AttrUnknown.#unknowns.delete(this);
     super.remove();
   }
 
   static *matchesDefinition(name) {
-    for (let at of UnknownAttr.#unknowns)
+    for (let at of AttrUnknown.#unknowns)
       if (name === at.trigger)
         yield at;
   }
 
   static *matchesRule(rule) {
-    for (let at of UnknownAttr.#unknowns)
+    for (let at of AttrUnknown.#unknowns)
       if (at.trigger.startsWith(rule))
         yield at;
   }
 };
+
+(function (addEventListenerOG, removeEventListenerOG) {
+
+  window.AttrListener = class AttrListener extends AttrCustom {
+    static #knownEvents = new Set();
+
+    static isEvent(name) {
+      return this.#knownEvents.has(name);
+    }
+
+    upgrade() {
+      Object.defineProperty(this, "__l", this.run.bind(this));
+      AttrListener.#knownEvents.add(this.type);
+      addEventListenerOG.call(this.target, this.type, this.__l, this.options);
+    }
+
+    remove() {
+      removeEventListenerOG(this.target, this.type, this.__l, this.options);
+      super.remove();
+    }
+
+    get target() {
+      return this.ownerElement;
+    }
+
+    get type() {
+      return this.trigger;
+    }
+
+    // get options(){ 
+    //   return undefined; this is redundant to implement
+    // }
+
+    run(e) {
+      !this.isConnected && this.remove();
+      this.dispatchEvent(e);
+    }
+  };
+})(
+  EventTarget.prototype.addEventListener,
+  EventTarget.prototype.removeEventListener
+);

@@ -46,17 +46,17 @@
     }
   }
 
-  class DefinitionsMapUnknownAttr extends DefinitionsMap {
+  class DefinitionsMapAttrUnknown extends DefinitionsMap {
 
     define(fullname, Def) {
       super.define(fullname, Def);
-      for (let at of UnknownAttr.matchesDefinition(fullname))
+      for (let at of AttrUnknown.matchesDefinition(fullname))
         at.upgradeUpgrade(Def);
     }
 
     defineRule(rule, FunClass) {
       super.defineRule(rule, FunClass);
-      for (let at of UnknownAttr.matchesRule(rule))
+      for (let at of AttrUnknown.matchesRule(rule))
         at.upgradeUpgrade(this.get(fullname));
     }
   }
@@ -151,7 +151,7 @@
     Triggers: {
       configurable: true,
       get: function () {
-        const map = new DefinitionsMapUnknownAttr();
+        const map = new DefinitionsMapAttrUnknown();
         Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
         return map;
       }
@@ -180,6 +180,6 @@
     DefinitionsMapLock,
     DefinitionsMapDOM,
     DefinitionsMapDOMOverride,
-    DefinitionsMapUnknownAttr
+    DefinitionsMapAttrUnknown
   });
 })();

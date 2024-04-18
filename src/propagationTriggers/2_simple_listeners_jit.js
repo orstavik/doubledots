@@ -1,41 +1,17 @@
-class ElementTrigger extends CustomAttr {
-  upgrade() {
-    Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-    this.eventTarget.addEventListener(this.eventType, this.__l);
-  }
-
-  get eventType() {
-    return this.trigger;
-  }
-
-  get eventTarget() {
-    return this.ownerElement;
-  }
-
-  remove() {
-    this.eventTarget.removeEventListener(this.eventType, this.__l);
-    super.remove();
-  }
-
-  run(e) {
-    this.isConnected ? eventLoop.dispatch(e, this) : this.remove();
-  }
-}
-
-class WindowTrigger extends EventTrigger {
-  get eventTarget() {
+class WindowTrigger extends AttrListener {
+  get target() {
     return window;
   }
 }
 
-class DocumentTrigger extends EventTrigger {
-  get eventTarget() {
+class DocumentTrigger extends AttrListener {
+  get target() {
     return document;
   }
 }
 
 class DCLTrigger extends DocumentTrigger {
-  get eventType() {
+  get type() {
     return "DOMContentLoaded";
   }
 }
@@ -57,7 +33,7 @@ const nativeEventType = (function (HTMLElement_p, Element_, Document_p) {
   };
 })(HTMLElement.prototype, Element.prototype, Document.prototype);
 
-class NativeEventDefinitionMap extends DoubleDots.DefinitionsMapUnknownAttr {
+class NativeEventDefinitionMap extends DoubleDots.DefinitionsMapAttrUnknown {
 
   define(name, Class) {
     if (nativeEventType(name))
@@ -74,9 +50,9 @@ class NativeEventDefinitionMap extends DoubleDots.DefinitionsMapUnknownAttr {
   #builtinDefs(name) {
     const type = nativeEventType(name);
     const Def =
-      type === "element" ? ElementTrigger :
-        type === "document" ? DocumentTrigger :
-          type === "window" ? WindowTrigger :
+      type === "element" ? AttrListener :
+        type === "window" ? WindowTrigger :
+          type === "document" ? DocumentTrigger :
             type === "domcontentloaded" ? DCLTrigger :
               null;
     super.define(name, Def);
@@ -96,3 +72,5 @@ Object.defineProperty(Document.prototype, "Triggers", {
     return map;
   }
 });
+
+//The just-in-time TriggerDefinitionsMap is unnecessary. As the definitions in the simple method is just a set of string to reused object references, then jit can KISS my ass.
