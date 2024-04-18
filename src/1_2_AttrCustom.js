@@ -35,6 +35,7 @@ window.AttrCustom = class AttrCustom extends Attr {
     return this.ownerElement.removeAttribute(this.name);
   }
 
+  //todo remove this and only use eventLoop.dispatch(e, ...attrs);
   dispatchEvent(e) {
     if (!this.isConnected)
       throw new DoubleDots.ReactionError("dispatch on disconnected attribute.");
@@ -101,9 +102,13 @@ window.AttrUnknown = class AttrUnknown extends AttrCustom {
   }
 };
 
-(function (addEventListenerOG, removeEventListenerOG) {
+(function () {
 
-  window.AttrListener = class AttrListener extends AttrCustom {
+  const stopProp = Event.prototype.stopImmediatePropagation;
+  const addEventListenerOG = EventTarget.prototype.addEventListener;
+  const removeEventListenerOG = EventTarget.prototype.removeEventListener;
+
+  class AttrListener extends AttrCustom {
     static #knownEvents = new Set();
 
     static isEvent(name) {
@@ -137,8 +142,63 @@ window.AttrUnknown = class AttrUnknown extends AttrCustom {
       !this.isConnected && this.remove();
       this.dispatchEvent(e);
     }
-  };
-})(
-  EventTarget.prototype.addEventListener,
-  EventTarget.prototype.removeEventListener
-);
+  }
+
+  class AttrListenerGlobal extends AttrListener {
+
+    // We can hide the triggers in JS space. But this makes later steps much worse.
+    //
+    // static #triggers = new WeakMap();
+    // get register() {
+    //   let dict = AttrListenerGlobal.#triggers.get(this.target);
+    //   !dict && AttrListenerGlobal.#triggers.set(this.target, dict = {});
+    //   return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
+    // }
+
+    get register() {
+      let dict = this.target.triggers;
+      if (!dict)
+        Object.defineProperty(this.target, "triggers", { value: dict = {} });
+      return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
+    }
+
+    get target() {
+      return window;
+    }
+
+    upgrade() {
+      super.upgrade();
+      this.register.add(this);
+    }
+
+    remove() {
+      this.register.delete(this);
+      super.remove();
+    }
+
+    run(e) {
+      if (!this.isConnected)
+        return this.remove();
+      stopProp.call(e);
+      eventLoop.dispatch(e, ...this.register);
+    }
+  }
+
+  class AttrListenerRoot extends AttrListenerGlobal {
+    get target() {
+      return this.getRootNode();
+    }
+  }
+
+  class AttrListenerDCL extends AttrListenerRoot {
+    get trigger() {
+      return "DOMContentLoaded";
+    }
+  }
+  Object.assign(window, {
+    AttrListener,
+    AttrListenerGlobal,
+    AttrListenerRoot,
+    AttrListenerDCL
+  });
+})();

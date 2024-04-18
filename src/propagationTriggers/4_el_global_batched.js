@@ -117,3 +117,8 @@
   }
 
 })(DoubleDots?.nativeMethods || window, HTMLElement.prototype, Element.prototype, Document.prototype);
+
+// <html default-action:reduce-default-action:run-default-action>
+// we can add a special `default-action:reduceda:runda` attribute.
+// this is immutable, you can't take it in/out.
+// we can then add this default-action attribute to the end of the getAttributes() list, so to run at the end of the batch.

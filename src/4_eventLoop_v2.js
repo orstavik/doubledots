@@ -117,10 +117,11 @@
     //This is different from #stack[#i] when tasks are continued in thread mode. 
     task;
 
-    addTask(attr, event) {
-      this.#stack.push(new MicroFrame(attr, event));
-      this.#i === this.#stack.length - 1 && this.loop();
-    }
+    // replaced by batch(e, attrs)
+    // addTask(attr, event) {
+    //   this.#stack.push(new MicroFrame(attr, event));
+    //   this.#i === this.#stack.length - 1 && this.loop();
+    // }
 
     getFrame() {
       return this.#i < this.#stack.length ? this.#stack[this.#i] : undefined;
@@ -150,7 +151,7 @@
   //external interface
   window.EventLoop = class EventLoop {
     //todo move the static classes to DoubleDots namespace?
-    //todo move the EventLoop class to DoubleDots namespace too? no.. If so everything, like CustomAttr, and that would be verbose.
+    //todo move the EventLoop class to DoubleDots namespace too? no.. If so everything, like AttrCustom, and that would be verbose.
     //todo but DoubleDots.ErrorEvent and DoubleDots.SpreadReactionError are nice!
     static ReactionJump = class ReactionJump {
       constructor(n) {
@@ -198,29 +199,33 @@
     }
   };
   Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
-
-  (function (Element_p) {
-    function* path(t, type) {
-      for (; t; t = t.assignedSlot || t.parentElement || t.parentNode.host)
-        for (let at of t.attributes)
-          if (at.trigger === type)
-            yield at;
-    }
-
-    function* localPath(target, type) {
-      for (let t = target; t; t = t.parentElement)
-        for (let at of t.attributes)
-          if (at.trigger === type)
-            yield at;
-    }
-
-    //todo this needs a WIDE and NARROW alternative.
-    //todo we have a problem here. We need to build in the error_g and error_l ++ as rules, so that we can add these types of triggers to discover them elsewhere. 
-    Element_p.bubble = function bubble(e) {
-      if (!this.isConnected)
-        throw new DoubleDots.DisconnectedError("bubble on disconnected Element");
-      eventLoop.dispatch(e, ...(e.composed ? path(this, e.type) : localPath(this, e.type)));
-    };
-
-  })(Element.prototype);
 })();
+
+
+
+  //todo move this into the propagation trigger rule
+  //todo 
+  // (function (Element_p) {
+  //   function* path(t, type) {
+  //     for (; t; t = t.assignedSlot || t.parentElement || t.parentNode.host)
+  //       for (let at of t.attributes)
+  //         if (at.trigger === type)
+  //           yield at;
+  //   }
+  // 
+  //   function* localPath(target, type) {
+  //     for (let t = target; t; t = t.parentElement)
+  //       for (let at of t.attributes)
+  //         if (at.trigger === type)
+  //           yield at;
+  //   }
+  // 
+  //   //todo this needs a WIDE and NARROW alternative.
+  //   //todo we have a problem here. We need to build in the error_g and error_l ++ as rules, so that we can add these types of triggers to discover them elsewhere. 
+  //   Element_p.bubble = function bubble(e) {
+  //     if (!this.isConnected)
+  //       throw new DoubleDots.DisconnectedError("bubble on disconnected Element");
+  //     eventLoop.dispatch(e, ...(e.composed ? path(this, e.type) : localPath(this, e.type)));
+  //   };
+
+  // })(Element.prototype);
