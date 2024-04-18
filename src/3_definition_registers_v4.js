@@ -6,6 +6,7 @@
 
     #definitions = {};
     #rules = {};
+    // #ruleRE = new RegExp(" ", "g");
 
     defineRule(prefix, FunFun) {
       //FunFun can be either a Function that given the prefix will produce either a class or a Function.
@@ -16,6 +17,7 @@
       for (let fullname of Object.keys(this.#definitions))
         if (fullname.startsWith(prefix))
           throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname}' exists.`);
+      // this.#ruleRE = new RegExp(`^(${Object.keys(this.#rules).join("|")}).*`, "g");
       this.#rules[prefix] = FunFun;
     }
 
@@ -34,6 +36,9 @@
       for (let [rule, FunFun] of Object.entries(this.#rules))
         if (fullname.startsWith(rule))
           return this.#definitions[fullname] = FunFun(fullname);//todo what if FunFun throws an error here?
+      // alternative logic using a regex to match the name. Not sure this is better
+      // for (let [_, prefix] of fullname.matchAll(this.#ruleRE))
+      //   return this.#definitions[fullname] = this.#rules[prefix](fullname);
     }
 
     get(fullname) {
