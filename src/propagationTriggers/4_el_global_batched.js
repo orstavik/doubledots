@@ -122,3 +122,22 @@
 // we can add a special `default-action:reduceda:runda` attribute.
 // this is immutable, you can't take it in/out.
 // we can then add this default-action attribute to the end of the getAttributes() list, so to run at the end of the batch.
+
+
+//todo how do we want this to 
+document.Triggers.define("default-action", AttrImmutable);
+document.Reactions.define("dd-filter-da", function (e) {
+  //process the default actions to see if we should run any default actions
+  return "something";
+});
+document.Reactions.define("dd-run-da", function (something) {
+  //set null in the list
+});
+document.Reactions.define("nda", function(oi){
+  //set the string "nda" in the list
+});
+document.Reactions.define("prevent-default", function(){});
+document.Reactions.define("da", function(){
+  //set the attr in the list
+});
+document.documentElement.setAttribute(":dd-filter-da:dd-run-da");

@@ -69,6 +69,10 @@ window.AttrCustom = class AttrCustom extends Attr {
   }
 };
 
+window.AttrImmutable = class AttrImmutable extends AttrCustom {
+  remove() { /* cannot be removed */ }
+};
+
 window.WaitForItAttr = class WaitForItAttr extends AttrCustom { };
 
 window.AttrUnknown = class AttrUnknown extends AttrCustom {
