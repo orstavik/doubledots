@@ -59,7 +59,7 @@ function monkeyPatch(proto, prop, fun) {
     if (name.startsWith("override-"))
       throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
     //1. treat the normal normal
-    if (name.indexOf(":") < 0)
+    if (!name.includes(":"))
       return setAttributeOG.call(this, name, value);
     //2. if the name is 
     let at = getAttributeNodeOG.call(this, name);
