@@ -1,7 +1,10 @@
-(function (HTMLElement_p, Element_p, Document_p) {
+(function () {
 
-  //depends on
-  AttrListener, AttrListenerGlobal, AttrListenerRoot;
+  class RootTrigger extends AttrListenerGlobal {
+    get target() {
+      return this.getRootNode();
+    }
+  }
 
   function complexListener(Listener) {
     return class ComplexListener extends Listener {
@@ -50,7 +53,7 @@
             if (prev?.host === n)  /*prev instanceof ShadowRoot &&*/
               if (slotLevel)
                 slotLevel--;
-              else 
+              else
                 targets.unshift(
                   ...Array.prototype.filter.call(n.attributes, at => at.trigger === type_t));
           }
@@ -62,8 +65,7 @@
           }
           prev = n;
         }
-        //todo here we need to add the defaultAction trigger somewhere.
-        return [...downs, ...targets, ...elems, ...ups];
+        return [...downs, ...targets, ...elems, ...ups, da];
       }
     };
   }
@@ -76,47 +78,23 @@
     };
   }
 
+  const BubbleTrigger = complexListener(AttrListener);
+  const TargetTrigger = typeSlice(complexListener(AttrListener), 0, -2);
+  const PrePropTrigger = typeSlice(complexListener(AttrListenerGlobal), 1, 0);
+  const PostPropTrigger = typeSlice(complexListener(AttrListenerGlobal), 0, -1);
+  const PreRootTrigger = typeSlice(complexListener(RootTrigger), 2, 0);
+  const PostRootTrigger = typeSlice(complexListener(RootTrigger), 0, -1);
 
-  const Listeners = {
-    "click": complexListener(AttrListener),
-    "click_t": typeSlice(complexListener(AttrListener), 0, -2),
-
-    "_click": typeSlice(complexListener(AttrListenerGlobal), 1, 0),
-    "click_": typeSlice(complexListener(AttrListenerGlobal), 0, -1),
-    "_.click": typeSlice(complexListener(AttrListenerRoot), 2, 0),
-    "click.": typeSlice(complexListener(AttrListenerRoot), 0, -1),
-  };
-
-  function extractHandlerNames(obj) {
-    return new Set(
-      Object.keys(obj)
-        .filter(k => k.startsWith("on"))
-        .map(k => k.substring(2).toLowerCase())
-    );
+  for (let type of DoubleDots.nativeEvents.element) {
+    document.Triggers.define(type, BubbleTrigger);
+    document.Triggers.define(type + "_t", TargetTrigger);
+    document.Triggers.define("_" + type, PrePropTrigger);
+    document.Triggers.define(type + "_", PostPropTrigger);
+    document.Triggers.define("_." + type, PreRootTrigger);
+    document.Triggers.define(type + ".", PostRootTrigger);
   }
 
-  let onElement = extractHandlerNames(Element_p);
-  const onHTMLElement = extractHandlerNames(HTMLElement_p);
-  const nonHandler = new Set([
-    "touchstart", "touchmove", "touchend", "touchcancel"
-  ]);
-  let onDocument = extractHandlerNames(Document_p);
-  let onWindow = extractHandlerNames(window);
-
-  onElement = onElement.union(onHTMLElement).union(nonHandler);
-  onWindow = onWindow.difference(onElement);
-  onDocument = onDocument.difference(onElement).difference(onWindow);
-
-  for (let type of onElement) {
-    document.Triggers.define(type, Listeners["click"]);
-    document.Triggers.define(type + "_t", Listeners["click_t"]);
-    document.Triggers.define("_" + type, Listeners["_click"]);
-    document.Triggers.define(type + "_", Listeners["click_"]);
-    document.Triggers.define("_." + type, Listeners["click"]);
-    document.Triggers.define(type + ".", Listeners["click."]);
-  }
-
-})(DoubleDots?.nativeMethods || window, HTMLElement.prototype, Element.prototype, Document.prototype);
+})(DoubleDots?.nativeMethods || window);
 
 // <html default-action:reduce-default-action:run-default-action>
 // we can add a special `default-action:reduceda:runda` attribute.
@@ -133,11 +111,11 @@ document.Reactions.define("dd-filter-da", function (e) {
 document.Reactions.define("dd-run-da", function (something) {
   //set null in the list
 });
-document.Reactions.define("nda", function(oi){
+document.Reactions.define("nda", function (oi) {
   //set the string "nda" in the list
 });
-document.Reactions.define("prevent-default", function(){});
-document.Reactions.define("da", function(){
+document.Reactions.define("prevent-default", function () { });
+document.Reactions.define("da", function () {
   //set the attr in the list
 });
 document.documentElement.setAttribute(":dd-filter-da:dd-run-da");

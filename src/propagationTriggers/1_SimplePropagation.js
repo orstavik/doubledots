@@ -33,7 +33,7 @@ class PostPropTrigger extends WindowTrigger {
   }
 }
 
-const nativeEventType = (function () {
+(function () {
 
   for (let type of DoubleDots.nativeEvents.element) {
     document.Triggers.define(type, AttrListener);
