@@ -117,3 +117,28 @@ document.documentElement.setAttribute("da:dd-filter-da:dd-run-da");
   })();
 
 })(DoubleDots?.nativeMethods || window);
+
+/**
+# ComplexPropagation
+
+## Why and when do we need more complex propagation algorithms?
+
+Truthfully? Not that often. If you need a different form of triggers, you likely wish for something else to occur.
+
+## Use cases
+
+Still. Sometimes more complex propagation can be relevant:
+
+1. Many different reaction modules interact against the same set of DOM events. This can be different gestures that all need to monitor the `pointerevent` to identify when *another* gesture has been given control of the sequence of events. For example, `longpress`, `drag-n-drop`, and `click` can all need to alert each other if one or the other has been given control of the `pointer-` or `mouse-`events. Here, the timing of the triggers might be especially important.
+
+There is only a small usecase that is truly needed for the click_. The gestures. They need the global post click_ and pointermove/up/down_ etc. We can accomplish this with the simpler structure of js=>listener individual dispatch.
+
+This interaction also relies heavily on the default action which is yet another mechanism such reaction modules can coordinate their behavior with. To implement, control, and augment behavior on par with default actions, you need to implement more complex propagation mechanisms.
+
+## HowTo augment the default action sub system?
+
+We can add the default action as a special attribute that is called default-action. We can take it out of the DOM. We can override .isConnected to true. and then we can set it to have a special property.
+
+We can also add it as an attribute on the <html da:reduce-default-action:run-default-action> element.
+
+ */

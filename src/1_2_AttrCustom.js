@@ -112,19 +112,20 @@
   const removeEventListenerOG = EventTarget.prototype.removeEventListener;
 
   class AttrListener extends AttrCustom {
-    static #knownEvents = new Set();
+    static #events = {};
 
     static isEvent(name) {
-      return this.#knownEvents.has(name);
+      return this.#events[name];
     }
 
     upgrade() {
-      Object.defineProperty(this, "__l", this.run.bind(this));
-      AttrListener.#knownEvents.add(this.type);
+      Object.defineProperty(this, "__l", { value: this.run.bind(this) });
       addEventListenerOG.call(this.target, this.type, this.__l, this.options);
+      AttrListener.#events[this.type] = (AttrListener.#events[this.type] || 0)+1;
     }
 
     remove() {
+      AttrListener.#events[this.type] -= 1;
       removeEventListenerOG(this.target, this.type, this.__l, this.options);
       super.remove();
     }
@@ -191,8 +192,8 @@
     AttrListener,
     AttrListenerGlobal,
     AttrCustom,
-    AttrImmutable, 
+    AttrImmutable,
     AttrUnknown,
-    AttrPromise, 
+    AttrPromise,
   });
 })();

@@ -40,17 +40,16 @@ window.DoubleDots = {
         .filter(k => k.startsWith("on"))
         .map(k => k.substring(2).toLowerCase());
     }
-    const onElement = extractHandlers(Element.prototype);
-    const onHTMLElement = extractHandlers(HTMLElement.prototype);
-    const onWindow = extractHandlers(window);
-    const onDocument = extractHandlers(Document.prototype);
+    const eOn = extractHandlers(Element.prototype);
+    const hOn = extractHandlers(HTMLElement.prototype);
+    const wOn = extractHandlers(window);
+    const dOn = extractHandlers(Document.prototype);
 
-    const result = {
-      element: [...onElement, ...onHTMLElement].filter((a, i) => combined.indexOf(a) === i),
-      window: onWindow.filter(x => !element.includes(x)),
-      document: onDocument.filter(x => !element.includes(x) && !window.includes(x)),
-      //todo should I switch the difference between window and document?
-    };
+    const e = [...eOn, ...hOn].filter((a, i, ar) => ar.indexOf(a) === i);
+    const w = wOn.filter(x => !e.includes(x));
+    const d = dOn.filter(x => !e.includes(x) && !w.includes(x));
+    //todo should I switch the difference between window and document?
+    const result = { element: e, window: w, document: d };
     result.element.push("touchstart", "touchmove", "touchend", "touchcancel");
     result.document.push("DOMContentLoaded");
     Object.values(result).forEach(Object.freeze);

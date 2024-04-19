@@ -78,9 +78,8 @@ function monkeyPatch(proto, prop, fun) {
   monkeyPatch(Element_p, "setAttribute", setAttribute_DD);
 })(Element.prototype, ShadowRoot.prototype);
 
-(function () {
+(function (aelOG) {
   if (document.readyState !== "loading")
     return AttrCustom.upgradeBranch(document.htmlElement);
-  const aelOG = DoubleDots.nativeMethods.EventTarget.prototype.addEventListener;
   aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));
-})();
+})(EventTarget.prototype.addEventListener);

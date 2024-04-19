@@ -89,7 +89,7 @@
       this.#i = this.#names.length;
       const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
       //todo add the attribute to the ErrorEvent, so that we know which attribute caused the error
-      target.bubble(new ErrorEvent("error", { error }));
+      target.dispatchEvent(new ErrorEvent("error", { error }));
     }
 
     #runSuccess(res) {
