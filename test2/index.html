@@ -5,5 +5,13 @@
 <script src="../src/4_eventLoop_v2.js"></script>
 <script src="../src/propagationTriggers/1_SimplePropagation.js"></script>
 <script src="../src/6_load_DoubleDots.js"></script>
+<script>
+  document.Reactions.define("hello", function(e){
+    console.log("hi");
+  });
+  document.Reactions.define("sunshine", function(e){
+    console.log("sunny");
+  });
+</script>
 
 <h1 click:hello:sunshine>Hello sunshine</h1>
