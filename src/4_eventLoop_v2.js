@@ -37,7 +37,6 @@
      */
     run(threadMode = false) {
       for (let re = this.getReaction(); re; re = this.nextReaction()) {
-        console.log(re);
         //1. process native reactions
         if (re === "") {
           threadMode = true;
@@ -151,8 +150,6 @@
   //external interface
   window.EventLoop = class EventLoop {
     //todo move the static classes to DoubleDots namespace?
-    //todo move the EventLoop class to DoubleDots namespace too? no.. If so everything, like AttrCustom, and that would be verbose.
-    //todo but DoubleDots.ErrorEvent and DoubleDots.SpreadReactionError are nice!
     static ReactionJump = class ReactionJump {
       constructor(n) {
         n = parseInt(n);
@@ -172,6 +169,7 @@
 
     static SpreadReaction = function (fun) {
       return function SpreadReaction(oi) {
+        //todo return fun.call(this, oi instanceof Iterable ? ...oi : oi);
         if (oi instanceof Iterable)
           return fun.call(this, ...oi);
         throw new DoubleDotsSpreadReactionError("SpreadReactions must be passed a spreadable oi argument");

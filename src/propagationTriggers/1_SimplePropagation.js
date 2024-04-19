@@ -34,7 +34,6 @@ class PostPropTrigger extends WindowTrigger {
 }
 
 (function () {
-
   for (let type of DoubleDots.nativeEvents.element) {
     document.Triggers.define(type, AttrListener);
     document.Triggers.define("_" + type, PrePropTrigger);
@@ -45,7 +44,6 @@ class PostPropTrigger extends WindowTrigger {
   for (let type of DoubleDots.nativeEvents.document)
     document.Triggers.define(type, DocumentTrigger);
   document.Triggers.define("domcontentloaded", DCLTrigger);
-
 })();
 
 /**
@@ -108,9 +106,9 @@ SimplePropagation follows the same logic as native event listeners. This means t
 
 The overhead per native event listener is not that big. It is quite performant. The only cost is resolving the reaction chain and maintaining the eventLoop state.
 
-## `AttrListener.isEvent()`
+## `Event.activeListeners()`
 
-The AttrListener keeps track of how many listener are active for any event type at any time. Asking `AttrListener.isEvent("click")` will return the number of active `click` event listeners in the DOM. This method can be used to for example:
+The AttrListener keeps track of how many listener are active for any event type at any time. Asking `Event.activeListeners("click")` will return the number of active `click` event listeners in the DOM. This method can be used to for example:
 
 1. debug an app to see what it does,
 
@@ -118,8 +116,8 @@ The AttrListener keeps track of how many listener are active for any event type 
 
 ```js
 EventTarget.prototype.dispatchEvent(e){
-  if(ListenerAttr.isEvent(e))
-    throw new DoubleDots.PropagationError(`dispatching event "${e.type}" when no listener has been registered yet`);
+  if(Event.activeListeners(e.type))
+    throw new DoubleDots.PropagationError(`dispatching event "${e.type}" when no one is listening.`);
   OG.call(this, e);
 }
 ```

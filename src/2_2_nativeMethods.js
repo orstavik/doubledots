@@ -58,18 +58,17 @@
       stopPropagation: deprecated,
       stopImmediatePropagation: deprecated,
     },
-    // todo this should likely not be hidden. Used by lots of triggers.
-    // "EventTarget.prototype": {
-    //   addEventListener: deprecated,
-    //   removeEventListener: deprecated,
-    //   dispatchEvent: deprecated
-    // },
+    "EventTarget.prototype": {
+      addEventListener: deprecated,
+      removeEventListener: deprecated,
+      // dispatchEvent: deprecated //todo we don't deprecate this one
+    },
     "window": {
       setTimeout: deprecated,
       clearTimeout: deprecated,
       setInterval: deprecated,
-      clearInterval: deprecated,
-      // event: deprecated, //todo this is impossible. It will always remain.
+      clearInterval: deprecated
+      //event: treated special at the bottom
     },
     "document": {
       write: deprecated,
@@ -80,7 +79,6 @@
       append: sameRootSpreadArg,
       prepend: sameRootSpreadArg,
 
-      // currentScript: deprecated, //todo this is a setter, not a function. Do we really need to bother with it
       createAttribute: deprecated,
       createComment: deprecated,
       createDocumentFragment: deprecated,
@@ -132,4 +130,19 @@
       monkeyPatch(obj, prop, newFunc);
     }
   }
+})();
+
+(function () {
+  //overriding getters
+  // Document.prototype.currentScript
+  // window.event
+
+  const currentScriptOG = Object.getOwnPropertyDescriptor(Document.prototype, "currentScript").get.bind(Document.prototype);
+  DoubleDots.nativeMethods.Document.prototype = currentScriptOG;
+  Object.defineProperty(Document.prototype, "currentScript", { configurable: false, value: undefined });
+
+
+  const eventOG = Object.getOwnPropertyDescriptor(window, "event").get.bind(window);
+  DoubleDots.nativeMethods.window.event = eventOG;
+  Object.defineProperty(window, "event", { configurable: false, value: undefined });
 })();

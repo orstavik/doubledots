@@ -82,4 +82,4 @@ function monkeyPatch(proto, prop, fun) {
   if (document.readyState !== "loading")
     return AttrCustom.upgradeBranch(document.htmlElement);
   aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));
-})(EventTarget.prototype.addEventListener);
+})(DoubleDots.nativeMethods.EventTarget.prototype.addEventListener);
