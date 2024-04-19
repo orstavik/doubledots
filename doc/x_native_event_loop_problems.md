@@ -48,3 +48,35 @@ function setTimeout0(cb){
 ### 9. Are the listeners on the `currentElement` static, stale, or dynamic?
 
 9. The same problem with semi-stale dynamic ability applies to listeners per element. If you add another event listener to the currentTarget of an event, then that listener will not run on the same event. However, if you remove a later event listener on the same element for the same event, then that event listener will *not* run. This makes sense in practice, and rarely cause any problems, but it is still small-print-details that specify a series of special points in time, ie. when-path-is-calculated and when-listeners-on-an-element-is-gotten, that the developer should take into account when adding and removing event listeners during propagation, or (re)moving elements in the current propagation path.
+
+### 10. Which `Event`s are there?
+
+`Event`s are taboo. They are *completely* surrounded by silence. Take for example a simple question such as "which `events` *could* the browser dispatch on an `Element`? There is no such list? Why? Because different browsers don't all dispatch the same events? Ok.. But could I please get this information from the individual system my code is running on? No? Why not? ... Hello? Anybody here??
+
+### 11. `Event` priority
+
+I've heard rumors that the browser will prioritize and run some events before others. For example, I've heard that `setTimeout` are given low priority. Can somebody please *confirm* this for me? No? Is there really *no* information about the implied priority of tasks in the browser's event loop? Nothing?!
+
+>> ### 12. Why so many different `Event` emitters?
+
+>> Why so many systems for calllbacks? Why can't everything be events? Why can't everything in the DOM be events? Why does `WebSocket`s that has nothing to do with the DOM and *only* lives in JS land emit `Event` and `extends EventTarget`? While we need an `Observer` for reacting to an element coming into view or reacting to attributes changing? Why can't `WebSocket`s use a simple callback structure, while all things in the DOM use events? Why do we need so many different systems? In different places?
+
+>> ### 13. `ErrorEvent`
+
+>> What are the possible `error` events that I can catch in the event loop? Can somebody *please, please* give me an overview of the errors I can pick up via the event loop? `error` and `unhandledrejection`? And why could you not have added `error` in the `unhandledrejection` event name. I don't know how many times I have struggled to find that `error` event name..
+
+There is an *utter* lack of information about the event loop. This not only leaves you guessing, but it makes you *question your questioning*. Am I doing something wrong when I have questions about native events? The effect of the *eventLoop taboo* is FUDing. Fear of sequence irregularities. Lingering Uncertainty after failed research into the topic. Doubting yourself for not finding any answers. And this FUDing is *completely inappropriate*. Simple facts about EXISTENCE and SEQUENCE of events is literally the metaphorical heart beat of the web run time! 😱 It is like JS trying to keep a secret if && or ?: comes first (which i always look up btw;) 
+
+## Event loop mysteries
+
+
+
+## Event loop model
+
+## JS Loop vs DD Loop
+
+## Error handling
+
+
+Where can i see this priority between tasks? 
+
