@@ -19,11 +19,11 @@ const ignore = observeElementsCreated(function checkForCustomReaction(elems) {
   for (let el of elems)
     if (el.attributes)
       for (const att of el.attributes)
-        if (att.name.indexOf(":") >= 0)
+        if (att.name.includes(":"))
           console.log(att.name, el.tagName);
 });
 
 setTimeout(function () {
-  for (let script of document.querySelectorAll("script[src]"))
+  for (let script of document.querySelectorAll("script[:src]"))
     activateScript(script);
 }, 0);
