@@ -1,11 +1,11 @@
-# `CustomAttr`
+# `AttrCustom`
 
-DoubleDots implement a `class CustomAttr extends Attr`. All triggers *must be* subclasses `CustomAttr`.
+DoubleDots implement a `class AttrCustom extends Attr`. All triggers *must be* subclasses `AttrCustom`.
 
 ## Implementation
 
 ```js
-class CustomAttr extends Attr {
+class AttrCustom extends Attr {
 
   get trigger() {
     this.#updateTriggerReactions();
@@ -23,6 +23,10 @@ class CustomAttr extends Attr {
   
   remove() {
     return this.ownerElement.removeAttribute(this.name);
+  }
+
+  getRootNode(...args) {
+    return this.ownerElement?.getRootNode(...args);
   }
 
   #updateTriggerReactions(){

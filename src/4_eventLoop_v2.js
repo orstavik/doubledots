@@ -164,10 +164,12 @@
 
     static SpreadReaction = function (fun) {
       return function SpreadReaction(oi) {
-        //todo return fun.call(this, oi instanceof Iterable ? ...oi : oi);
-        if (oi instanceof Iterable)
-          return fun.call(this, ...oi);
-        throw new DoubleDotsSpreadReactionError("SpreadReactions must be passed a spreadable oi argument");
+        return oi instanceof Iterable ?
+          fun.call(this, ...oi) :
+          fun.call(this, oi);
+        // if (oi instanceof Iterable)
+        //   return fun.call(this, ...oi);
+        // throw new DoubleDotsSpreadReactionError("SpreadReactions must be passed a spreadable oi argument");
       };
     };
 

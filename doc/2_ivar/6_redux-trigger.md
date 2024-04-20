@@ -1,4 +1,28 @@
-# Demo: redux-reaction
+# Demo: single-state-trigger
+
+Having the DOM be the single state is not always possible. The reason is that the DOM is also the view. So, if you need to show the same state in two different places, then you need to *either* have one state in the dom be *mirrored* by another element (possible, the DOM stays as the single state) *or* you have a single state outside of the dom be mirrored in two places (a redux style single state application). If the connections between the different states are complex (which they quickly become), then the best course of action is likely to have *one* state function as a non-viewable model (serializable in the dom or transient outside dom) up at the root of the document and then have it mirrored into several different locations. 
+
+Redux
+
+1. state: trigger. As a singleton callback. It will register a :reaction too, with the same name? And then it will register.
+2. A trigger/reaction pair.
+3. So the reaction receives production, and then the triggers register for callbacks. And the triggers dispatch the subscriptions.
+
+We need two different reaction receivers
+:state-update, and :state-setup.
+
+This is a callback trigger.
+It has a reaction that triggers the callbacks. Or it can poll an internet resource.
+
+Actually. We should have different types of triggers:
+1. Observer triggers.
+2. Timer triggers. Can be better than :sleep reactions because they are removed and not in the event loop if not needed. So they are a variation around the same theme.
+3. Callback triggers. Like redux.
+4. Custom poll trigger. Polling a network resource. Or a server resource.
+5. Socket trigger? I am not sure, but i think sockets can fit nicely here.
+6. StateMachineAttr. Conductor of orchestra of reactions state machine.
+
+
 
 The _global reactions are a means of getting reactions situated in the dom to react to global events or events in other branches of the dom. The _global reactions are run for any event with the same name at the beginning of propagation. The sequence between _global reactions for the same event is first-added-first-serve, ie. it does often, but not necessarily follow the sequence of the elements in the dom depth-first.
 

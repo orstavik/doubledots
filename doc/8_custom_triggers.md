@@ -1,5 +1,7 @@
 # Custom `trigger:`s
 
+The triggers in DoubleDots are small anchors that will capture an event and then pass this event to the first reaction in the chain.   you make a reaction chain  provide a sequence of 
+
 ## 1. Listener triggers: `click:`
 
 The trigger is primarily event listeners. Whenever an event propagates in the DOM, any trigger with the *same name* as the event type, will trigger its reaction chain. For example, if the user `click` on an element inside another element that has a `click:` trigger, then the reaction chain behind the `click:` trigger will run when the event bubbles past the `ownerElement`.
@@ -36,10 +38,10 @@ _global triggers are:
 
 In Doubledots you can also define your own `trigger:`. Triggers are event factories, sort of. Some are atomic and simple, like `set-timeout_10:` or `attr-change_style:` for example. Others are complex state machines like `swipeable` and `drag-n-drop`. In this chapter we start with the simple ones.
 
-To define a trigger is very similar to defining a reaction rule, except that the definition is not a function, but a `class` that `extends CustomAttr`. This is what it looks like:
+To define a trigger is very similar to defining a reaction rule, except that the definition is not a function, but a `class` that `extends AttrCustom`. This is what it looks like:
 
 ```js
-customReactions.defineTrigger("prefix", class MyTrigger extends CustomAttr{
+customReactions.defineTrigger("prefix", class MyTrigger extends AttrCustom{
   upgrade(fullname) {
     this; //=> the attribute node
   }
@@ -89,7 +91,7 @@ Custom triggers replace all the native Observers in JS. In this example we use t
 
 ```html
 <script>
-  class AttrTrigger extends CustomAttr{
+  class AttrTrigger extends AttrCustom{
 
     async upgrade(attr_xyz) {
       const [_, ...list] = attr_xyz.split("_");
@@ -121,7 +123,7 @@ In this example we use the `IntersectionObserver` to create a custom `inview:` t
 
 ```html
 <script>
-  class InviewTrigger extends CustomAttr{
+  class InviewTrigger extends AttrCustom{
 
     async upgrade(inview_thresholdPerc) {
       const threshold = parseInt(inview_thresholdPerc.split("_")[1]) / 100;
@@ -148,11 +150,11 @@ The atomic `timeout_x:` trigger dispatches an attribute event type `timeout` tha
 
 ```html
 <script>
-  class TimeoutTrigger extends CustomAttr{
+  class TimeoutTrigger extends AttrCustom{
     async upgrade(timeout_time) {
       const delay = timeout_time.split("_")[1];
       await sleep(delay);
-      if(this.isConnected) //Doubledots adds this method to CustomAttr too
+      if(this.isConnected) //Doubledots adds this method to AttrCustom too
         this.dispatchEvent(new Event("timeout"));
     }
   }
@@ -192,7 +194,7 @@ The benefits of using the `::sleep_x` instead of a `timeout_x:` are:
 
 ```html
 <script>
-  class IntervalTrigger extends CustomAttr{
+  class IntervalTrigger extends AttrCustom{
     async upgrade(timeout_time) {
       const delay = timeout_time.split("_")[1];
       while (true) {

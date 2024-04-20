@@ -4,6 +4,10 @@ There are two ways to define custom reactions:
 1. normal reactions (`customReaction.define("name", reaction)`), and
 2. reaction rules (`customReaction.defineRule("prefix", rule)`). 
 
+## Todo
+
+1. allow for definition names to be the same as rule names. And overlap between rules and definitions??
+
 ## HowTo define a reaction rule
 
 When you define a reaction rule, you pass in two parameters: `prefix` and `rule`.

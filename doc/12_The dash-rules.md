@@ -350,3 +350,28 @@ But what does this difference *mean*? Why do we care if we query up or down betw
 There are usecases for *both* queries upwards and downwards, obviously. Sometimes the down to one of potentially many and empty changing descendants is what we need. But, the syntactical preference of descendant searches in CSS should not be taken as a fact of HTML relationship value, but rather as a linguistical coincidence that might best be perceived as misleading.
 
 Conclusion: CSS falsely presents querying HTML nodes in the direction *up* and *previous siblings* as bad, when they often are very, very good. CSS also misrepresent *descendant* querying as good, when it is much more problematic than one might think. I suspect this grammatical tilt towards down/right to be one (of several) causes for CSS having turned into such a soup. Using directional queries wisely can hopefully provide safer reaction chains in DoubleDots.
+
+
+## Todo: dynamic
+
+If we make the -dash dynamic, then we can chain simpler dash-rules.
+
+The -dash should be able to work with querySelectorAll `this`, enabling it to add set to set.
+
+The .dot rule should also be able to work with querySelectorAll `this`. And run functions on all the nodes.
+
+The `querySelectorAll` returns a static `NodeList`. The `.childNodes` is a live `NodeList`. We should freeze the `.childNodes` `NodeList`. We want our iterators to be non-hindered by this.
+
+The `.attributes` is a `NamedNodeMap`. This is also live.
+
+```js
+const list = attributes || childNodes || querySelectorAll;
+if(this instanceof NodeList || NamedNodeMap)
+  list = this; //list mode true
+else if(this instanceof )
+  
+for (let n of list) {
+  if (n instanceof Node) //this is unnecessary, they have to be.
+
+}
+```

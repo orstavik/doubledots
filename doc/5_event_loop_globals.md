@@ -5,12 +5,12 @@
 Doubledots implements a virtual event loop. The virtual event loop captures and runs all* native events, all custom events, observers such as `MutationObserver`, `setTimeout()`, `requestAnimationFrame()`, invocation of `<script>` tags, etc.
 
 There are several new rules for the virtual event loop in DoubleDots:
-1. The virtual event loop only triggers custom reaction attributes: `addEventListener` is blocked.
-2. `setTimeout` is replaced by `sleep(ms)`.
+1. The virtual event loop only triggers custom reaction attributes: the native `addEventListener` is deprecated.
+2. `setTimeout` is deprecated and replaced by `sleep(ms)`.
 3. Observes such as MutationObserver are wrapped as triggers.
-4. The only callbacks that remain are the internal callbacks in WebComponents.
+4. The only callbacks that are not captured by the eventLoop are the lifecycle callbacks of web components: `constructor()` `connectedCallback()`, `disconnectedCallback()`, and `attributeChangedCallback()`. 
 
->> * It would be too costly for the virtual event loop to add event listeners for all events, always. If we don't want to listen for `mousemove` for example, we do not want to add a listener for it. Similarly, if we only want to listen for `mousemove` events over a narrow branch of the DOM, we add the event listeners there, and not everywhere. Therefore, doubledots only add event listeners for native events when there is a custom reaction needed.
+>> * It would be too costly for the virtual event loop to add event listeners for all events, always. If we don't want to listen for `mousemove` for example, we do not want to add a listener for it. Similarly, if we only want to listen for `mousemove` events over a narrow branch of the DOM, we add the event listeners there, and not everywhere. Therefore, doubledots only add event listeners for native events when there is a custom reaction needed. See triggers_native_events.
 
 ## Types of events
 

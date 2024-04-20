@@ -1,12 +1,5 @@
-window.DoubleDots = {
-
-  DoubleDotsError: class DoubleDotsError extends Error { },
-  DeprecationError: class DeprecationError extends Error { },
-  DefinitionError: class DefinitionError extends Error { },
-  MissingReaction: class MissingReaction extends Error { },
-  DisconnectedError: class DisconnectedError extends Error { },
-
-  AttrWeakSet: class AttrWeakSet extends Set {
+(function () {
+  class AttrWeakSet extends Set {
     static #bigSet = new Set(); //wr => AttrWeakSet
     static #key;
     static GC = 10_000;
@@ -33,27 +26,47 @@ window.DoubleDots = {
       AttrWeakSet.#key ??= setInterval(AttrWeakSet.gc, AttrWeakSet.GC);
       super.add(at);
     }
-  },
-  nativeEvents: (function () {
-    function extractHandlers(obj) {
-      return Object.keys(obj)
-        .filter(k => k.startsWith("on"))
-        .map(k => k.substring(2).toLowerCase());
-    }
-    const eOn = extractHandlers(Element.prototype);
-    const hOn = extractHandlers(HTMLElement.prototype);
-    const wOn = extractHandlers(window);
-    const dOn = extractHandlers(Document.prototype);
+  }
 
-    const e = [...eOn, ...hOn].filter((a, i, ar) => ar.indexOf(a) === i);
-    const w = wOn.filter(x => !e.includes(x));
-    const d = dOn.filter(x => !e.includes(x) && !w.includes(x));
-    //todo should I switch the difference between window and document?
-    const result = { element: e, window: w, document: d };
-    result.element.push("touchstart", "touchmove", "touchend", "touchcancel");
-    result.document.push("DOMContentLoaded");
-    Object.values(result).forEach(Object.freeze);
-    Object.freeze(result);
-    return result;
-  })()
-};
+  window.DoubleDots = {
+    DoubleDotsError: class DoubleDotsError extends Error {
+      constructor(at) {
+        //todo
+      }
+    },
+    DeprecationError: class DeprecationError extends DoubleDotsError { },
+    DefinitionError: class DefinitionError extends DoubleDotsError { },
+    MissingReaction: class MissingReaction extends DoubleDotsError { },
+    DisconnectedError: class DisconnectedError extends DoubleDotsError { },
+    TriggerUpgradeError: class TriggerUpgradeError extends DoubleDotsError {
+      constructor(at, error) {
+        super(at);
+        //todo
+      }
+
+    },
+    AttrWeakSet,
+    nativeEvents: (function () {
+      function extractHandlers(obj) {
+        return Object.keys(obj)
+          .filter(k => k.startsWith("on"))
+          .map(k => k.substring(2).toLowerCase());
+      }
+      const eOn = extractHandlers(Element.prototype);
+      const hOn = extractHandlers(HTMLElement.prototype);
+      const wOn = extractHandlers(window);
+      const dOn = extractHandlers(Document.prototype);
+
+      const e = [...eOn, ...hOn].filter((a, i, ar) => ar.indexOf(a) === i);
+      const w = wOn.filter(x => !e.includes(x));
+      const d = dOn.filter(x => !e.includes(x) && !w.includes(x));
+      //todo should I switch the difference between window and document?
+      const result = { element: e, window: w, document: d };
+      result.element.push("touchstart", "touchmove", "touchend", "touchcancel");
+      result.document.push("DOMContentLoaded");
+      Object.values(result).forEach(Object.freeze);
+      Object.freeze(result);
+      return result;
+    })()
+  };
+})();
