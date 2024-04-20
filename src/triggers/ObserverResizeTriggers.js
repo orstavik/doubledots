@@ -31,22 +31,19 @@
   customAttributes.define("content-box", ResizeAttr);
   customAttributes.define("device-pixel-content-box", ResizeAttr);
 
-  class AttrContainerQuery extends AttrResize {
-    run() {
-      const style = getComputedStyle(this.ownerElement);
-      const width = parseFloat(style.width);
-      const height = parseFloat(style.height);
-      const cq = {
-        cqw: width + "px",
-        cqh: height + "px",
-        // cqi: 1% of a query container's inline size,
-        // cqb: 1% of a query container's block size,
-        // cqmin: The smaller value of either cqi or cqb,
-        // cqmax: The larger value of either cqi or cqb,
-      };
-      for (let [k, v] of Object.entries(cq))
-        this.ownerElement.style.setProperty("--" + k, v);
+  class TriggerCQW extends AttrResize {
+    run([{ contentBoxSize: [{ inlineSize }] }]) {
+      this.ownerElement.style.setProperty("--cqw", inlineSize);
+      //todo run through the contentBoxSize and 
+      //check how to map the contentBoxSize values to 
+      //cqw, cqh, cqi, cqb, cqmin, cqmax
+    }
+
+    settings() {
+      return { box: "content-box" };
     }
   }
+  
+  customAttributes.define("cqw", TriggerCQW);
 
 })(DoubleDots?.nativeMethods || window);
