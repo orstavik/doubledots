@@ -87,7 +87,8 @@
 
       this.#i = this.#names.length;
       const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
-      //todo add the attribute to the ErrorEvent, so that we know which attribute caused the error
+      //todo add the at + reactionIndex + self + input to the ErrorEvent, so that we know which attribute caused the error
+      //todo or just the at, and then just read the data from the _eventLoop?
       target.dispatchEvent(new ErrorEvent("error", { error }));
     }
 
@@ -96,7 +97,7 @@
 
       const next = this.#i + (res instanceof EventLoop.ReactionJump ? res.value : 1);
       if (next >= this.#names.length)
-        this.#i = this.#names.length - 1;
+        this.#i = this.#names.length - 1; //todo I need to update the #selves and #inputs
       else if (res instanceof EventLoop.ReactionOrigin) {
         this.#selves[next] = res.value;
         this.#inputs[next] = this.#inputs[next - 1];
@@ -116,12 +117,6 @@
     //This is different from #stack[#i] when tasks are continued in thread mode. 
     task;
 
-    // replaced by batch(e, attrs)
-    // addTask(attr, event) {
-    //   this.#stack.push(new MicroFrame(attr, event));
-    //   this.#i === this.#stack.length - 1 && this.loop();
-    // }
-
     getFrame() {
       return this.#i < this.#stack.length ? this.#stack[this.#i] : undefined;
     }
@@ -137,7 +132,7 @@
           return;
     }
 
-    batch(event, attrs) {
+    batch(event, ...attrs) {
       const ready = this.#i === this.#stack.length;
       for (let at of attrs)
         this.#stack.push(new MicroFrame(at, event));
@@ -193,37 +188,8 @@
     }
 
     dispatch(event, ...attrs) {
-      __eventLoop.batch(event, attrs);
+      __eventLoop.batch(event, ...attrs);
     }
   };
   Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
 })();
-
-
-
-  //todo move this into the propagation trigger rule
-  //todo 
-  // (function (Element_p) {
-  //   function* path(t, type) {
-  //     for (; t; t = t.assignedSlot || t.parentElement || t.parentNode.host)
-  //       for (let at of t.attributes)
-  //         if (at.trigger === type)
-  //           yield at;
-  //   }
-  // 
-  //   function* localPath(target, type) {
-  //     for (let t = target; t; t = t.parentElement)
-  //       for (let at of t.attributes)
-  //         if (at.trigger === type)
-  //           yield at;
-  //   }
-  // 
-  //   //todo this needs a WIDE and NARROW alternative.
-  //   //todo we have a problem here. We need to build in the error_g and error_l ++ as rules, so that we can add these types of triggers to discover them elsewhere. 
-  //   Element_p.bubble = function bubble(e) {
-  //     if (!this.isConnected)
-  //       throw new DoubleDots.DisconnectedError("bubble on disconnected Element");
-  //     eventLoop.dispatch(e, ...(e.composed ? path(this, e.type) : localPath(this, e.type)));
-  //   };
-
-  // })(Element.prototype);
