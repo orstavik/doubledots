@@ -1,7 +1,5 @@
 (function () {
 
-  //todo deprecate the setter of outerHTML
-
   window.DoubleDots.nativeMethods = {};
 
   //.attachShadow(/*always open*/);   
@@ -28,7 +26,7 @@
   }
 
   function deprecated() {
-    throw new DoubleDots.DeprecationError;
+    throw new DoubleDots.DeprecationError();
   }
 
   const mask = {
@@ -61,14 +59,15 @@
     "EventTarget.prototype": {
       addEventListener: deprecated,
       removeEventListener: deprecated,
-      // dispatchEvent: deprecated //todo we don't deprecate this one
+      // remaining API surface
+      //   dispatchEvent
     },
     "window": {
       setTimeout: deprecated,
       clearTimeout: deprecated,
       setInterval: deprecated,
       clearInterval: deprecated
-      //event: treated special at the bottom
+      //must add "async sleep(ms)" first
     },
     "document": {
       write: deprecated,
@@ -102,6 +101,26 @@
     }
   };
 
+  const getters = {
+    "Document.prototype": {
+      currentScript: deprecated
+    },
+    "window": {
+      event: deprecated
+      //MutationObserver
+      //ResizeObserver
+      //IntersectionObserver
+    }
+  };
+
+  //todo
+  // const setters = {
+  //   "Element.prototype": {
+  //     "outerHTML": deprecated
+  //   }
+  // };
+
+
   function monkeyPatch(proto, prop, value) {
     Object.defineProperty(proto, prop, {
       ...Object.getOwnPropertyDescriptor(proto, prop), value
@@ -130,19 +149,14 @@
       monkeyPatch(obj, prop, newFunc);
     }
   }
-})();
 
-(function () {
-  //overriding getters
-  // Document.prototype.currentScript
-  // window.event
-
-  const currentScriptOG = Object.getOwnPropertyDescriptor(Document.prototype, "currentScript").get.bind(Document.prototype);
-  DoubleDots.nativeMethods.Document.prototype = currentScriptOG;
-  Object.defineProperty(Document.prototype, "currentScript", { configurable: false, value: undefined });
-
-
-  const eventOG = Object.getOwnPropertyDescriptor(window, "event").get.bind(window);
-  DoubleDots.nativeMethods.window.event = eventOG;
-  Object.defineProperty(window, "event", { configurable: false, value: undefined });
+  for (let [path, objMask] of Object.entries(getters)) {
+    path = path.split(".");
+    const obj = getObj(window, path);
+    const ddObj = getObj(DoubleDots.nativeMethods, path);
+    for (let [p, get] of Object.entries(objMask)) {
+      ddObj[p] = Object.getOwnPropertyDescriptor(obj, p).get.bind(obj);
+      Object.defineProperty(Document.prototype, "currentScript", { get });
+    }
+  }
 })();

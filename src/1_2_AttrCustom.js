@@ -111,21 +111,23 @@
   const addEventListenerOG = EventTarget.prototype.addEventListener;
   const removeEventListenerOG = EventTarget.prototype.removeEventListener;
 
-  class AttrListener extends AttrCustom {
-    static #events = {};
-
-    static isEvent(name) {
-      return this.#events[name];
+  const listenerReg = {};
+  Object.defineProperty(Event, "activeListeners", {
+    enumerable: true,
+    value: function activeListeners(name) {
+      return listenerReg[name];
     }
+  });
 
+  class AttrListener extends AttrCustom {
     upgrade() {
       Object.defineProperty(this, "__l", { value: this.run.bind(this) });
       addEventListenerOG.call(this.target, this.type, this.__l, this.options);
-      AttrListener.#events[this.type] = (AttrListener.#events[this.type] || 0)+1;
+      listenerReg[this.type] = (listenerReg[this.type] || 0) + 1;
     }
 
     remove() {
-      AttrListener.#events[this.type] -= 1;
+      listenerReg[this.type] -= 1;
       removeEventListenerOG(this.target, this.type, this.__l, this.options);
       super.remove();
     }
@@ -143,8 +145,8 @@
     // }
 
     run(e) {
-      !this.isConnected && this.remove();
-      this.dispatchEvent(e);
+      // !this.isConnected && this.remove();
+      eventLoop.dispatch(e, this);
     }
   }
 
@@ -181,8 +183,8 @@
     }
 
     run(e) {
-      if (!this.isConnected)
-        return this.remove();
+      // if (!this.isConnected)
+      //   return this.remove();
       stopProp.call(e);
       eventLoop.dispatch(e, ...this.register);
     }
