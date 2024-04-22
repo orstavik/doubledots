@@ -31,12 +31,16 @@
     upgrade() {
       const observer = new MutationObserver(this.run.bind(this));
       Object.defineProperty(this, "observer", { value: observer });
-      this.observer.observe(this.ownerElement, this.settings);
+      this.observer.observe(this.target, this.settings);
     }
 
     remove() {
       this.observer.disconnect();
       super.remove();
+    }
+
+    get target() {
+      return this.ownerElement;
     }
 
     get settings() {
@@ -53,14 +57,28 @@
   function TriggerRuleAttr(fullname) {
     const attributesFilter = fullname.split("_").slice(1).map(n => n.replaceAll("..", ":"));
     Object.freeze(attributesFilter);
-    return class TriggerRuleAttr extends AttrTrigger {
+    return class TriggerRuleAttr extends AttrAttr {
       get settings() {
         return { attributes: true, attributesOldValue: true, attributesFilter };
       }
     };
   }
-  document.Triggers.define("attr", AttrTrigger);
-  document.Triggers.defineRule("attr_", AttrTriggerRule);
+  document.Triggers.define("attr", AttrAttr);
+  document.Triggers.defineRule("attr_", TriggerRuleAttr);
+  
+  function TriggerRuleParentAttr(fullname) {
+    const attributesFilter = fullname.split("_").slice(1).map(n => n.replaceAll("..", ":"));
+    Object.freeze(attributesFilter);
+    return class TriggerRuleAttr extends AttrAttr {
+      get settings() {
+        return { attributes: true, attributesOldValue: true, attributesFilter };
+      }
+      get target(){
+        return this.ownerElement.parentNode;
+      }
+    };
+  }
+  document.Triggers.defineRule("p-attr_", TriggerRuleParentAttr);
 
   class TriggerChild extends AttrAttr {
     get settings() { return { childList: true }; }
@@ -94,5 +112,12 @@
   }
 
   document.Triggers.defineRule("desc_", TriggerDescRule);
-  
+
+  class TriggerSiblingAdd extends AttrAttr {
+    get target() { return this.ownerElement.parentNode; }
+    run([mr]) { mr.addedNodes?.forEach(n => eventLoop.dispatch(n, this)); }
+  }
+
+  document.Triggers.define("new-sibling", TriggerSiblingAdd);
+
 })(DoubleDots?.nativeMethods || window);

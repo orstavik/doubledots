@@ -1,0 +1,26 @@
+<script src="../src/1_1_DoubleDots.js"></script>
+<script src="../src/1_2_AttrCustom.js"></script>
+<script src="../src/2_2_nativeMethods.js"></script>
+<script src="../src/3_definition_registers_v4.js"></script>
+<script src="../src/4_eventLoop_v2.js"></script>
+<script src="../src/triggers/ObserverMutationTriggers.js"></script>
+<script src="../src/6_load_DoubleDots.js"></script>
+<script>
+  document.Reactions.defineRule("toggle-class_", function (fullname) {
+    const c = fullname.split("_")[1];
+    return function toggleClass(oi) {
+      this.ownerElement.classList.toggle(c);
+      return oi;
+    };
+  });
+</script>
+
+<style>
+  summary { border: 2px solid yellow; }
+  .glow { border-color: orange; }
+</style>
+
+<details>
+  <summary p-attr_open:toggle-class_glow>hello</summary>
+  <div>sunshine</div>
+</details>
