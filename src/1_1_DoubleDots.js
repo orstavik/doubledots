@@ -59,13 +59,13 @@
     return str.replace(/[A-Z]/g, '-$0').toLowerCase();
   }
 
-
+  class DoubleDotsError extends Error {
+    constructor(at) {
+      //todo
+    }
+  }
   window.DoubleDots = {
-    DoubleDotsError: class DoubleDotsError extends Error {
-      constructor(at) {
-        //todo
-      }
-    },
+    DoubleDotsError,
     DeprecationError: class DeprecationError extends DoubleDotsError { },
     DefinitionError: class DefinitionError extends DoubleDotsError { },
     MissingReaction: class MissingReaction extends DoubleDotsError { },

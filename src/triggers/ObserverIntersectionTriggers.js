@@ -31,6 +31,9 @@
   }
   document.Triggers.define("inview", AttrIntersection);
 
+  // <div overlap_first-child:explode>
+  //   <div>hello</div>
+  // </div>
   /**
    * This rule should only be applied when the ownerElement of the
    * custom attribute and the element being observed do not change
