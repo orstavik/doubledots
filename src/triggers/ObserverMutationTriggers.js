@@ -22,54 +22,23 @@
 })();
 
 (function () {
-  /**
-   * AttrAttr is the only needed main base for MutationObserver.
-   * With AttrAttr we can deprecate MutationObserver.
-   * All other MutationObserver triggers should use AttrAttr.
-   */
-  class AttrAttr extends AttrCustom {
-    upgrade() {
-      const observer = new MutationObserver(this.run.bind(this));
-      Object.defineProperty(this, "observer", { value: observer });
-      this.observer.observe(this.target, this.settings);
-    }
-
-    remove() {
-      this.observer.disconnect();
-      super.remove();
-    }
-
-    get target() {
-      return this.ownerElement;
-    }
-
-    get settings() {
-      return { attributes: true, attributesOldValue: true };
-    }
-
-    run(mrs) {
-      for (let mr of mrs)
-        eventLoop.dispatch(mr, this); //one event per attribute changed.
-    }
-  }
-
 
   function TriggerRuleAttr(fullname) {
     const attributesFilter = fullname.split("_").slice(1).map(n => n.replaceAll("..", ":"));
     Object.freeze(attributesFilter);
-    return class TriggerRuleAttr extends AttrAttr {
+    return class TriggerRuleAttr extends AttrMutation {
       get settings() {
         return { attributes: true, attributesOldValue: true, attributesFilter };
       }
     };
   }
-  document.Triggers.define("attr", AttrAttr);
+  document.Triggers.define("attr", AttrMutation);
   document.Triggers.defineRule("attr_", TriggerRuleAttr);
   
   function TriggerRuleParentAttr(fullname) {
     const attributesFilter = fullname.split("_").slice(1).map(n => n.replaceAll("..", ":"));
     Object.freeze(attributesFilter);
-    return class TriggerRuleAttr extends AttrAttr {
+    return class TriggerRuleAttr extends AttrMutation {
       get settings() {
         return { attributes: true, attributesOldValue: true, attributesFilter };
       }
@@ -80,17 +49,17 @@
   }
   document.Triggers.defineRule("p-attr_", TriggerRuleParentAttr);
 
-  class TriggerChild extends AttrAttr {
+  class TriggerChild extends AttrMutation {
     get settings() { return { childList: true }; }
     run([mr]) { eventLoop.dispatch(mr, this); }
   }
 
-  class TriggerChildAdd extends AttrAttr {
+  class TriggerChildAdd extends AttrMutation {
     get settings() { return { childList: true }; }
     run([mr]) { mr.addedNodes?.forEach(n => eventLoop.dispatch(n, this)); }
   }
 
-  class TriggerChildRemove extends AttrAttr {
+  class TriggerChildRemove extends AttrMutation {
     get settings() { return { childList: true }; }
     run([mr]) { mr.removedNodes?.forEach(n => eventLoop.dispatch(n, this)); }
   }
@@ -101,7 +70,7 @@
 
   function TriggerDescRule(fullname, nodeListName = "addedNodes") {
     const q = DoubleDots.argsToSelector(fullname.split("_").slice(1));
-    return class TriggerDescAdd extends AttrAttr {
+    return class TriggerDescAdd extends AttrMutation {
       get settings() { return { childList: true, subtree: true }; }
       run([mr]) {
         for (let n in mr[nodeListName])
@@ -113,7 +82,7 @@
 
   document.Triggers.defineRule("desc_", TriggerDescRule);
 
-  class TriggerSiblingAdd extends AttrAttr {
+  class TriggerSiblingAdd extends AttrMutation {
     get target() { return this.ownerElement.parentNode; }
     run([mr]) { mr.addedNodes?.forEach(n => eventLoop.dispatch(n, this)); }
   }

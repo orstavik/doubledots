@@ -81,7 +81,7 @@
     return {key, keys, attrs};
   }
 
-  function TriggerRuleSSO(fullename) {
+  function TriggerRuleSSO(fullname) {
     const props = fullname.split("_").slice(1);
     const key = props.join(" ");
     return class TriggerSSO extends AttrCustom {

@@ -1,34 +1,4 @@
 (function () {
-  /**
-   * AttrIntersection is the main base for IntersectionObserver.
-   * With AttrIntersection we can deprecate IntersectionObserver.
-   * All other IntersectionObserver triggers should use AttrIntersection.
-   */
-
-  class AttrIntersection extends AttrCustom {
-    upgrade() {
-      const observer = new IntersectionObserver(this.run.bind(this));
-      Object.defineProperty(this, "observer", { value: observer });
-      this.observer.observe(this.ownerElement, this.settings);
-    }
-
-    stop() {
-      this.observer.disconnect();
-    }
-
-    remove() {
-      this.stop();
-      super.remove();
-    }
-
-    // get settings() {
-    //   return { threshold: 0.0, root: null, rootMargin: '0px 0px 0px 0px' };
-    // }
-
-    run([mr]) {
-      eventLoop.dispatch(mr, this);
-    }
-  }
   document.Triggers.define("inview", AttrIntersection);
 
   // <div overlap_first-child:explode>
