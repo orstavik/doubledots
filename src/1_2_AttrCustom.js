@@ -190,6 +190,95 @@
     }
   }
 
+  /**
+ * AttrMutation is the only needed main base for MutationObserver.
+ * With AttrMutation we can deprecate MutationObserver.
+ * All other MutationObserver triggers should use AttrMutation.
+ */
+  class AttrMutation extends AttrCustom {
+    upgrade() {
+      const observer = new MutationObserver(this.run.bind(this));
+      Object.defineProperty(this, "observer", { value: observer });
+      this.observer.observe(this.target, this.settings);
+    }
+
+    remove() {
+      this.observer.disconnect();
+      super.remove();
+    }
+
+    get target() {
+      return this.ownerElement;
+    }
+
+    get settings() {
+      return { attributes: true, attributesOldValue: true };
+    }
+
+    run(mrs) {
+      for (let mr of mrs)
+        eventLoop.dispatch(mr, this); //one event per attribute changed.
+    }
+  }
+
+  /**
+   * works out of the box using:
+   * 
+   * documents.Triggers.define("content-box", AttrResize);
+   * documents.Triggers.define("border-box", AttrResize);
+   * documents.Triggers.define("device-pixel-content-box", AttrResize);
+   */
+  class AttrResize extends AttrCustom {
+    upgrade() {
+      const observer = new ResizeObserver(this.run.bind(this));
+      Object.defineProperty(this, "observer", { value: observer });
+      this.observer.observe(this.ownerElement, this.settings);
+    }
+
+    remove() {
+      this.observer.disconnect();
+      super.remove();
+    }
+
+    get settings() {
+      return { box: this.trigger };
+    }
+
+    run(entries) {
+      eventLoop.dispatch(entries, this);
+    }
+  }
+
+  /**
+   * AttrIntersection is the main base for IntersectionObserver.
+   * With AttrIntersection we can deprecate IntersectionObserver.
+   * All other IntersectionObserver triggers should use AttrIntersection.
+   */
+  class AttrIntersection extends AttrCustom {
+    upgrade() {
+      const observer = new IntersectionObserver(this.run.bind(this));
+      Object.defineProperty(this, "observer", { value: observer });
+      this.observer.observe(this.ownerElement, this.settings);
+    }
+
+    stop() {
+      this.observer.disconnect();
+    }
+
+    remove() {
+      this.stop();
+      super.remove();
+    }
+
+    // get settings() {
+    //   return { threshold: 0.0, root: null, rootMargin: '0px 0px 0px 0px' };
+    // }
+
+    run([mr]) {
+      eventLoop.dispatch(mr, this);
+    }
+  }
+
   Object.assign(window, {
     AttrListener,
     AttrListenerGlobal,
@@ -197,5 +286,8 @@
     AttrImmutable,
     AttrUnknown,
     AttrPromise,
+    AttrMutation,
+    AttrIntersection,
+    AttrResize
   });
 })();
