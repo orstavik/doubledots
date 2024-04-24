@@ -1,0 +1,105 @@
+<script src="../../src/1_1_DoubleDots.js"></script>
+<script src="../../src/1_2_AttrCustom.js"></script>
+<script src="../../src/2_2_nativeMethods.js"></script>
+<script src="../../src/3_definition_registers_v4.js"></script>
+<script src="../../src/4_eventLoop_v2.js"></script>
+<script src="../../src/triggers/PropagationSimple.js"></script>
+<script src="../../src/6_load_DoubleDots.js"></script>
+
+<form submit:submition>
+  <h3>Hangman Game</h3>
+  <button click:startgame>Start Game</button>
+  <div>
+    <p>Guess the word: <span class="word"></span></p>
+    <p>Attempts left: <span class="attempts"></span></p>
+    <div style="display: flex; gap: 10px">
+      <p>Guess (only letters):</p>
+      <input type="text" maxlength="1" pattern="[A-Za-z]" id="input" />
+      <button type="submit">Submit</button>
+    </div>
+    <p class="status"></p>
+  </div>
+</form>
+<script>
+  const words = [
+    "apple",
+    "banana",
+    "cherry",
+    "date",
+    "elderberry",
+    "fig",
+    "grape",
+    "honeydew",
+    "kiwi",
+    "lemon",
+    "mango",
+    "nectarine",
+    "orange",
+    "papaya",
+    "quince",
+    "raspberry",
+    "strawberry",
+    "tangerine",
+    "watermelon",
+  ];
+  let attempts;
+  let word;
+  let response = [];
+  let t;
+
+  document.Reactions.define("startgame", function () {
+    console.log("Game started");
+    this.ownerElement.setAttribute("disabled", true);
+    word = words[Math.floor(Math.random() * words.length)];
+    // making it 6 for now, can be changed later
+    attempts = 6;
+    response = word.split("").map((letter) => ({ letter, ondisplay: "_" }));
+    console.log(word);
+    console.log(response);
+    this.ownerElement.parentElement.querySelector(".word").textContent = response.map((letter) => letter.ondisplay).join(" ");
+    this.ownerElement.parentElement.querySelector(".attempts").textContent = attempts;
+  });
+
+  document.Reactions.define("submition", function () {
+    __eventLoop.getFrame().event.preventDefault();
+    let attmp = this.ownerElement.querySelector("input").value;
+    t = false;
+    response.map((letter) => {
+      // if letter already guessed
+      if (letter.letter === attmp && letter.ondisplay === attmp) {
+        console.log("Letter already guessed");
+        this.ownerElement.querySelector(".status").textContent = "You have already guessed this letter";
+        return;
+        // if letter not guessed and in word
+      } else if (letter.letter === attmp && letter.ondisplay === "_") {
+        console.log(letter.letter, "correct");
+        letter.ondisplay = attmp;
+        console.log(response);
+        this.ownerElement.querySelector(".word").textContent = response.map((letter) => letter.ondisplay).join(" ");
+        t = true;
+        return
+      }
+    });
+    // if bad attempt decrease attempts
+    if (!t) {
+      console.log("bad attempt");
+      attempts--;
+      this.ownerElement.parentElement.querySelector(".attempts").textContent = attempts;
+    }
+    // if no attempts left end game
+    if (attempts === 0) {
+      this.ownerElement.querySelector(".status").textContent = "You lost!";
+      return;
+    }
+    // finally check if all letters are guessed
+    if (response.every((letter) => letter.ondisplay !== "_")) {
+      this.ownerElement.querySelector(".status").textContent = "You won!";
+      return;
+    }
+  });
+
+  document.Reactions.define("log", function () {
+    this.ownerElement.querySelector("input").value = "";
+    console.log(word);
+  });
+</script>
