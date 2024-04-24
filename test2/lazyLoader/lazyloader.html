@@ -1,0 +1,31 @@
+<script src="../../src/1_1_DoubleDots.js"></script>
+<script src="../../src/1_2_AttrCustom.js"></script>
+<script src="../../src/2_2_nativeMethods.js"></script>
+<script src="../../src/3_definition_registers_v4.js"></script>
+<script src="../../src/4_eventLoop_v2.js"></script>
+<script src="../../src/triggers/PropagationSimple.js"></script>
+<script src="../../src/6_load_DoubleDots.js"></script>
+<script src="../../src/triggers/ObserverIntersectionTriggers.js"></script>
+<div>
+    <div style="height: 100vh;" inview:lazyloader>
+      <img src="https://via.placeholder.com/150" alt="">
+    </div>
+    <div style="height: 100vh;" inview:lazyloader>
+      <img src="https://via.placeholder.com/150" alt="">
+    </div>
+    <div style="height: 100vh;" inview:lazyloader>
+      <img src="https://via.placeholder.com/150" alt="">
+    </div>  
+</div>
+<script>
+  document.Reactions.define("lazyloader", function() {
+    console.log("Lazy loader");
+    let images = this.ownerElement.querySelectorAll("img");
+    console.log(images);
+    images.forEach((img) => {
+      if (img.src === "https://via.placeholder.com/150") {
+        img.src = "https://via.placeholder.com/300";
+      }
+    });
+  });
+</script>
