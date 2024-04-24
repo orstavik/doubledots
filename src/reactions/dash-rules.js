@@ -1,183 +1,199 @@
-function dashOi(e, oi){
-  if (oi instanceof Object)
-    return new EventLoop.ReactionOrigin(oi);
-  throw new DashReactionError(`"${oi}" is not an Object.`);
+class ElementIterator {
+  #superior;
+  constructor(superior) { this.#superior = superior; }
+  *elements() { yield* this.#superior.elements(); }
+  *attributes() { for (let el of this.elements) yield* el.attributes; }
 }
 
-function attributeQuery(query, el){
-  for (let a of el.attributes)
-    if (a.name.replaceAll(":", "_").startsWith(query))
-      return a;
+//todo this we need for el, target, relatedTarget
+class SingleElementIterator extends ElementIterator {
+  #q;
+  constructor(q) { this.#q = q; }
+  *elements() { yield this.#q(this); }
 }
 
-function elQuerySelector(query){
-  let [typeAttr, ...classes] = query.split(".");
-  classes = classes.join(".");
-  let [type, ...attr] = typeAttr.split(/(?<!_)_(?!_)/); 
-  if(attr.length)
-    attr = attr.map(a => a.split("__")).map(([n,v]) => v ? `[${n}="${v}"]`: `[${n}]`);
-  return type + attr + classes;
-}
+class DirectionIterator extends ElementIterator {
 
-function* upwardsIterator(el) {
-  while (el instanceof Element) {
-    yield el;
-    el = el.parentNode;
-  }
-}
+  #generator;
+  #num;
+  #reverse;
 
-function* previousSiblingIterator(el) {
-  while (el instanceof Element) {
-    yield el;
-    el = el.previousSiblingElement;
+  constructor(superior, generator, reverse, num) {
+    super(superior);
+    this.#generator = generator;
+    this.#num = num;
+    this.#reverse = reverse;
   }
-}
 
-// function* nextSiblingIterator(el) {
-//   while (el instanceof Element) {
-//     el = el.nextSiblingElement;
-//     yield el;
-//   }
-// }
+  * #core() {
+    for (let el of super.elements())
+      yield* this.#generator(el);
+  }
 
-function upwardsNumber(number, root) {
-  for (let i = 0; i < number; i++) {
-    root = root.parentNode;
-    if (!(root instanceof Element))
-      throw new DashRuleError("iterating upwards index out of range");
-  } 
-  return root;
-}
-
-function dirQuerySelector(dir, elQuery) {
-  const type = dir[0];
-  const number = parseInt(dir.substring(1));
-  
-  if(type === "c") {
-    const tail = isNaN(number) ? "" : `:nth-child(${number})`;
-    const query = `:root > ${elQuery}${tail}`;
-    return e => e.currentElement.querySelector(query);
-  }
-  if(type === "l") {
-    const tail = isNaN(number) ? "" : `:nth-last-child(${number})`;
-    const query = `:root > ${elQuery}${tail}`;
-    return e => e.currentElement.querySelector(query);
-  }
-  if (type === "m") {
-    if(isNaN(number) && !elQuery)
-        return e => e.currentElement.previousSiblingElement;
-    if(isNaN(number)/*&&elQuery*/){
-      return function(e) {
-        for (let p of previousSiblingIterator(e.currentElement.previousSiblingElement)) {
-          if (!p)
-            throw new DashRuleError("previousSibling direction with query didn't match");
-          if (p.matches(elQuery))
-            return p;
-        }
-        throw new DashRuleError("previousSibling direction with query didn't match");
-      }
+  *elements() {
+    if (!this.#reverse && this.#num === undefined)
+      yield* this.#core();
+    const res = [...this.#core()];
+    this.#reverse && res.reverse();
+    if (this.#num === undefined) {
+      yield* res;
+      return;
     }
-    //todo not sure that the support for :has() is big enough for this to work yet..
-    const plusStar = number > 0 ? '+*'.repeat(number) + '+' : '+';
-    const query = `${elQuery}:has(${plusStar}:root)`;
-    return e => e.currentElement.querySelector(query);
-  }
-  if (type === "n") {
-    const plusStar = number > 0 ? '+*'.repeat(number) + '+' : '~';
-    const query = `:root ${plusStar} ${elQuery}`;
-    return e => e.currentElement.querySelector(query);
-  }
-  if (type === "p") {
-    if ((isNaN(number) || number === 0) && !elQuery)
-      return e => e.currentElement.parentNode;
-    if(number && !elQuery){
-      const func = upwardsNumber.bind(null, number);
-      return e => func(e.currentElement.parentNode);
-    }
-    if(isNaN(number) && elQuery){
-      return function(e) {
-        for (let p of upwardsIterator(e.currentElement.parentNode)) {
-          if (!p || !(p instanceof Element))
-            throw new DashRuleError("parent direction with query didn't match");
-          if (p.matches(elQuery))
-            return p;
-        }
-      }
-    }
-    if(!isNaN(number) && elQuery){
-      const func = upwardsNumber.bind(null, number);
-      return function(e){
-        const el = func(e.currentElement.parentNode);
-        if(el.matches(elQuery))
-          return el;
-        throw new DashRuleError("parent direction with number and query didn't match");
-      }
-    }
-  }
-  if (type === "t") {
-    if ((isNaN(number) || number === 0) && !elQuery)
-      return e => e.target;
-    if(number && !elQuery){
-      const func = upwardsNumber.bind(null, number);
-      return e => func(e.target);
-    }
-    if(isNaN(number) && elQuery){
-      return function(e) {
-        for (let p of upwardsIterator(e.target)) {
-          if (!p || !(p instanceof Element))
-            throw new DashRuleError("parent direction with query didn't match");
-          if (p.matches(elQuery))
-            return p;
-        }
-      }
-    }
-    if(!isNaN(number) && elQuery){
-      const func = upwardsNumber.bind(null, number);
-      return function(e){
-        const el = func(e.target);
-        if(!el.matches(elQuery))
-          return el;
-        throw new DashRuleError("parent direction with number and query didn't match");
-      }
-    }
+    let i = this.#num < 0 ? res.length + this.#num : this.#num;
+    yield res[i];
   }
 }
 
-//todo memoize dashRule function
-customReactions.defineRule("-", function dashRule(name) {
-  if (name==="")
-    return e => new EventLoop.ReactionOrigin(e.currentElement);
-  // if (name==="-") There is an opening for `:--`
-  //   return e => new EventLoop.ReactionOrigin(Free_notYetInUse);
-  if (name==="--") 
-    return e => new EventLoop.ReactionOrigin(e.currentAttribute);
-  if (name===".") 
-    return e => new EventLoop.ReactionOrigin(e);
-  if (name==="..")
-    return dashOi;
-  
-  //direct attribute query
-  if (name.startsWith("--")){
-    const funAttr = attributeQuery.bind(null, name.substring(2));
-    return e => funAttr(e.currentElement);
+class TypeClassQueryIterator extends ElementIterator {
+  #query;
+
+  constructor(superior, query) {
+    super(superior);
+    this.#query = query;
   }
-  
-  const [dirEl, attr] = name.split("---");
-  const funAttr = attr ? attributeQuery.bind(null, attr) : undefined;
-  const [dir, el] = dirEl.split("--");
-  if(!dir)
-    return e => e.currentElement.querySelector("elQuery");
-  const elQS = elQuerySelector(el);
-  const funQS = dirQuerySelector(dir, elQS);
-  
-  return function dashReaction(e, oi){
-    let o = e.currentElement;
-    funQS && (o = funQS(e));
-    if (!o)
-      throw new DashRuleException("element not found");
-    funAttr && (o = funAttr(o));
-    if (!o)
-      throw new DashRuleException("attribute not found");
-    return new EventLoop.ReactionOrigin(o);
+
+  *elements() {
+    for (let el of super.elements())
+      if (el.matches(this.#query))
+        yield el;
   }
-});
+}
+
+class AttributeQueryIterator extends ElementIterator {
+  #query;
+  constructor(superior, queryString) {
+    super(superior);
+    //todo shit vocabulary issues.
+    this.#query = queryString.replaceAll("_.", ":");
+  }
+  *elements() {
+    const done = new Set();
+    for (let at of this.attributes) {
+      const el = at.ownerElement;
+      if (done.has(el))
+        continue;
+      done.add(el);
+      yield el;
+    }
+  }
+  *attributes() {
+    for (let at of super.attributes)
+      if (at.name.startsWith(this.#query))
+        yield at;
+  }
+}
+
+// 1. NOT e,oi,window
+//  e,oi,window are not directions! This dash-rule is for dom node origins only. We use the .-dot rules for e, oi, window.
+// document.Reactions.define("-oi", oi => new EventLoop.ReactionOrigin(oi));
+// document.Reactions.define("-e", _ => new EventLoop.ReactionOrigin(eventLoop.event));
+// document.Reactions.define("-w", _ => new EventLoop.ReactionOrigin(window));
+
+// 2. lowered doubledots = '..' 
+// 
+// ".." as local psynonym for ":". I think that we should likely make this a global soft convention. As a way to speed up the reaction calls. This enables a hatch if you don't want to break the ":" in the sgml spec.
+//The .. as a convention for a "lowered doubledots" that enable chaining
+//inside the dash-rule.
+//If the dash-rule allow for chaining internally, then we can make it static at the beginning. And that gives clear benefits.
+
+//3. -dash rule starts with the single node that is the ownerElement.
+
+// produce either a single node, or a DomNodeIterator. A special node that will return 
+
+function propIterator(prop) {
+  return function* (el) {
+    for (let p = el[prop]; p; p = p[prop])
+      yield el;
+  };
+}
+
+// Todo: especially down should be implemented
+//
+//   down: 1,// self => target down towards the target
+//   widthFirst: right to left. 
+//   sibsNearest: 11, // nearest => next[0], prev[0], next[1], 
+
+// Todo 2: use querySelectorWhen possible to speed up traversal
+const generators = {
+  child: function* (el) { yield* el.children; },
+  depth: function* (el) { yield* el.querySelectorAll("*"); },
+  width: function* (el) {
+    yield* el.children;
+    for (let c of el.children)
+      yield* this.widthFirst(c);
+  },
+  root: function* (el) { yield el.getRootNode(); },
+  host: function* (el) { yield el.getRootNode().host; },
+  roots: function* (el) {
+    for (let r = el.getRootNode(); r; r = r.host?.getRootNode())
+      yield r;
+  },
+  hosts: function* (el) {
+    for (let h = el.getRootNode().host; h; r = r.getRootNode().host)
+      yield h;
+  },
+  parent: propIterator("parentElement"),
+  sibp: propIterator("previousSiblingElement"),
+  sibn: propIterator("nextSiblingElement"),
+  sibs: function* (el) { yield* el.parentNode.children; }
+};
+
+function dashesToIterator(dash, superior) {
+  if (dash.startsWith("---"))
+    return new AttributeQueryIterator(superior, dash.slice(3));
+  if (dash.startsWith("--"))
+    return new TypeClassQueryIterator(superior, dash.slice(2));
+  dash = dash.slice(1);
+  if (dash === "t")  //target
+    return new SingleElementIterator(_ => eventLoop.event.target);
+  if (dash === "t2") //relatedTarget
+    return new SingleElementIterator(_ => eventLoop.event.relatedTarget);
+  if (dash === "d")  //d for document
+    return new SingleElementIterator(_ => document);
+
+  // "_p12" or "p12" or "_p" or "p"
+  const m = dash.match(/^(_)?([a-zA-Z]*)([-]?\d*)$/);
+  if (!m)
+    throw new DoubleDots.SyntaxError("Bad dash rule segment: " + dash);
+  const [_, inverse, gen, num] = m;
+  const generator = generators[gen];
+  if (!generator)
+    throw new DoubleDots.SyntaxError("Bad dash rule generator name: " + gen);
+  return new DirectionIterator(superior, generator, !!inverse, num);
+}
+
+//todo error handling!!
+function listProxy(elements) {
+  return new Proxy(elements, {
+    get(obj, prop) {
+      const res = [];
+      const propOg = obj[0][prop];
+      if (propOg instanceof Function)
+        return function (...args) {
+          return obj.map(el => propOg.call(el, ...args));
+        };
+      res[0] = propOg;
+      for (let i = 1; i < obj.length; i++)
+        res[i] = obj[i][prop];
+      return res;
+    },
+    set(obj, prop, value) {
+      return obj.map(el => (el[prop] = value));
+    },
+  });
+}
+
+function dashRule(fullname) {
+  const dashes = fullname.split("..");
+  let it = new SingleElementIterator(eventLoop.attribute.ownerElement);
+  for (let dash of dashes)
+    it = dashesToIterator(dash, it);
+  const res = it instanceof AttributeQueryIterator ?
+    [...it.attributes()] :
+    [...it.elements()];
+  return !res.length ? undefined :
+    res.length === 1 ? res[0] :
+      listProxy(res);
+}
+
+document.Reactions.defineRule("-", dashRule);
