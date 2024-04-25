@@ -145,19 +145,21 @@
     }
   }
 
-  // class TriggerMap extends DefinitionsMapDOMOverride {
-  //   defineRule(prefix, FunFun) {
-  //     if (!prefix[0].match(/[a-z_]/))
-  //       throw new DefinitionError(`Trigger rule prefixes must begin with /a-z_/: ${prefix} starts with '${prefix[0]}'.`);
-  //     super.defineRule(prefix, FunFun);
-  //   }
+  function TriggerSyntaxCheck(DefMap) {
+    return class TriggerMap extends DefMap {
+      defineRule(prefix, FunFun) {
+        if (!prefix[0].match(/[a-z_]/))
+          throw new DefinitionError(`Trigger rule prefixes must begin with /a-z_/: ${prefix} starts with '${prefix[0]}'.`);
+        super.defineRule(prefix, FunFun);
+      }
 
-  //   define(fullname, Def) {
-  //     if (!fullname[0].match(/[a-z_]/))
-  //       throw new DefinitionError(`Trigger definition names must begin with /a-z_/: ${fullname} starts with '${fullname[0]}'.`);
-  //     super.define(fullname, Def);
-  //   }
-  // }
+      define(fullname, Def) {
+        if (!fullname[0].match(/[a-z_]/))
+          throw new DefinitionError(`Trigger definition names must begin with /a-z_/: ${fullname} starts with '${fullname[0]}'.`);
+        super.define(fullname, Def);
+      }
+    };
+  }
 
 
   Object.defineProperties(Document.prototype, {
@@ -171,7 +173,8 @@
     Triggers: {
       configurable: true,
       get: function () {
-        const map = new DefinitionsMapAttrUnknown();
+        const TriggerMap = TriggerSyntaxCheck(DefinitionsMapAttrUnknown);
+        const map = new TriggerMap();
         Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
         return map;
       }
@@ -189,7 +192,8 @@
     Triggers: {
       configurable: true,
       get: function () {
-        const map = new DefinitionsMapDOMOverride(this, "Triggers");
+        const TriggerMap = TriggerSyntaxCheck(DefinitionsMapDOMOverride);
+        const map = new TriggerMap(this, "Triggers");
         Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
         return map;
       }
