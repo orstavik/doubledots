@@ -15,6 +15,12 @@ The `:` is *only* and *always* used to split trigger and reactions. You *cannot*
 1. Triggers and reactions can *only ever* contain `a-z0-9_-.`. ***English lowercase characters***, digits `0-9`, and `_-.`. This is because HTML attributes can only contain `a-z0-9_-.:`, and `:` doubledot is already reserved for splitting triggers and reactions.
 2. The first character of trigger names must be `a-z_`. ***English lowercase characters or `_`***. This is because HTML attribute names *can't startWith digits, `.` nor `-`*.
 
+## Hard rule "No `this` in arrow functions"
+
+You *cannot* use `this` in arrow functions in DoubleDots. You *can* use arrow functions that do not reference `this` inside. The reason for this hard limit is that the virtual event loop cannot override the `this` in arrow functions when invoking reactions. Therefore, if you attempt to define a reaction with an arrow function that use `this` inside, you will get an error, often a silent one or an error in the subsequent reaction. These errors are so confusing that DoubleDots have made this restriction.
+
+If you need, you *can* still define your reactions as *both* closures and bound functions (`.bind(this)`) that use outside variables. This can be useful in some complex state-oriented reactions such as schedulars. But for normal reactions, try to use as pure functions as possible.
+
 ## Soft rule `..` - lowered doubledot
 
 `..` is called a lowered doubledot. The lowered doubledot is considered a psynonym for the (raised) normal `:` doubledot: when you see a `..`, you should be able to replace it with `:` and get the exact same behavior (the difference being the doubledot engine running the reaction as a chain of smaller reactions). Similarly, if you *lower* doubledot `:` to `..`, then some DoubleDot trigger and reaction rules will *merge* and *inline* the two reactions into one.
