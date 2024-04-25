@@ -1,0 +1,39 @@
+<script src="../../src/1_1_DoubleDots.js"></script>
+<script src="../../src/1_2_AttrCustom.js"></script>
+<script src="../../src/2_2_nativeMethods.js"></script>
+<script src="../../src/3_definition_registers_v4.js"></script>
+<script src="../../src/4_eventLoop_v2.js"></script>
+<script src="../../src/6_load_DoubleDots.js"></script>
+<script src="../../src/triggers/PropagationSimple.js"></script>
+
+
+<style>
+  button {
+    width: 100px;
+    height: 100px;
+    border: solid;
+    border-radius: 50%;
+  }
+</style>
+
+<script>
+  document.Reactions.define("this-sound", function () {
+    return this.ownerElement.innerText;
+  });
+  document.Reactions.define("target-sound", e=>e.target.innerText);
+  document.Reactions.define("play-sound", function (name) {
+    const audio = document.querySelector(`audio[name="${name.toLowerCase()}"]`);
+    audio.currentTime = 0;
+    audio.play();
+  });  
+</script>
+
+<audio name=kick src="./static/kick.ogg"></audio>
+<audio name=snare src="./static/snare.ogg"></audio>
+<audio name=drum src="./static/drum.ogg"></audio>
+
+<div _keypress:target-sound:play-sound>
+  <button click:this-sound:play-sound><u>K</u>ick</button>
+  <button click:this-sound:play-sound><u>S</u>nare</button>
+  <button click:this-sound:play-sound><u>D</u>rum</button>
+</div>
