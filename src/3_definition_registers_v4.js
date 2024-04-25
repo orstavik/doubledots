@@ -11,8 +11,7 @@
     defineRule(prefix, FunFun) {
       //FunFun can be either a Function that given the prefix will produce either a class or a Function.
       //FunFun can also be a Promise.
-      if (!prefix.match(/^[a-z0-9_\.-]*$/))
-        throw new DefinitionError(`Definition rule prefixes can only contain /^[a-z0-9_\.-]*$/: ${prefix}`);
+      DoubleDots.DefinitionNameError.check(prefix);
       for (let r of Object.keys(this.#rules))
         if (r.startsWith(prefix) || prefix.startsWith(r))
           throw new DefinitionError(`rule/rule conflict: trying to add '${prefix}' when '${r}' exists.`);
@@ -26,8 +25,7 @@
     define(fullname, Def) {
       //Def can be either a class or a Function.
       //Def can also be a Promise.
-      if (!fullname.match(/^[a-z0-9_\.-]*$/))
-        throw new DefinitionError(`Definition names can only contain /^[a-z0-9_\.-]*$/: ${fullname}`);
+      DoubleDots.DefinitionNameError.check(fullname);
       if (fullname in this.#definitions)
         throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
       for (let r of Object.keys(this.#rules))
@@ -148,14 +146,21 @@
   function TriggerSyntaxCheck(DefMap) {
     return class TriggerMap extends DefMap {
       defineRule(prefix, FunFun) {
-        if (!prefix[0].match(/[a-z_]/))
-          throw new DefinitionError(`Trigger rule prefixes must begin with /a-z_/: ${prefix} starts with '${prefix[0]}'.`);
+        DoubleDots.TriggerNameError.check(prefix);
         super.defineRule(prefix, FunFun);
       }
 
       define(fullname, Def) {
-        if (!fullname[0].match(/[a-z_]/))
-          throw new DefinitionError(`Trigger definition names must begin with /a-z_/: ${fullname} starts with '${fullname[0]}'.`);
+        DoubleDots.TriggerNameError.check(fullname);
+        super.define(fullname, Def);
+      }
+    };
+  }
+
+  function ReactionThisInArrowCheck(DefMap) {
+    return class ReactionMapNoThisInArrow extends DefMap {
+      define(fullname, Def) {
+        DoubleDots.ThisArrowFunctionError.check(Def);
         super.define(fullname, Def);
       }
     };
