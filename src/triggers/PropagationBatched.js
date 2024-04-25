@@ -112,7 +112,8 @@ document.documentElement.setAttribute("da:dd-filter-da:dd-run-da");
     for (let type of DoubleDots.nativeEvents.window)
       document.Triggers.define(type, AttrListenerGlobal);
     for (let type of DoubleDots.nativeEvents.document)
-      document.Triggers.define(type, DocumentTrigger);
+      if (type !== "DOMContentLoaded")
+        document.Triggers.define(type, DocumentTrigger);
     document.Triggers.define("domcontentloaded", DCLTrigger);
   })();
 

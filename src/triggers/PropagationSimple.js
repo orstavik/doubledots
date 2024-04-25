@@ -42,7 +42,8 @@ class PostPropTrigger extends WindowTrigger {
   for (let type of DoubleDots.nativeEvents.window)
     document.Triggers.define(type, WindowTrigger);
   for (let type of DoubleDots.nativeEvents.document)
-    document.Triggers.define(type, DocumentTrigger);
+    if (type !== "DOMContentLoaded")
+      document.Triggers.define(type, DocumentTrigger);
   document.Triggers.define("domcontentloaded", DCLTrigger);
 })();
 
