@@ -18,9 +18,9 @@
 
 <script>
   document.Reactions.define("this-sound", function () {
-    return this.ownerElement.innerText;
+    return this.ownerElement.innerText[0];
   });
-  document.Reactions.define("target-sound", e=>e.target.innerText);
+  document.Reactions.define("key-sound", e => e.key);
   document.Reactions.define("play-sound", function (name) {
     const audio = document.querySelector(`audio[name="${name.toLowerCase()}"]`);
     audio.currentTime = 0;
@@ -28,11 +28,11 @@
   });  
 </script>
 
-<audio name=kick src="./static/kick.ogg"></audio>
-<audio name=snare src="./static/snare.ogg"></audio>
-<audio name=drum src="./static/drum.ogg"></audio>
+<audio name="k" src="./static/kick.ogg"></audio>
+<audio name="s" src="./static/snare.ogg"></audio>
+<audio name="d" src="./static/drum.ogg"></audio>
 
-<div _keypress:target-sound:play-sound>
+<div _keypress:key-sound:play-sound>
   <button click:this-sound:play-sound><u>K</u>ick</button>
   <button click:this-sound:play-sound><u>S</u>nare</button>
   <button click:this-sound:play-sound><u>D</u>rum</button>
