@@ -11,6 +11,8 @@
     defineRule(prefix, FunFun) {
       //FunFun can be either a Function that given the prefix will produce either a class or a Function.
       //FunFun can also be a Promise.
+      if (!prefix.match(/^[a-z0-9_\.-]*$/))
+        throw new DefinitionError(`Definition rule prefixes can only contain /^[a-z0-9_\.-]*$/: ${prefix}`);
       for (let r of Object.keys(this.#rules))
         if (r.startsWith(prefix) || prefix.startsWith(r))
           throw new DefinitionError(`rule/rule conflict: trying to add '${prefix}' when '${r}' exists.`);
@@ -24,6 +26,8 @@
     define(fullname, Def) {
       //Def can be either a class or a Function.
       //Def can also be a Promise.
+      if (!fullname.match(/^[a-z0-9_\.-]*$/))
+        throw new DefinitionError(`Definition names can only contain /^[a-z0-9_\.-]*$/: ${fullname}`);
       if (fullname in this.#definitions)
         throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
       for (let r of Object.keys(this.#rules))
@@ -86,6 +90,7 @@
     #root;
     #type;
     constructor(root, type) {
+      super();
       this.#root = root;
       this.#type = type;
     }
@@ -139,6 +144,21 @@
       return overrider ? overrider.get(name) : super.get(name);
     }
   }
+
+  // class TriggerMap extends DefinitionsMapDOMOverride {
+  //   defineRule(prefix, FunFun) {
+  //     if (!prefix[0].match(/[a-z_]/))
+  //       throw new DefinitionError(`Trigger rule prefixes must begin with /a-z_/: ${prefix} starts with '${prefix[0]}'.`);
+  //     super.defineRule(prefix, FunFun);
+  //   }
+
+  //   define(fullname, Def) {
+  //     if (!fullname[0].match(/[a-z_]/))
+  //       throw new DefinitionError(`Trigger definition names must begin with /a-z_/: ${fullname} starts with '${fullname[0]}'.`);
+  //     super.define(fullname, Def);
+  //   }
+  // }
+
 
   Object.defineProperties(Document.prototype, {
     Reactions: {
