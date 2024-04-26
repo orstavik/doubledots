@@ -5,7 +5,7 @@
 <script src="../../src/4_eventLoop_v2.js"></script>
 <script src="../../src/6_load_DoubleDots.js"></script>
 <script src="../../src/triggers/PropagationSimple.js"></script>
-<script src="../../src/reactions/dash-rule2.js"></script>
+<script src="../../src/reactions/dash-rule.js"></script>
 <script src="../../src/reactions/dot-rules.js"></script>
 
 <div>
@@ -17,8 +17,8 @@
   </video>
   <br>
   <button id="play" click:-p0..-c..--video:.play>Play</button>
-  <!-- <button id="pause" click:get-video:pause>Pause</button>
-  <button id="stop" click:get-video:pause:get-video:reset>Stop</button> -->
+  <button id="pause" click:-sibp..--video:.pause>Pause</button>
+  <!-- <button id="stop" click:get-video:pause:get-video:reset>Stop</button> -->
 </div>
 <script>
   // document.Reactions.define("get-video", _ => document.querySelector("#video"));
