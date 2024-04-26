@@ -106,7 +106,7 @@
 
       const next = this.#i + (res instanceof EventLoop.ReactionJump ? res.value : 1);
       if (next >= this.#names.length)
-        this.#i = this.#names.length - 1; //todo I need to update the #selves and #inputs
+        this.#i = this.#names.length; //todo I need to update the #selves and #inputs
       else if (res instanceof EventLoop.ReactionOrigin) {
         this.#selves[next] = res.value;
         this.#inputs[next] = this.#inputs[next - 1];
