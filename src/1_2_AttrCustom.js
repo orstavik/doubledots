@@ -275,7 +275,7 @@
     // }
 
     run([mr]) {
-      eventLoop.dispatch(mr, this);
+      document.readyState === "complete" && eventLoop.dispatch(mr, this);
     }
   }
 
