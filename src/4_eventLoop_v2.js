@@ -54,6 +54,15 @@
           if (!func)
             throw new DoubleDots.MissingReaction("No reaction definition.");
 
+          if (func instanceof Promise){
+            if(threadMode){
+              func.then(_=> (__eventLoop.task = this).run(threadMode));
+              return;
+            }else {
+              func.then(_=>__eventLoop.loop());
+              return true;
+            }
+          }
           const input = this.#inputs[this.#i];
           const self = this.#selves[this.#i];
           const res = this.#outputs[this.#i] = func.call(self, input);
