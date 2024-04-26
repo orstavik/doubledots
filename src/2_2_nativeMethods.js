@@ -51,6 +51,8 @@
       //  el.getAttribute(name)
       //  el.getAttributeNode(name)
       //  el.attributes
+      after: deprecated,
+      before: deprecated
     },
     "Event.prototype": {
       stopPropagation: deprecated,
