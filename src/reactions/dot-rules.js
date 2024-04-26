@@ -28,23 +28,6 @@ function processArg(arg) {
               `"${arg}"`;
 }
 
-// /**
-//  * @param {string} txt 
-//  * @returns {string} with the input as a valid js expression
-//  */
-// function textToExp(txt) {
-//   let [prop, ...args] = txt.split("_");
-//   if (prop.startsWith("e."))
-//     prop = "eventLoop.event" + prop.slice(1);
-//   else if (prop.startsWith("el."))
-//     prop = "this.ownerElement" + prop.slice(1);
-//   else
-//     prop = "this." + prop;
-//   prop = DoubleDots.kebabToPascal(prop);
-//   args = args.map(a => processArg(a));
-//   return `${prop}(${args.join(", ")})`;
-// }
-
 /**
  * @param {string} txt 
  * @returns {string} with the input as a valid js expression
@@ -53,7 +36,10 @@ function textToExp(txt) {
   let [prop, ...args] = txt.split("_");
   prop = DoubleDots.kebabToPascal(prop);
   args = args.map(a => processArg(a));
-  return `${prop}(${args.join(", ")})`;
+  const getSet = !args.length ? prop :
+    args.length === 1 ? `${prop} = ${args[0]}` :
+      `${prop} = [${args.join(", ")}]`;
+  return `${prop} instanceof Function ? ${prop}(${args.join(", ")}) : ${getSet}`;
 }
 
 function DotReactionRule(corrected) {
@@ -62,17 +48,17 @@ function DotReactionRule(corrected) {
   return evalFunctionBody(code);
 }
 
-function eDotReactionRule(fullname){
+function eDotReactionRule(fullname) {
   fullname = "eventLoop.event" + fullname.slice(1);
   return DotReactionRule(fullname);
 }
 
-function thisDotReactionRule(fullname){
+function thisDotReactionRule(fullname) {
   fullname = "this" + fullname;
   return DotReactionRule(fullname);
 }
 
-function elDotReactionRule(fullname){
+function elDotReactionRule(fullname) {
   fullname = "this.ownerElement" + fullname.slice(2);
   return DotReactionRule(fullname);
 }
