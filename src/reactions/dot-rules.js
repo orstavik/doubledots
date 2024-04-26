@@ -7,7 +7,8 @@
  * @param {string} The body of the function to be created from the string.
  * @returns Function 
  */
-async function evalFunctionBody(codeString) {
+async function importBasedEval(codeString) {
+  codeString = "export default " + codeString;
   const blob = new Blob([codeString], { type: 'application/javascript' });
   const url = URL.createObjectURL(blob);
   const module = await import(url);
@@ -15,82 +16,57 @@ async function evalFunctionBody(codeString) {
   return module.default;
 }
 
-const numNullUndefinedBooleanThisWindowOi =
-  /^(-?\d+(\.\d+)?([eE][-+]?\d+)?)|null|undefined|true|false|this|window|oi$/;
-const startsWithThisWindowOi = /^this\.|^window\.|^oi\./;
-function processArg(arg) {
-  return arg === "e" ? "eventLoop.event" :
-    arg.startsWith("e.") ? "eventLoop.event" + arg.slice(1) :
-      arg === "el" ? "this.ownerElement" :
-        arg.startsWith("el.") ? "this.ownerElement" + arg.slice(1) :
-          numNullUndefinedBooleanThisWindowOi.test(arg) ? arg :
-            startsWithThisWindowOi.test(arg) ? DoubleDots.kebabToPascal(arg) :
-              `"${arg}"`;
+const scopes = {
+  ".": "this.",
+  "e.": "window.eventLoop.event.",
+  "t.": "window.eventLoop.event.target.",
+  "w.": "window.",
+  "d.": "window.document.",
+  "oi.": "oi.",  //the input argument
+  "at.": "window.eventLoop.attribute.",
+  "el.": "window.eventLoop.attribute.ownerElement.",
+  "this.": "this.",
+  "window.": "window.",
+  "document.": "document."
+};
+
+function processRef(prop) {
+  for (let prefix in scopes)
+    if (prop.startsWith(prefix))
+      return DoubleDots.kebabToPascal(scopes[prefix] + prop.slice(prefix.length));
 }
 
-/**
- * @param {string} txt 
- * @returns {string} with the input as a valid js expression
- */
+const primitives =
+  /^((-?\d+(\.\d+)?([eE][-+]?\d+)?)|this|window|document|i|e|true|false|undefined|null)$/;
+
 function textToExp(txt) {
   let [prop, ...args] = txt.split("_");
-  prop = DoubleDots.kebabToPascal(prop);
-  args = args.map(a => processArg(a));
-  const getSet = !args.length ? prop :
-    args.length === 1 ? `${prop} = ${args[0]}` :
-      `${prop} = [${args.join(", ")}]`;
-  return `${prop} instanceof Function ? ${prop}(${args.join(", ")}) : ${getSet}`;
+  const ref = processRef(prop);
+  args = args.map(arg => processRef(arg) || primitives.test(arg) ? arg : `"${arg}"`);
+  const sargs = args.join(", ");
+  const setter = !args.length ? "" : args.length === 1 ? `=${sargs}` : `=[${sargs}]`;
+  return `(${ref} instanceof Function ? ${ref}() : (${ref}${setter}))`;
 }
 
-function DotReactionRule(corrected) {
-  const exp = textToExp(corrected);
-  const code = `export default function dotReaction(oi) { return ${exp}; }`;
-  return evalFunctionBody(code);
+function DotReactionRule(fullname) {
+  const exp = textToExp(fullname);
+  const code = `function dotReaction(oi) { return ${exp}; }`;
+  return importBasedEval(code);
 }
 
-function eDotReactionRule(fullname) {
-  fullname = "eventLoop.event" + fullname.slice(1);
-  return DotReactionRule(fullname);
-}
+for (let prefix in scopes)
+  document.Reactions.defineRule(prefix, DotReactionRule);
 
-function thisDotReactionRule(fullname) {
-  fullname = "this" + fullname;
-  return DotReactionRule(fullname);
-}
-
-function elDotReactionRule(fullname) {
-  fullname = "this.ownerElement" + fullname.slice(2);
-  return DotReactionRule(fullname);
-}
-
-
-document.Reactions.defineRule(".", thisDotReactionRule);
-document.Reactions.defineRule("e.", eDotReactionRule);
-document.Reactions.defineRule("el.", elDotReactionRule);
-document.Reactions.defineRule("window.", DotReactionRule);
-document.Reactions.defineRule("document.", DotReactionRule);
-
-
-//todo these don't work yet!!!
-//todo we need to write them as wrappers..
 function BreakOnFalseReactionRule(fullname) {
-  const name = fullname.slice(2);
-  //todo if we have the previous  
-  if (!name)
-    return function breakOnFalse(oi) { return oi || EventLoop.break; };
-  const exp = textToExp(name);
-  const code = `export default function filterReaction(oi) { return ${exp} || EventLoop.break; }`;
-  return evalFunctionBody(code);
+  const exp = textToExp(fullname.slice(2));
+  const code = `function dotReaction(oi) { return ${exp} || EventLoop.break; }`;
+  return importBasedEval(code);
 }
 
 function BreakOnTrueReactionRule(fullname) {
-  const name = fullname.slice(2);
-  if (!name)
-    return function breakOnTrue(oi) { return oi && EventLoop.break; };
   const exp = textToExp(fullname.slice(2));
-  const code = `export default function filterReaction(oi) { return ${exp} && EventLoop.break; }`;
-  return evalFunctionBody(code);
+  const code = `function dotReaction(oi) { return ${exp} && EventLoop.break; }`;
+  return importBasedEval(code);
 }
-
-// document.Reactions.defineRule("f.", BreakOnFalseReactionRule);
-// document.Reactions.defineRule("t.", BreakOnTrueReactionRule);
+document.Reactions.defineRule("x.", BreakOnFalseReactionRule);
+document.Reactions.defineRule("y.", BreakOnTrueReactionRule);
