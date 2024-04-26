@@ -171,7 +171,7 @@ function toGenerator(dash, isFirst, isLast) {
     return single;
   }
   if (dash.startsWith("--")) {
-    const query = dash.substring(2);
+    const query = dash.substring(2).replaceAll("..", ":");
     return isLast ? function* (it) {
       for (let el of it)
         for (let at of el.attributes)
@@ -189,7 +189,7 @@ function toGenerator(dash, isFirst, isLast) {
       };
   }
   if (dash.startsWith("-")) {
-    const query = dash.substring(1);
+    const query = DoubleDots.miniQuerySelector(dash.substring(1));
     return function* (it) {
       for (let el of it)
         if (el.matches(query))
@@ -197,7 +197,7 @@ function toGenerator(dash, isFirst, isLast) {
     };
   }
   if (dash.startsWith(".")) {
-    const query = dash.substring(1);
+    const query = DoubleDots.miniQuerySelector(dash.substring(1));
     return function* (it) {
       for (let el of it)
         yield* el.querySelectorAll(query);

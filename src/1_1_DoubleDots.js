@@ -77,6 +77,29 @@
     return module.default;
   }
 
+  /**
+   * miniQuerySelector
+   * 
+   * Converts miniQuerySelector given in super limited DoubleDots notation
+   * into a valid css querySelector.
+   * 
+   * For example: 
+   *     my-element.foo.bar_attr-hello.._sunshine_active
+   * =>  my-element.foo.bar[attr-hello\:$="sunshine"][active]
+   * 
+   * @param {string} doubledot: 
+   * @returns {string} querySelector
+   */
+  function miniQuerySelector(doubledot) {
+    let [q, ...attrs] = doubledot.split("_");
+    for (let i = 0; i <= attrs.length - 1; i += 2) {
+      const name = attrs[i].replaceAll("..", "\\:");
+      const val = i <= attrs.length ? `$="${attrs[i + 1]}"` : "";
+      q += `[${name}${val}]`;
+    }
+    return q;
+  };
+
   class DoubleDotsError extends Error {
     constructor(msg, at) {
       super(msg);
@@ -144,6 +167,7 @@
     nativeEvents,
     kebabToPascal,
     pascalToKebab,
-    importBasedEval
+    importBasedEval,
+    miniQuerySelector
   };
 })();

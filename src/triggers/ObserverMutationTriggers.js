@@ -1,28 +1,5 @@
 (function () {
 
-  /**
-   * accepts an input of 
-   *  ["type.class.class", "attr-name..", "attr-value", "attr-name2"]
-   * @param {[string]} args 
-   * @returns string
-   */
-  DoubleDots.queryToSelector = function queryToSelector(args) {
-    let q = args[0];
-    for (let i = 1; i <= args.length - 1; i++) {
-      let at = args[i], val;
-      if (i <= args.length)
-        val = args[i];
-      at.replaceAll("..", "\\:");
-      if (val)
-        at += `="${val}"`;
-      q += `[${at}]`;
-    }
-    return q;
-  };
-})();
-
-(function () {
-
   function TriggerRuleAttr(fullname) {
     const attributesFilter = fullname.split("_").slice(1).map(n => n.replaceAll("..", ":"));
     Object.freeze(attributesFilter);
@@ -38,6 +15,7 @@
   function TriggerRuleParentAttr(fullname) {
     const attributesFilter = fullname.split("_").slice(1).map(n => n.replaceAll("..", ":"));
     Object.freeze(attributesFilter);
+    
     return class TriggerRuleAttr extends AttrMutation {
       get settings() {
         return { attributes: true, attributesOldValue: true, attributesFilter };
@@ -46,6 +24,7 @@
         return this.ownerElement.parentNode;
       }
     };
+
   }
   document.Triggers.defineRule("p-attr_", TriggerRuleParentAttr);
 
