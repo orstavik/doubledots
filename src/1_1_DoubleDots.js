@@ -59,6 +59,24 @@
     return str.replace(/[A-Z]/g, '-$0').toLowerCase();
   }
 
+  /**
+ * This method is just as bad as eval. But, 
+ * if you use this during development, and 
+ * then switch to a static Reaction Trigger in production,
+ * then you will be fine.
+ * 
+ * @param {string} The body of the function to be created from the string.
+ * @returns Function 
+ */
+  async function importBasedEval(codeString) {
+    codeString = "export default " + codeString;
+    const blob = new Blob([codeString], { type: 'application/javascript' });
+    const url = URL.createObjectURL(blob);
+    const module = await import(url);
+    URL.revokeObjectURL(url);
+    return module.default;
+  }
+
   class DoubleDotsError extends Error {
     constructor(msg, at) {
       super(msg);
@@ -125,6 +143,7 @@
     AttrWeakSet,
     nativeEvents,
     kebabToPascal,
-    pascalToKebab
+    pascalToKebab,
+    importBasedEval
   };
 })();

@@ -1,21 +1,3 @@
-/**
- * This method is just as bad as eval. But, 
- * if you use this during development, and 
- * then switch to a static Reaction Trigger in production,
- * then you will be fine.
- * 
- * @param {string} The body of the function to be created from the string.
- * @returns Function 
- */
-async function importBasedEval(codeString) {
-  codeString = "export default " + codeString;
-  const blob = new Blob([codeString], { type: 'application/javascript' });
-  const url = URL.createObjectURL(blob);
-  const module = await import(url);
-  URL.revokeObjectURL(url);
-  return module.default;
-}
-
 const scopes = {
   ".": "this.",
   "e.": "window.eventLoop.event.",
@@ -51,7 +33,7 @@ function textToExp(txt) {
 function DotReactionRule(fullname) {
   const exp = textToExp(fullname);
   const code = `function dotReaction(oi) { return ${exp}; }`;
-  return importBasedEval(code);
+  return DoubleDots.importBasedEval(code);
 }
 
 for (let prefix in scopes)
@@ -60,13 +42,13 @@ for (let prefix in scopes)
 function BreakOnFalseReactionRule(fullname) {
   const exp = textToExp(fullname.slice(2));
   const code = `function dotReaction(oi) { return ${exp} || EventLoop.break; }`;
-  return importBasedEval(code);
+  return DoubleDots.importBasedEval(code);
 }
 
 function BreakOnTrueReactionRule(fullname) {
   const exp = textToExp(fullname.slice(2));
   const code = `function dotReaction(oi) { return ${exp} && EventLoop.break; }`;
-  return importBasedEval(code);
+  return DoubleDots.importBasedEval(code);
 }
 document.Reactions.defineRule("x.", BreakOnFalseReactionRule);
 document.Reactions.defineRule("y.", BreakOnTrueReactionRule);
