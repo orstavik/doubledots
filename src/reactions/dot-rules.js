@@ -39,6 +39,7 @@ function DotReactionRule(fullname) {
 for (let prefix in scopes)
   document.Reactions.defineRule(prefix, DotReactionRule);
 
+//basic filters
 function BreakOnFalseReactionRule(fullname) {
   const exp = textToExp(fullname.slice(2));
   const code = `function dotReaction(oi) { return ${exp} || EventLoop.break; }`;
@@ -52,3 +53,13 @@ function BreakOnTrueReactionRule(fullname) {
 }
 document.Reactions.defineRule("x.", BreakOnFalseReactionRule);
 document.Reactions.defineRule("y.", BreakOnTrueReactionRule);
+
+//jump
+function JumpReactionRule(fullname) {
+  const n = parseInt(fullname.slice(2));
+  if (!n || isNaN(n))
+    throw new DoubleDots.SyntaxError("ReactionJump only accept positive and negative integers: " + fullname.slice(2));
+  // return _ => new EventLoop.ReactionJump(n);
+  return DoubleDots.importBasedEval(`_ => new EventLoop.ReactionJump(${n})`);
+}
+document.Reactions.defineRule("j.", JumpReactionRule);
