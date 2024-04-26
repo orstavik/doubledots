@@ -54,12 +54,14 @@
           if (!func)
             throw new DoubleDots.MissingReaction("No reaction definition.");
 
-          if (func instanceof Promise){
-            if(threadMode){
-              func.then(_=> (__eventLoop.task = this).run(threadMode));
+          if (func instanceof Promise) {
+            if (threadMode) {
+              func.then(_ => (__eventLoop.task = this).run(threadMode));
               return;
-            }else {
-              func.then(_=>__eventLoop.loop());
+            } else {
+              func.then(_ => __eventLoop.loop());
+              //todo these sync delays needs to have a max timeout.
+              //todo thus, we need to have some max timers
               return true;
             }
           }
@@ -76,6 +78,8 @@
               res.then(oi => this.#runSuccess(oi))
                 .catch(error => this.#runError(error))
                 .finally(_ => __eventLoop.loop());
+                //todo these sync delays needs to have a max timeout.
+                //todo thus, we need to have some max timers
               return true; //abort outside loop
             }
           }
