@@ -36,8 +36,16 @@
 
     #checkViaRule(fullname) {
       for (let [rule, FunFun] of Object.entries(this.#rules))
-        if (fullname.startsWith(rule))
-          return this.#definitions[fullname] = FunFun(fullname);//todo what if FunFun throws an error here?
+        if (fullname.startsWith(rule)) {
+          //todo what if FunFun throws an error here?
+          const Def = FunFun(fullname);
+          if (Def instanceof Promise)
+            Def.then(newDef => this.#definitions[fullname] = newDef)
+          // .catch(_=> );
+          //todo and catch the error if the Promise
+          return this.#definitions[fullname] = Def;
+
+        }
       // alternative logic using a regex to match the name. Not sure this is better
       // for (let [_, prefix] of fullname.matchAll(this.#ruleRE))
       //   return this.#definitions[fullname] = this.#rules[prefix](fullname);
