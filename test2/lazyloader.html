@@ -6,26 +6,22 @@
 <script src="../../src/6_load_DoubleDots.js"></script>
 <script src="../../src/triggers/PropagationSimple.js"></script>
 <script src="../../src/triggers/ObserverIntersectionTriggers.js"></script>
-<div>
-    <div id=a style="height: 100vh;" inview:lazyloader>
-      <img src="https://via.placeholder.com/150" alt="">
-    </div>
-    <div id=b style="height: 100vh;" inview:lazyloader>
-      <img src="https://via.placeholder.com/150" alt="">
-    </div>
-    <div id=c style="height: 100vh;" inview:lazyloader>
-      <img src="https://via.placeholder.com/150" alt="">
-    </div>  
-</div>
+
 <script>
-  document.Reactions.define("lazyloader", function() {
-    console.log("Lazy loader");
-    let images = this.ownerElement.querySelectorAll("img");
-    console.log(images);
-    images.forEach((img) => {
-      if (img.src === "https://via.placeholder.com/150") {
-        img.src = "https://via.placeholder.com/300";
-      }
-    });
+  document.Reactions.define("lazyload", function () {
+    this.ownerElement.src = "https://via.placeholder.com/300";
   });
 </script>
+<style>
+  img {
+    height: 100vh;
+    width: 100%;
+    border: 2px dotted orange;
+  }
+</style>
+
+<div>
+  <img inview:lazyload src="https://via.placeholder.com/150">
+  <img inview:lazyload src="https://via.placeholder.com/150">
+  <img inview:lazyload src="https://via.placeholder.com/150">
+</div>

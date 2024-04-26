@@ -275,6 +275,9 @@
     // }
 
     run([mr]) {
+      //todo add a native event listener for the DOMContentLoaded or readystatechange?
+      //todo and then ensure that the inview is called on all elements that are then inview?
+      //should we await sleep() on it??
       document.readyState === "complete" && eventLoop.dispatch(mr, this);
     }
   }
