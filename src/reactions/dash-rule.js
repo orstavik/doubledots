@@ -47,6 +47,7 @@ class AttrList extends AutoList { };
 expandPropsToList(HTMLElementList, HTMLElement, Element, Node, EventTarget);
 expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
 
+//the two AutoLists are super simplistic jQuery versions for manipulation. Will likely produce many errors if used extensively..
 
 
 // 1. NOT e,oi,window
@@ -117,12 +118,12 @@ const generators = {
   },
   sibp: function* previousSiblings(it) {
     for (let el of it)
-      for (let s = el.previousSiblingElement; s; s = s.previousSiblingElement)
+      for (let s = el.previousElementSibling; s; s = s.previousElementSibling)
         yield s;
   },
   sibn: function* nextSiblings(it) {
     for (let el of it)
-      for (let s = el.nextSiblingElement; s; s = s.nextSiblingElement)
+      for (let s = el.nextElementSibling; s; s = s.nextElementSibling)
         yield s;
   },
   sibs: function* (it) {
@@ -204,7 +205,6 @@ function toGenerator(dash, isFirst, isLast) {
 }
 
 function pipeGenerators(generators, iterable) {
-  // return generators.reduce((acc, gen) => gen(acc), iterable);
   for (let gen of generators)
     iterable = gen(iterable);
   return iterable;
@@ -226,7 +226,6 @@ function dashRule(fullname) {
     res = res.length === 1 ? res[0] :
         res[0] instanceof Element ? HTMLElementList(res) :
           AttrList(res);
-    debugger
     return new EventLoop.ReactionOrigin(res);
   };
 }
