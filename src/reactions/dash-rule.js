@@ -78,7 +78,7 @@ expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
 const singleNodeGenerators = {
   t: function* () { yield eventLoop.event.target; },
   rt: function* () { yield eventLoop.event.relatedTarget; },
-  d: [document]
+  d: function* () { yield document; }
 };
 
 const generators = {
@@ -196,6 +196,13 @@ function toGenerator(dash, isFirst, isLast) {
           yield el;
     };
   }
+  if (dash.startsWith(".")) {
+    const query = dash.substring(1);
+    return function* (it) {
+      for (let el of it)
+        yield* el.querySelectorAll(query);
+    };
+  }
   // "_p12" or "p12" or "_p" or "p"
   const m = dash.match(/^(_)?([a-zA-Z]+)([-]?\d+)?$/);
   if (!m)
@@ -221,11 +228,11 @@ function dashRule(fullname) {
           [eventLoop.attribute.ownerElement];
     const pipeGenerator = pipeGenerators(its, origin);
     let res = [...pipeGenerator];
-    if(!res.length)
-      throw "dash-rule returned empty: "+ fullname;
+    if (!res.length)
+      throw "dash-rule returned empty: " + fullname;
     res = res.length === 1 ? res[0] :
-        res[0] instanceof Element ? HTMLElementList(res) :
-          AttrList(res);
+      res[0] instanceof Element ? HTMLElementList(res) :
+        AttrList(res);
     return new EventLoop.ReactionOrigin(res);
   };
 }
