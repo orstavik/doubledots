@@ -36,8 +36,10 @@ function textToExp(txt) {
   let [prop, ...args] = txt.split("_");
   if (prop.startsWith("e."))
     prop = "eventLoop.event" + prop.slice(1);
-  if (prop.startsWith("el."))
+  else if (prop.startsWith("el."))
     prop = "this.ownerElement" + prop.slice(1);
+  else
+    prop = "this." + prop;
   prop = DoubleDots.kebabToPascal(prop);
   args = args.map(a => processArg(a));
   return `${prop}(${args.join(", ")})`;
@@ -51,22 +53,31 @@ function DotReactionRule(fullname) {
 
 
 function BreakOnFalseReactionRule(fullname) {
-  const exp = textToExp(fullname.slice(2));
+  const name = fullname.slice(2);
+  if (!name)
+    return function breakOnFalse(oi) { return oi || EventLoop.break; };
+  const exp = textToExp(name);
   const code = `export default function filterReaction(oi) { return ${exp} || EventLoop.break; }`;
   return evalFunctionBody(code);
 }
 
 function BreakOnTrueReactionRule(fullname) {
+  const name = fullname.slice(2);
+  if (!name)
+    return function breakOnTrue(oi) { return oi && EventLoop.break; };
   const exp = textToExp(fullname.slice(2));
   const code = `export default function filterReaction(oi) { return ${exp} && EventLoop.break; }`;
   return evalFunctionBody(code);
 }
 
-function breakOnFalse(oi) { return oi || EventLoop.break; }
-function breakOnTrue(oi) { return oi && EventLoop.break; }
-
 document.Reactions.defineRule(".", DotReactionRule);
 document.Reactions.defineRule("f.", BreakOnFalseReactionRule);
 document.Reactions.defineRule("t.", BreakOnTrueReactionRule);
-document.Reactions.define("f.", breakOnFalse);
-document.Reactions.define("t.", breakOnTrue);
+// todo implement like this?
+// document.Reactions.defineRule("e.", DotReactionRule);
+// document.Reactions.defineRule("el.", DotReactionRule);
+// document.Reactions.defineRule("window.", DotReactionRule);
+// document.Reactions.defineRule("document.", DotReactionRule);
+
+// document.Reactions.define("f.", breakOnFalse);
+// document.Reactions.define("t.", breakOnTrue);

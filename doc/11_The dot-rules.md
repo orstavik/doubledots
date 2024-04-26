@@ -46,6 +46,12 @@ customReactions.defineRule(".", function(name){
 });
 ```
 
+# TODO 
+
+Change `:..` to `:f.` the "f-dot" or "filter-dot".
+
+Change `:..num` to `:j.` the "j-dot" or "jump-dot".
+
 ## The default filter reaction `:.:` and `:..:`
 
 The default dot-rule handles `:.` as a filter that breaks if the input is `falsy`. If the Link to the definition of falsy on mdn. If the `oi` input is truey, then the `:.` will let the `oi` "pass through".
