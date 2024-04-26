@@ -28,32 +28,68 @@ function processArg(arg) {
               `"${arg}"`;
 }
 
+// /**
+//  * @param {string} txt 
+//  * @returns {string} with the input as a valid js expression
+//  */
+// function textToExp(txt) {
+//   let [prop, ...args] = txt.split("_");
+//   if (prop.startsWith("e."))
+//     prop = "eventLoop.event" + prop.slice(1);
+//   else if (prop.startsWith("el."))
+//     prop = "this.ownerElement" + prop.slice(1);
+//   else
+//     prop = "this." + prop;
+//   prop = DoubleDots.kebabToPascal(prop);
+//   args = args.map(a => processArg(a));
+//   return `${prop}(${args.join(", ")})`;
+// }
+
 /**
  * @param {string} txt 
  * @returns {string} with the input as a valid js expression
  */
 function textToExp(txt) {
   let [prop, ...args] = txt.split("_");
-  if (prop.startsWith("e."))
-    prop = "eventLoop.event" + prop.slice(1);
-  else if (prop.startsWith("el."))
-    prop = "this.ownerElement" + prop.slice(1);
-  else
-    prop = "this." + prop;
   prop = DoubleDots.kebabToPascal(prop);
   args = args.map(a => processArg(a));
   return `${prop}(${args.join(", ")})`;
 }
 
-function DotReactionRule(fullname) {
-  const exp = textToExp(fullname.slice(1));
+function DotReactionRule(corrected) {
+  const exp = textToExp(corrected);
   const code = `export default function dotReaction(oi) { return ${exp}; }`;
   return evalFunctionBody(code);
 }
 
+function eDotReactionRule(fullname){
+  fullname = "eventLoop.event" + fullname.slice(1);
+  return DotReactionRule(fullname);
+}
 
+function thisDotReactionRule(fullname){
+  fullname = "this" + fullname;
+  return DotReactionRule(fullname);
+}
+
+function elDotReactionRule(fullname){
+  fullname = "this.ownerElement" + fullname.slice(2);
+  return DotReactionRule(fullname);
+}
+
+
+document.Reactions.defineRule(".", thisDotReactionRule);
+document.Reactions.defineRule("e.", eDotReactionRule);
+document.Reactions.defineRule("el.", elDotReactionRule);
+document.Reactions.defineRule("window.", DotReactionRule);
+document.Reactions.defineRule("document.", DotReactionRule);
+
+
+//todo these don't work yet!!!
+//todo we need to write them as wrappers..
 function BreakOnFalseReactionRule(fullname) {
   const name = fullname.slice(2);
+  //todo if we have the previous  
   if (!name)
     return function breakOnFalse(oi) { return oi || EventLoop.break; };
   const exp = textToExp(name);
@@ -70,14 +106,5 @@ function BreakOnTrueReactionRule(fullname) {
   return evalFunctionBody(code);
 }
 
-document.Reactions.defineRule(".", DotReactionRule);
-document.Reactions.defineRule("f.", BreakOnFalseReactionRule);
-document.Reactions.defineRule("t.", BreakOnTrueReactionRule);
-// todo implement like this?
-// document.Reactions.defineRule("e.", DotReactionRule);
-// document.Reactions.defineRule("el.", DotReactionRule);
-// document.Reactions.defineRule("window.", DotReactionRule);
-// document.Reactions.defineRule("document.", DotReactionRule);
-
-// document.Reactions.define("f.", breakOnFalse);
-// document.Reactions.define("t.", breakOnTrue);
+// document.Reactions.defineRule("f.", BreakOnFalseReactionRule);
+// document.Reactions.defineRule("t.", BreakOnTrueReactionRule);
