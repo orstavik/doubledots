@@ -1,0 +1,42 @@
+<script src="../../src/1_1_DoubleDots.js"></script>
+<script src="../../src/1_2_AttrCustom.js"></script>
+<script src="../../src/2_2_nativeMethods.js"></script>
+<script src="../../src/3_definition_registers_v4.js"></script>
+<script src="../../src/4_eventLoop_v2.js"></script>
+<script src="../../src/6_load_DoubleDots.js"></script>
+<script src="../../src/triggers/PropagationSimple.js"></script>
+<style>
+  .tooltip{
+    position: absolute;
+    display: none;
+    pointer-events: none;
+  }
+</style>
+<div>
+  <div class="tooltip">Following the cursor</div>
+  <div class="hovered" style="border: solid; width: 50vw; height: 50vh;" mouseenter:turnon mousemove:move mouseleave:turnoff>
+    <p>HOVER ME</p>
+  </div>
+</div>
+
+<script>
+  document.Reactions.define("log", function(){
+    console.log(__eventLoop.getFrame().event)
+  })
+  document.Reactions.define("turnon", function(){
+    console.log("turning on");
+    this.ownerElement.previousElementSibling.style.display = "block"
+  })
+  document.Reactions.define("turnoff", function(){
+    console.log("turning off");
+    this.ownerElement.previousElementSibling.style.display = "none"
+    this.ownerElement.previousElementSibling.style.left = "0px"
+    this.ownerElement.previousElementSibling.style.top = "0px"
+  })
+  document.Reactions.define("move", function(){
+    console.log("moving");
+    this.ownerElement.previousElementSibling.style.left = __eventLoop.getFrame().event.clientX + "px"
+    this.ownerElement.previousElementSibling.style.top = __eventLoop.getFrame().event.clientY + "px"
+  })
+</script>
+
