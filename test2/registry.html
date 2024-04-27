@@ -1,0 +1,52 @@
+<script src="../../src/1_1_DoubleDots.js"></script>
+<script src="../../src/1_2_AttrCustom.js"></script>
+<script src="../../src/2_2_nativeMethods.js"></script>
+<script src="../../src/3_definition_registers_v4.js"></script>
+<script src="../../src/4_eventLoop_v2.js"></script>
+<script src="../../src/6_load_DoubleDots.js"></script>
+<script src="../../src/triggers/PropagationSimple.js"></script>
+
+<form submit:validate:log>
+  <h1>Register on our plataform</h1>
+  <label for="name">Name:</label><br>
+  <input type="text" id="name" name="name"><br>
+  <label for="email">Email:</label><br>
+  <input type="text" id="email" name="email"><br>
+  <label for="password">Password:</label><br>
+  <input type="password" id="password" name="password"><br>
+  <label for="passwordconf">Confirm Password:</label><br>
+  <input type="password" id="passwordconf" name="password"><br>
+  <input type="submit" value="Submit">
+</form>
+
+<script>
+  document.Reactions.define("validate", function () {
+    const name = document.getElementById("name").value;
+    const email = document.getElementById("email").value;
+    const password = document.getElementById("password").value;
+    if (name === "" || email === "" || password === "" || passwordconf === "") {
+      alert("Please fill all the fields");
+    }
+    if (password !== passwordconf) {
+      alert("The passwords are different");
+    }
+  });
+
+  document.Reactions.define("log", function () {
+    __eventLoop.getFrame().event.preventDefault();
+    const name = this.ownerElement.querySelector("#name").value;
+    const email = this.ownerElement.querySelector("#email").value;
+    const password = this.ownerElement.querySelector("#password").value;
+    const passwordconf = this.ownerElement.querySelector("#passwordconf").value;
+    if (name !== "" && email !== "" && password !== "" && passwordconf !== "") {
+      const body = {
+        name: name,
+        email: email,
+        password: password,
+        passwordconf: passwordconf
+      };
+      console.log("The next body can be sent to an API")
+      console.log(body);
+    }
+  });
+</script>
