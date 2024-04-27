@@ -1,10 +1,10 @@
-<script src="../../src/1_1_DoubleDots.js"></script>
-<script src="../../src/1_2_AttrCustom.js"></script>
-<script src="../../src/2_2_nativeMethods.js"></script>
-<script src="../../src/3_definition_registers_v4.js"></script>
-<script src="../../src/4_eventLoop_v2.js"></script>
-<script src="../../src/6_load_DoubleDots.js"></script>
-<script src="../../src/triggers/PropagationSimple.js"></script>
+<script src="../src/1_1_DoubleDots.js"></script>
+<script src="../src/1_2_AttrCustom.js"></script>
+<script src="../src/2_2_nativeMethods.js"></script>
+<script src="../src/3_definition_registers_v4.js"></script>
+<script src="../src/4_eventLoop_v2.js"></script>
+<script src="../src/6_load_DoubleDots.js"></script>
+<script src="../src/triggers/PropagationSimple.js"></script>
 
 <form submit:validate:log>
   <h1>Register on our plataform</h1>
@@ -21,9 +21,10 @@
 
 <script>
   document.Reactions.define("validate", function () {
-    const name = document.getElementById("name").value;
-    const email = document.getElementById("email").value;
-    const password = document.getElementById("password").value;
+    const name = this.ownerElement.querySelector("#name").value;
+    const email = this.ownerElement.querySelector("#email").value;
+    const password = this.ownerElement.querySelector("#password").value;
+    const passwordconf = this.ownerElement.querySelector("#passwordconf").value;
     if (name === "" || email === "" || password === "" || passwordconf === "") {
       alert("Please fill all the fields");
     }
