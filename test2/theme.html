@@ -1,0 +1,30 @@
+<script src="../../src/1_1_DoubleDots.js"></script>
+<script src="../../src/1_2_AttrCustom.js"></script>
+<script src="../../src/2_2_nativeMethods.js"></script>
+<script src="../../src/3_definition_registers_v4.js"></script>
+<script src="../../src/4_eventLoop_v2.js"></script>
+<script src="../../src/6_load_DoubleDots.js"></script>
+<script src="../../src/triggers/PropagationSimple.js"></script>
+<style>
+  body {
+    background-color: white;
+    color: black;
+    transition: all 0.5s;
+  }
+
+  .dark {
+    background-color: black;
+    color: white;
+  }
+</style>
+<body>
+  <h1>Theme Toggle Example</h1>
+
+  <button click:themetogle>Toggle Theme</button>
+  <script>
+    document.Reactions.define('themetogle', () => {
+      console.log('Theme toggle')
+      document.body.classList.toggle('dark')
+    })
+  </script>
+</body>
