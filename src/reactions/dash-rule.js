@@ -66,17 +66,10 @@ expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
 
 // produce either a single node, or a DomNodeIterator. A special node that will return 
 
-// Todo: especially down should be implemented
-//
-//   down: 1,// self => target down towards the target
-//   widthFirst: right to left. 
+//   downTarget: 1,// self => target down towards the target
+//   downTarget: is the same as target=>up in reverse, stop at current element.
 //   sibsNearest: 11, // nearest => next[0], prev[0], next[1], 
 
-
-// Todo 2: use querySelectorWhen possible to speed up traversal
-// Todo 2: for example -c..--input => querySelectorAll(':root > input')
-// Todo 2: this is possible with -c/sibp/sibn/depth..--query
-// Todo 2: -depth..--query already has the -.query
 // Todo 2: but maybe make the "." be the attribute and then make "---query" be short for -depth..--query and add "--0" as short for a numerical variant.
 const firsts = {
   t: `[eventLoop.event.target]`,
@@ -99,10 +92,6 @@ const directions = {
   downwide: n => `DoubleDots.downWide(el${n}, "*")`,
 };
 
-function attrQuery(q) {
-  return;
-}
-
 function direction(dash, n) {
   const m = dash.match(/^(_)?([a-zA-Z]+)([-]?\d+)?$/);
   if (!m)
@@ -118,61 +107,51 @@ function direction(dash, n) {
   return rev ? `[...${it}].reverse()` : !isNaN(num) ? `[[...${it}].at(${num})]` : it;
 }
 
-function miniQuerySelector(d) {
-  return d[0] === "-" && DoubleDots.miniQuerySelector(d.substring(1));
-}
-
 function attrQuerySelector(d, n, length) {
   if (d[0] !== ".")
     return;
-  const q = d.substring(1); //todo we need to process the q
+  const q = d.substring(1); //replaceAll(".", ":")??
   const core = `[...el${n}.attributes].filter(a => a.startsWith("${q}"))`;
   return n === length - 1 ? core : `new Set(${core}.map(a=>a.ownerElement))`;
-}
-
-function wrapper(body, fullname) {
-  return `
-function ${DoubleDots.kebabToPascal(fullname.replaceAll(".", "_").slice(1))}(oi) {
-  const res = [];
-${body}
-  if (!res.length)
-    throw "-dash-rule returned empty: ${fullname}";
-  const res2 = res.length === 1 ? res[0] :
-    res[0] instanceof Element ? HTMLElementList(res) :
-      AttrList(res);
-  return new EventLoop.ReactionOrigin(res2);
-}`;
 }
 
 function dashRule(fullname) {
   const ds = fullname.split("..").map(d => d.substring(1));
   //1. fixing implied starts
-  const pipes = [];
   const start = firsts[["t", "rt", "d"].includes(ds[0]) ? ds.shift() : "default"];
-  pipes.push(start);
-
-
-  if (ds[0][0] === "-")
-    ds.unshift("down");
+  const pipes = [start];
+  //2. implied down direction
+  ds[0][0] === "-" && ds.unshift("down");
 
   for (let i = 0; i < ds.length; i++) {
     const d = ds[i];
     let exp;
-    //inlining the querySelector
-    //todo we must make sure that querySelectors are not added twice in a row.
-    //todo if they are, then they are nested. and we should just space .join(" ") them
-    if (exp = miniQuerySelector(d))
-      pipes[pipes.length - 1] = pipes[pipes.length - 1].replace("*", exp);
-    else if (exp = direction(d, i) || attrQuerySelector(d, i, ds.length))
+    if (d[0] === "-") { //inlining the querySelector, and space.join(" ")ing selectors
+      exp = DoubleDots.miniQuerySelector(d.slice(1));
+      while (i + 1 < ds.length && ds[i + 1][0] === "-")
+        exp += " " + DoubleDots.miniQuerySelector(ds[++i].slice(1));
+      pipes.push(pipes.pop().replace("*", exp));
+    } else if (exp = direction(d, i) || attrQuerySelector(d, i, ds.length))
       pipes.push(exp);
     else
-      throw DoubleDots.SyntaxError("DashRule unknown");
+      throw DoubleDots.SyntaxError("DashRule unknown: " + d);
   }
 
   const iters = pipes.map((pipe, i) => `for (let el${i} of ${pipe})`);
   iters.push(`res.push(el${pipes.length - 1})`);
   const body = iters.map((str, i) => "  ".repeat(i + 1) + str).join("\n");
-  return DoubleDots.importBasedEval(wrapper(body, fullname));
+  const func = `
+function ${DoubleDots.kebabToPascal(fullname.slice(1).replaceAll(".", ""))}() {
+  const res = [];
+${body}
+  if (!res.length)
+    throw "-dash-rule returned empty: ${fullname}";
+  const res2 = res.length === 1 ? res[0] :
+    res[0] instanceof Element ? new HTMLElementList(res) :
+      AttrList(res);
+  return new EventLoop.ReactionOrigin(res2);
+}`;
+  return DoubleDots.importBasedEval(func);
 }
 
 document.Reactions.defineRule("-", dashRule);
