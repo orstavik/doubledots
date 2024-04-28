@@ -108,17 +108,14 @@ function direction(dash, n) {
   if (!m)
     throw new DoubleDots.SyntaxError("Unknown dash: " + dash);
   let [_, rev, dir, num] = m;
-  let gen = directions[dir];
+  const gen = directions[dir];
   if (!gen)
     throw new DoubleDots.SyntaxError("Dash direction unknown: " + dir);
   num = parseInt(num);
   if (rev && !isNaN(num))
     throw new DoubleDots.SyntaxError(`${dash} is reverse+indexed. Just invert the number, it means the same: ${dir}${-num}`);
-  else if (rev)
-    return `[...${gen(n)}].reverse()`;
-  else if (num)
-    return `[...${gen(n)}].at(${num})`;
-  return gen(n);
+  const it = gen(n);
+  return rev ? `[...${it}].reverse()` : !isNaN(num) ? `[[...${it}].at(${num})]` : it;
 }
 
 function miniQuerySelector(d) {
