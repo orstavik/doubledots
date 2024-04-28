@@ -75,7 +75,7 @@ const firsts = {
   t: `[eventLoop.event.target]`,
   rt: `[eventLoop.event.relatedTarget]`,
   d: `[document]`,
-  default: `this instanceof AutoList ? this.nodes : [this instanceof Element ? this : this instanceof Attr ? this.ownerElement : eventLoop.attribute.ownerElement]`
+  origin: `this instanceof AutoList ? this.nodes : [this instanceof Element ? this : this instanceof Attr ? this.ownerElement : eventLoop.attribute.ownerElement]`
 };
 
 const directions = {
@@ -117,10 +117,9 @@ function attrQuerySelector(d, n, length) {
 
 function dashRule(fullname) {
   const ds = fullname.split("..").map(d => d.substring(1));
-  //1. fixing implied starts
-  const start = firsts[["t", "rt", "d"].includes(ds[0]) ? ds.shift() : "default"];
-  const pipes = [start];
-  //2. implied down direction
+  //1. fixing starts
+  let pipes = [ds[0] in firsts ? firsts[ds.shift()] : firsts["origin"]];
+  //2. implied first direction
   ds[0][0] === "-" && ds.unshift("down");
 
   for (let i = 0; i < ds.length; i++) {
@@ -136,22 +135,19 @@ function dashRule(fullname) {
     else
       throw DoubleDots.SyntaxError("DashRule unknown: " + d);
   }
-
-  const iters = pipes.map((pipe, i) => `for (let el${i} of ${pipe})`);
-  iters.push(`res.push(el${pipes.length - 1})`);
-  const body = iters.map((str, i) => "  ".repeat(i + 1) + str).join("\n");
-  const func = `
+  pipes = pipes.map((exp, i)=> `for (let el${i} of ${exp})`);
+  pipes.push(`res.push(el${pipes.length - 1})`);
+  return DoubleDots.importBasedEval(`
 function ${DoubleDots.kebabToPascal(fullname.slice(1).replaceAll(".", ""))}() {
   const res = [];
-${body}
+${pipes.map((str, i) => "  ".repeat(i + 1) + str).join("\n")}
   if (!res.length)
     throw "-dash-rule returned empty: ${fullname}";
   const res2 = res.length === 1 ? res[0] :
     res[0] instanceof Element ? new HTMLElementList(res) :
       AttrList(res);
   return new EventLoop.ReactionOrigin(res2);
-}`;
-  return DoubleDots.importBasedEval(func);
+}`);
 }
 
 document.Reactions.defineRule("-", dashRule);
