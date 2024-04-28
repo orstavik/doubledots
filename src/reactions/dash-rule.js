@@ -9,6 +9,7 @@ class AutoList {
   }
 
   getter(prop) {
+    //todo if the output are Elements, or Attrs, then make new AutoList
     return Array.prototype.map.call(this.#nodes, n => n[prop]);
   }
 
@@ -40,6 +41,9 @@ class HTMLElementList extends AutoList { };
 class AttrList extends AutoList { };
 expandPropsToList(HTMLElementList, HTMLElement, Element, Node, EventTarget);
 expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
+
+//todo move this monad jQuery structure into DoubleDots? Or move it into another file?
+//DoubleDots.Lists
 
 //the two AutoLists are super simplistic jQuery versions for manipulation. Will likely produce many errors if used extensively..
 
@@ -92,19 +96,17 @@ const directions = {
   downwide: n => `DoubleDots.downWide(el${n}, "*")`,
 };
 
+const directionRegEx = new RegExp(`^(_)?(${Object.keys(directions).join("|")})([-]?\\d+)?$`);
+
 function direction(dash, n) {
-  const m = dash.match(/^(_)?([a-zA-Z]+)([-]?\d+)?$/);
+  const m = dash.match(directionRegEx);
   if (!m)
-    throw new DoubleDots.SyntaxError("Unknown dash: " + dash);
-  let [_, rev, dir, num] = m;
-  const gen = directions[dir];
-  if (!gen)
-    throw new DoubleDots.SyntaxError("Dash direction unknown: " + dir);
-  num = parseInt(num);
-  if (rev && !isNaN(num))
-    throw new DoubleDots.SyntaxError(`${dash} is reverse+indexed. Just invert the number, it means the same: ${dir}${-num}`);
-  const it = gen(n);
-  return rev ? `[...${it}].reverse()` : !isNaN(num) ? `[[...${it}].at(${num})]` : it;
+    return;
+  const [_, rev, dir, num] = m;
+  if (rev && num)
+    throw new DoubleDots.SyntaxError(`${dash} is reverse&Indexed. Just invert the number, it means the same: ${dir}${-parseInt(num)}`);
+  const core = directions[dir](n);
+  return rev ? `[...${core}].reverse()` : num ? `[[...${core}].at(${num})]` : core;
 }
 
 function attrQuerySelector(d, n, length) {
@@ -117,30 +119,36 @@ function attrQuerySelector(d, n, length) {
 
 function dashRule(fullname) {
   const ds = fullname.split("..").map(d => d.substring(1));
-  //1. fixing starts
+  //1. extracting starts
   let pipes = [ds[0] in firsts ? firsts[ds.shift()] : firsts["origin"]];
-  //2. implied first direction
+  //2. fixing implied first direction
   ds[0][0] === "-" && ds.unshift("down");
-
+  //3. parsing the dashes
   for (let i = 0; i < ds.length; i++) {
     const d = ds[i];
     let exp;
-    if (d[0] === "-") { //inlining the querySelector, and space.join(" ")ing selectors
+    if (d[0] === "-") { 
+      // inlining the querySelector, and space.join(" ")ing selectors
+      // the space.join(" ") ensures that the implied *down* direction 
+      // always applies when direction is implied.
       exp = DoubleDots.miniQuerySelector(d.slice(1));
-      while (i + 1 < ds.length && ds[i + 1][0] === "-")
-        exp += " " + DoubleDots.miniQuerySelector(ds[++i].slice(1));
+      for (;i + 1 < ds.length && ds[i + 1][0] === "-";i++)
+        exp += " " + DoubleDots.miniQuerySelector(ds[i+1].slice(1));
       pipes.push(pipes.pop().replace("*", exp));
     } else if (exp = direction(d, i) || attrQuerySelector(d, i, ds.length))
       pipes.push(exp);
     else
       throw DoubleDots.SyntaxError("DashRule unknown: " + d);
   }
+  //4. converting pipes to for-loop-chain with correct spaces
   pipes = pipes.map((exp, i)=> `for (let el${i} of ${exp})`);
   pipes.push(`res.push(el${pipes.length - 1})`);
+  pipes = pipes.map((str, i) => "  ".repeat(i + 1) + str + "\n");
+  //5. returning the finished function txt
   return DoubleDots.importBasedEval(`
 function ${DoubleDots.kebabToPascal(fullname.slice(1).replaceAll(".", ""))}() {
   const res = [];
-${pipes.map((str, i) => "  ".repeat(i + 1) + str).join("\n")}
+${pipes.join("")}
   if (!res.length)
     throw "-dash-rule returned empty: ${fullname}";
   const res2 = res.length === 1 ? res[0] :
