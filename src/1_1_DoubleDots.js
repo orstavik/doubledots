@@ -52,7 +52,7 @@
   })();
 
   function kebabToPascal(str) {
-    return str.replace(/-./g, match => match[1].toUpperCase());
+    return str.replace(/-+/g, "-").replace(/-./g, match => match[1].toUpperCase());
   }
 
   function pascalToKebab(str) {
@@ -69,7 +69,7 @@
  * @returns Function 
  */
   async function importBasedEval(codeString) {
-    codeString = "export default " + codeString;
+    codeString = "export default " + codeString.trim();
     const blob = new Blob([codeString], { type: 'application/javascript' });
     const url = URL.createObjectURL(blob);
     const module = await import(url);
@@ -99,6 +99,36 @@
     }
     return q;
   };
+
+  function* up(el, q = "*") {
+    for (let p = el.parentElement; p; p = p.parentElement)
+      if (q === "*" || p.match(q))
+        yield p;
+  }
+  function* left(el, q = "*") {
+    for (let s = el.previousElementSibling; s; s = s.previousElementSibling)
+      if (q === "*" || s.match(q))
+        yield s;
+  }
+  function* right(el, q = "*") {
+    for (let s = el.nextElementSibling; s; s = s.nextElementSibling)
+      if (q === "*" || s.match(q))
+        yield s;
+  }
+  function* roots(el) {
+    for (let r = el.getRootNode(); r; r = r.host?.getRootNode())
+      yield r;
+  }
+  function* hosts(el, q = "*") {
+    for (let h = el.getRootNode().host; h; h = h.getRootNode().host)
+      if (q === "*" || h.match(q))
+        yield h;
+  }
+  function* downwide(el, q = "*") {
+    for (let d, queue = [...el.children]; d = queue.shift(); queue.push(...el.children))
+      if (q === "*" || d.match(q))
+        yield d;
+  }
 
   class DoubleDotsError extends Error {
     constructor(msg, at) {
@@ -167,6 +197,7 @@
     nativeEvents,
     kebabToPascal,
     pascalToKebab,
+    up, left, right, roots, hosts, downwide,
     importBasedEval,
     miniQuerySelector
   };
