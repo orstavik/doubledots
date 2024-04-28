@@ -103,7 +103,7 @@ function attrQuery(q) {
   return;
 }
 
-function direction(dash) {
+function direction(dash, n) {
   const m = dash.match(/^(_)?([a-zA-Z]+)([-]?\d+)?$/);
   if (!m)
     throw new DoubleDots.SyntaxError("Unknown dash: " + dash);
@@ -115,10 +115,10 @@ function direction(dash) {
   if (rev && !isNaN(num))
     throw new DoubleDots.SyntaxError(`${dash} is reverse+indexed. Just invert the number, it means the same: ${dir}${-num}`);
   else if (rev)
-    return n => `[...${gen(n)}].reverse()`;
+    return `[...${gen(n)}].reverse()`;
   else if (num)
-    return n => `[...${gen(n)}].at(${num})`;
-  return gen;
+    return `[...${gen(n)}].at(${num})`;
+  return gen(n);
 }
 
 function miniQuerySelector(d) {
@@ -174,8 +174,8 @@ function dashRule(fullname) {
     //todo if they are, then they are nested. and we should just space .join(" ") them
     if (exp = miniQuerySelector(d))
       pipes[pipes.length - 1] = pipes[pipes.length - 1].replace("*", exp);
-    else if (exp = direction(d))
-      pipes.push(exp(i));
+    else if (exp = direction(d, i))
+      pipes.push(exp);
     else if (exp = middleAttrQuerySelector(d)) //todo untested
       pipes.push(exp(i));
     else if (exp = endAttrQuerySelector(d)) //todo untested
