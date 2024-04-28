@@ -125,29 +125,21 @@ function miniQuerySelector(d) {
   return d[0] === "-" && DoubleDots.miniQuerySelector(d.substring(1));
 }
 
-function endAttrQuerySelector(d) {
+function attrQuerySelector(d, n, length) {
   if (d[0] !== ".")
     return;
-  const q = d.substring(1);
-  return n => `[...el${n}.attributes].filter(a => a.startsWith("${q}"))`;
+  const q = d.substring(1); //todo we need to process the q
+  const core = `[...el${n}.attributes].filter(a => a.startsWith("${q}"))`;
+  return n === length - 1 ? core : `new Set(${core}.map(a=>a.ownerElement))`;
 }
 
-function middleAttrQuerySelector(d) {
-  if (d[0] !== ".")
-    return;
-  const q = d.substring(1);
-  return n => `new Set([...el${n}.attributes].filter(a => a.startsWith("${q}")).map(a=>a.ownerElement))`;
-}
-
-function wrapper(body, fullname, size) {
-  const funcName = DoubleDots.kebabToPascal(fullname.slice(1).replaceAll(".", "_"));
-  const els = Array.from({ length: size }, (_, i) => `el${i}`).join(", ");
-  return `function ${funcName}(oi) {
-  let ${els};
+function wrapper(body, fullname) {
+  return `
+function ${DoubleDots.kebabToPascal(fullname.replaceAll(".", "_").slice(1))}(oi) {
   const res = [];
 ${body}
   if (!res.length)
-    throw "dash-rule returned empty: ${fullname}";
+    throw "-dash-rule returned empty: ${fullname}";
   const res2 = res.length === 1 ? res[0] :
     res[0] instanceof Element ? HTMLElementList(res) :
       AttrList(res);
@@ -174,21 +166,16 @@ function dashRule(fullname) {
     //todo if they are, then they are nested. and we should just space .join(" ") them
     if (exp = miniQuerySelector(d))
       pipes[pipes.length - 1] = pipes[pipes.length - 1].replace("*", exp);
-    else if (exp = direction(d, i))
+    else if (exp = direction(d, i) || attrQuerySelector(d, i, ds.length))
       pipes.push(exp);
-    else if (exp = middleAttrQuerySelector(d)) //todo untested
-      pipes.push(exp(i));
-    else if (exp = endAttrQuerySelector(d)) //todo untested
-      pipes.push(exp(i));
     else
       throw DoubleDots.SyntaxError("DashRule unknown");
   }
 
-  const iters = pipes.map((pipe, i) => `for (el${i} of ${pipe})`);
+  const iters = pipes.map((pipe, i) => `for (let el${i} of ${pipe})`);
   iters.push(`res.push(el${pipes.length - 1})`);
   const body = iters.map((str, i) => "  ".repeat(i + 1) + str).join("\n");
-  const functionText = wrapper(body, fullname, pipes.length);
-  return DoubleDots.importBasedEval(functionText);
+  return DoubleDots.importBasedEval(wrapper(body, fullname));
 }
 
 document.Reactions.defineRule("-", dashRule);
