@@ -75,11 +75,12 @@ expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
 //   sibsNearest: 11, // nearest => next[0], prev[0], next[1], 
 
 // Todo 2: but maybe make the "." be the attribute and then make "---query" be short for -depth..--query and add "--0" as short for a numerical variant.
-const firsts = {
+const origins = {
   t: `[eventLoop.event.target]`,
   rt: `[eventLoop.event.relatedTarget]`,
+  a: `[eventLoop.attribute.ownerElement]`,
   d: `[document]`,
-  origin: `this instanceof AutoList ? this.nodes : [this instanceof Element ? this : this instanceof Attr ? this.ownerElement : eventLoop.attribute.ownerElement]`
+  this: `this instanceof AutoList ? this.nodes : [this instanceof Attr ? this.ownerElement : this]`
 };
 
 const directions = {
@@ -120,7 +121,7 @@ function attrQuerySelector(d, n, length) {
 function dashRule(fullname) {
   const ds = fullname.split("..").map(d => d.substring(1));
   //1. extracting starts
-  let pipes = [ds[0] in firsts ? firsts[ds.shift()] : firsts["origin"]];
+  let pipes = [ds[0] in origins ? origins[ds.shift()] : origins["this"]];
   //2. fixing implied first direction
   ds[0][0] === "-" && ds.unshift("down");
   //3. parsing the dashes
