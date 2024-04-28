@@ -78,45 +78,29 @@ expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
 // Todo 2: this is possible with -c/sibp/sibn/depth..--query
 // Todo 2: -depth..--query already has the -.query
 // Todo 2: but maybe make the "." be the attribute and then make "---query" be short for -depth..--query and add "--0" as short for a numerical variant.
-const tags = {
-  t: n => `for (let el${n} of [eventLoop.event.target])`,
-  rt: n => `for (let el${n} of [eventLoop.event.relatedTarget])`,
-  d: n => `for (let el${n} of [document])`,
-  default: n => `for (let el${n} of this instanceof AutoList ? this.nodes : [this instanceof Element ? this : this instanceof Attr ? this.ownerElement :  eventLoop.attribute.ownerElement])`,
-
-  //todo .querySelectorAll(":scope ~ *") doesn't work..
-  //todo .querySelectorAll(":scope:has(++)") I don't even bother testing.
-
-
-  c: n => `for (let el${n} of el${n - 1}.querySelectorAll(":scope > *"))`,
-  sibs: n => `for (let el${n} of el${n - 1}.parentNode.querySelectorAll(":scope > *"))`,down: n => `for (let el${n} of el${n - 1}.querySelectorAll("*"))`,
-  up: n => `for (let el${n} of DoubleDots.up(el${n - 1}, "*"))`,
-  left: n => `for (let el${n} of DoubleDots.left(el${n - 1}, "*"))`,
-  right: n => `for (let el${n} of DoubleDots.right(el${n - 1}, "*"))`,
-  roots: n => `for (let el${n} of DoubleDots.roots(el${n - 1}, "*"))`,
-  hosts: n => `for (let el${n} of DoubleDots.hosts(el${n - 1}, "*"))`,
-  downwide: n => `for (let el${n} of DoubleDots.downWide(el${n - 1}, "*"))`,
+const firsts = {
+  t: `[eventLoop.event.target]`,
+  rt: `[eventLoop.event.relatedTarget]`,
+  d: `[document]`,
+  default: `this instanceof AutoList ? this.nodes : [this instanceof Element ? this : this instanceof Attr ? this.ownerElement : eventLoop.attribute.ownerElement]`
 };
 
-function reverse(n) {
-  return `(tmp${n} ||= []).push(el${n - 1});
-}{
-  let x = tmp1;
-  tmp1 = [];
-  for (let el${n};el${n}=x.pop();)`;
-}
+const directions = {
+  //todo .querySelectorAll(":scope ~ *") doesn't work..
+  //todo .querySelectorAll(":scope:has(++)") I don't even bother testing.
+  c: n => `el${n}.querySelectorAll(":scope > *")`,
+  sibs: n => `el${n}.parentNode.querySelectorAll(":scope > *")`,
+  down: n => `el${n}.querySelectorAll("*")`,
+  up: n => `DoubleDots.up(el${n}, "*")`,
+  left: n => `DoubleDots.left(el${n}, "*")`,
+  right: n => `DoubleDots.right(el${n}, "*")`,
+  roots: n => `DoubleDots.roots(el${n}, "*")`,
+  hosts: n => `DoubleDots.hosts(el${n}, "*")`,
+  downwide: n => `DoubleDots.downWide(el${n}, "*")`,
+};
 
-function count(c) {
-  return n =>
-    `if(tmp${n}>${c}) {tmp${n}=0; break;} else if (tmp${n}++ == ${c} && (el${n}=el${n - 1}))`;
-}
-
-function negCount(c) {
-  return n =>
-    `(tmp${n} ||= []).push(el${n - 1});
-}{
-let el${n} = tmp${n}[tmp${n}.length + ${num}]; 
-tmp${n} = [];`;
+function attrQuery(q) {
+  return;
 }
 
 function direction(dash) {
@@ -124,35 +108,43 @@ function direction(dash) {
   if (!m)
     throw new DoubleDots.SyntaxError("Unknown dash: " + dash);
   let [_, rev, dir, num] = m;
+  let gen = directions[dir];
+  if (!gen)
+    throw new DoubleDots.SyntaxError("Dash direction unknown: " + dir);
   num = parseInt(num);
-  if (!(dir in tags))
-    throw new DoubleDots.SyntaxError("Bad dash rule generator name: " + dir);
-  const res = [tags[dir]];
-  rev && res.push(reverse);
-  !isNaN(num) && res.push(num < 0 ? negCount(num) : count(num));
-  return res;
+  if (rev && !isNaN(num))
+    throw new DoubleDots.SyntaxError(`${dash} is reverse+indexed. Just invert the number, it means the same: ${dir}${-num}`);
+  else if (rev)
+    return n => `[...${gen(n)}].reverse()`;
+  else if (num)
+    return n => `[...${gen(n)}].at(${num})`;
+  return gen;
 }
 
+function miniQuerySelector(d) {
+  return d[0] === "-" && DoubleDots.miniQuerySelector(d.substring(1));
+}
 
-function miniQuerySelects(d) {
+function endAttrQuerySelector(d) {
+  if (d[0] !== ".")
+    return;
+  const q = d.substring(1);
+  return n => `[...el${n}.attributes].filter(a => a.startsWith("${q}"))`;
+}
 
-  const queries = {
-    "-": q => n => `for(let el${n} = el${n - 1}; el${n}?.matches("${q}"); el${n} = null)`,
-    ".": q => n => `for (let el${n} of el${n - 1}.querySelectorAll("${q}"))`,
-  };
-
-  for (let key in queries)
-    if (d.startsWith(key))
-      return queries[key](DoubleDots.miniQuerySelector(d.slice(key.length)));
+function middleAttrQuerySelector(d) {
+  if (d[0] !== ".")
+    return;
+  const q = d.substring(1);
+  return n => `new Set([...el${n}.attributes].filter(a => a.startsWith("${q}")).map(a=>a.ownerElement))`;
 }
 
 function wrapper(body, fullname, size) {
   const funcName = DoubleDots.kebabToPascal(fullname.slice(1).replaceAll(".", "_"));
-  const tmps = Array.from({ length: size }, (_, i) => `el${i}, tmp${i}=0`);
-  const tmpStr = tmps.join(", ");
-  return `function ${funcName} (oi) {
+  const els = Array.from({ length: size }, (_, i) => `el${i}`).join(", ");
+  return `function ${funcName}(oi) {
+  let ${els};
   const res = [];
-  let ${tmpStr};
 ${body}
   if (!res.length)
     throw "dash-rule returned empty: ${fullname}";
@@ -165,14 +157,37 @@ ${body}
 
 function dashRule(fullname) {
   const ds = fullname.split("..").map(d => d.substring(1));
-  ["r", "rt", "d"].includes(ds[0]) || ds.unshift("default");
-  // throw new SyntaxError("-rt, -t, or -d must be the first dash rule");
-  const pipe = ds.map(d => miniQuerySelects(d) || direction(d)).flat();
-  const strs = pipe.map((fun, i) => fun(i)).reverse();
-  let body = `res.push(el${strs.length - 1});`;
-  for (let str of strs)
-    body = `${str}{\n  ${body.replaceAll("\n", "\n  ")}\n}`;
-  const functionText = wrapper(body, fullname, pipe.length);
+  //1. fixing implied starts
+  const pipes = [];
+  const start = firsts[["t", "rt", "d"].includes(ds[0]) ? ds.shift() : "default"];
+  pipes.push(start);
+
+
+  if (ds[0][0] === "-")
+    ds.unshift("down");
+
+  for (let i = 0; i < ds.length; i++) {
+    const d = ds[i];
+    let exp;
+    //inlining the querySelector
+    //todo we must make sure that querySelectors are not added twice in a row.
+    //todo if they are, then they are nested. and we should just space .join(" ") them
+    if (exp = miniQuerySelector(d))
+      pipes[pipes.length - 1] = pipes[pipes.length - 1].replace("*", exp);
+    else if (exp = direction(d))
+      pipes.push(exp(i));
+    else if (exp = middleAttrQuerySelector(d)) //todo untested
+      pipes.push(exp(i));
+    else if (exp = endAttrQuerySelector(d)) //todo untested
+      pipes.push(exp(i));
+    else
+      throw DoubleDots.SyntaxError("DashRule unknown");
+  }
+
+  const iters = pipes.map((pipe, i) => `for (el${i} of ${pipe})`);
+  iters.push(`res.push(el${pipes.length - 1})`);
+  const body = iters.map((str, i) => "  ".repeat(i + 1) + str).join("\n");
+  const functionText = wrapper(body, fullname, pipes.length);
   return DoubleDots.importBasedEval(functionText);
 }
 

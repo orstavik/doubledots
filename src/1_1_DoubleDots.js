@@ -102,17 +102,17 @@
 
   function* up(el, q = "*") {
     for (let p = el.parentElement; p; p = p.parentElement)
-      if (q === "*" || p.match(q))
+      if (q === "*" || p.matches(q))
         yield p;
   }
   function* left(el, q = "*") {
     for (let s = el.previousElementSibling; s; s = s.previousElementSibling)
-      if (q === "*" || s.match(q))
+      if (q === "*" || s.matches(q))
         yield s;
   }
   function* right(el, q = "*") {
     for (let s = el.nextElementSibling; s; s = s.nextElementSibling)
-      if (q === "*" || s.match(q))
+      if (q === "*" || s.matches(q))
         yield s;
   }
   function* roots(el) {
@@ -121,12 +121,12 @@
   }
   function* hosts(el, q = "*") {
     for (let h = el.getRootNode().host; h; h = h.getRootNode().host)
-      if (q === "*" || h.match(q))
+      if (q === "*" || h.matches(q))
         yield h;
   }
   function* downwide(el, q = "*") {
     for (let d, queue = [...el.children]; d = queue.shift(); queue.push(...el.children))
-      if (q === "*" || d.match(q))
+      if (q === "*" || d.matches(q))
         yield d;
   }
 
