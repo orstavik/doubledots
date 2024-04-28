@@ -4,27 +4,21 @@ class AutoList {
     this.#nodes = nodes;
   }
 
-  get nodes() {
-    return [...this.#nodes];
+  *nodes() {
+    yield* this.#nodes;
   }
 
   getter(prop) {
-    debugger;
     return Array.prototype.map.call(this.#nodes, n => n[prop]);
   }
 
   setter(prop, val) {
-    debugger;
     Array.prototype.map.call(this.#nodes, n => n[prop] = val);
     return this;
   }
 
   func(prop) {
-    debugger;
-    return (...args) => {
-      debugger;
-      return Array.prototype.map.call(this.#nodes, n => n[prop](...args));
-    };
+    return (...args) => Array.prototype.map.call(this.#nodes, n => n[prop](...args));
   }
 }
 
@@ -52,6 +46,7 @@ expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
 
 // 1. NOT e,oi,window
 //  e,oi,window are not directions! This dash-rule is for dom node origins only. We use the .-dot rules for e, oi, window.
+// so NONE of this:
 // document.Reactions.define("-oi", oi => new EventLoop.ReactionOrigin(oi));
 // document.Reactions.define("-e", _ => new EventLoop.ReactionOrigin(eventLoop.event));
 // document.Reactions.define("-w", _ => new EventLoop.ReactionOrigin(window));
@@ -61,7 +56,11 @@ expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
 // ".." as local psynonym for ":". I think that we should likely make this a global soft convention. As a way to speed up the reaction calls. This enables a hatch if you don't want to break the ":" in the sgml spec.
 //The .. as a convention for a "lowered doubledots" that enable chaining
 //inside the dash-rule.
-//If the dash-rule allow for chaining internally, then we can make it static at the beginning. And that gives clear benefits.
+//If the dash-rule allow for chaining internally, then we can make it 
+//static at the beginning. But we don't. If `this` is a valid origin, we go dynamic.
+//
+//todo PROBLEM: how to do lowered doubledots in the attribute query? ".." conflicts with the nesting, should we do "_."? Or should we say that "." is illegal in trigger names? So we will just match with full trigger names?
+//todo empty: use `-..-something` as a way to make a static dash selector?
 
 //3. -dash rule starts with the single node that is the ownerElement.
 
@@ -75,166 +74,105 @@ expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
 
 
 // Todo 2: use querySelectorWhen possible to speed up traversal
-const singleNodeGenerators = {
-  t: function* () { yield eventLoop.event.target; },
-  rt: function* () { yield eventLoop.event.relatedTarget; },
-  d: function* () { yield document; }
+// Todo 2: for example -c..--input => querySelectorAll(':root > input')
+// Todo 2: this is possible with -c/sibp/sibn/depth..--query
+// Todo 2: -depth..--query already has the -.query
+// Todo 2: but maybe make the "." be the attribute and then make "---query" be short for -depth..--query and add "--0" as short for a numerical variant.
+const firsts = {
+  t: `[eventLoop.event.target]`,
+  rt: `[eventLoop.event.relatedTarget]`,
+  d: `[document]`,
+  default: `this instanceof AutoList ? this.nodes : [this instanceof Element ? this : this instanceof Attr ? this.ownerElement : eventLoop.attribute.ownerElement]`
 };
 
-const generators = {
-  c: function* (it) {
-    for (let el of it)
-      yield* el.children;
-  },
-  depth: function* (it) {
-    for (let el of it)
-      yield* el.querySelectorAll("*");
-  },
-  width: function* widthFirst(iterable) {
-    const queue = [iterable];
-    while (queue.length) {
-      const it = queue.shift();
-      for (let el of it) {
-        yield it;
-        el.children?.length && queue.push(el.children);
-      }
-    }
-  },
-  //roots0 is just the root and hosts0 is just host.
-  roots: function* (it) {
-    for (let el of it)
-      for (let r = el.getRootNode(); r; r = r.host?.getRootNode())
-        yield r;
-  },
-  hosts: function* (it) {
-    for (let el of it)
-      for (let h = el.getRootNode().host; h; r = r.getRootNode().host)
-        yield h;
-  },
-  p: function* parentElements(it) {
-    for (let el of it)
-      for (let p = el.parentElement; p; p = p.parentElement)
-        yield p;
-  },
-  sibp: function* previousSiblings(it) {
-    for (let el of it)
-      for (let s = el.previousElementSibling; s; s = s.previousElementSibling)
-        yield s;
-  },
-  sibn: function* nextSiblings(it) {
-    for (let el of it)
-      for (let s = el.nextElementSibling; s; s = s.nextElementSibling)
-        yield s;
-  },
-  sibs: function* (it) {
-    for (let el of it)
-      yield* el.parentNode.children;
-  }
+const directions = {
+  //todo .querySelectorAll(":scope ~ *") doesn't work..
+  //todo .querySelectorAll(":scope:has(++)") I don't even bother testing.
+  c: n => `el${n}.querySelectorAll(":scope > *")`,
+  sibs: n => `el${n}.parentNode.querySelectorAll(":scope > *")`,
+  down: n => `el${n}.querySelectorAll("*")`,
+  up: n => `DoubleDots.up(el${n}, "*")`,
+  left: n => `DoubleDots.left(el${n}, "*")`,
+  right: n => `DoubleDots.right(el${n}, "*")`,
+  roots: n => `DoubleDots.roots(el${n}, "*")`,
+  hosts: n => `DoubleDots.hosts(el${n}, "*")`,
+  downwide: n => `DoubleDots.downWide(el${n}, "*")`,
 };
 
-function makeGenerator(reverse, dir, num) {
-  let generator = generators[dir];
-  if (!generator)
-    throw new DoubleDots.SyntaxError("Bad dash rule generator name: " + dir);
-  if (reverse)
-    generator = function* (it) {
-      const res = [...generator(it)];
-      res.reverse();
-      yield* res;
-    };
-  if (isNaN(num))
-    return generator;
-  if (num < 0) {
-    return function* (it) {
-      const res = [...generator(it)];
-      yield res[res.length + num];
-    };
-  }
-  return function* (it) {
-    let i = num;
-    for (let el of generator(it))
-      if (!i--) {
-        yield el;
-        return;
-      }
-  };
+function attrQuery(q) {
+  return;
 }
 
-
-
-//todo memoize it
-function toGenerator(dash, isFirst, isLast) {
-  const single = singleNodeGenerators[dash];
-  if (single) {
-    if (!isFirst)
-      throw new SyntaxError("-rt, -t, or -d must be the first dash rule");
-    return single;
-  }
-  if (dash.startsWith("--")) {
-    const query = dash.substring(2).replaceAll("..", ":");
-    return isLast ? function* (it) {
-      for (let el of it)
-        for (let at of el.attributes)
-          if (at.name.startsWith(query))
-            yield at;
-    } :
-      function* (it) {
-        for (let el of it)
-          for (let at of el.attributes) {
-            if (at.name.startsWith(query)) {
-              yield el;
-              break;
-            }
-          }
-      };
-  }
-  if (dash.startsWith("-")) {
-    const query = DoubleDots.miniQuerySelector(dash.substring(1));
-    return function* (it) {
-      for (let el of it)
-        if (el.matches(query))
-          yield el;
-    };
-  }
-  if (dash.startsWith(".")) {
-    const query = DoubleDots.miniQuerySelector(dash.substring(1));
-    return function* (it) {
-      for (let el of it)
-        yield* el.querySelectorAll(query);
-    };
-  }
-  // "_p12" or "p12" or "_p" or "p"
+function direction(dash, n) {
   const m = dash.match(/^(_)?([a-zA-Z]+)([-]?\d+)?$/);
   if (!m)
     throw new DoubleDots.SyntaxError("Unknown dash: " + dash);
-  const [_, reverse, dir, num] = m;
-  return makeGenerator(reverse, dir, parseInt(num));
+  let [_, rev, dir, num] = m;
+  const gen = directions[dir];
+  if (!gen)
+    throw new DoubleDots.SyntaxError("Dash direction unknown: " + dir);
+  num = parseInt(num);
+  if (rev && !isNaN(num))
+    throw new DoubleDots.SyntaxError(`${dash} is reverse+indexed. Just invert the number, it means the same: ${dir}${-num}`);
+  const it = gen(n);
+  return rev ? `[...${it}].reverse()` : !isNaN(num) ? `[[...${it}].at(${num})]` : it;
 }
 
-function pipeGenerators(generators, iterable) {
-  for (let gen of generators)
-    iterable = gen(iterable);
-  return iterable;
+function miniQuerySelector(d) {
+  return d[0] === "-" && DoubleDots.miniQuerySelector(d.substring(1));
+}
+
+function attrQuerySelector(d, n, length) {
+  if (d[0] !== ".")
+    return;
+  const q = d.substring(1); //todo we need to process the q
+  const core = `[...el${n}.attributes].filter(a => a.startsWith("${q}"))`;
+  return n === length - 1 ? core : `new Set(${core}.map(a=>a.ownerElement))`;
+}
+
+function wrapper(body, fullname) {
+  return `
+function ${DoubleDots.kebabToPascal(fullname.replaceAll(".", "_").slice(1))}(oi) {
+  const res = [];
+${body}
+  if (!res.length)
+    throw "-dash-rule returned empty: ${fullname}";
+  const res2 = res.length === 1 ? res[0] :
+    res[0] instanceof Element ? HTMLElementList(res) :
+      AttrList(res);
+  return new EventLoop.ReactionOrigin(res2);
+}`;
 }
 
 function dashRule(fullname) {
   const ds = fullname.split("..").map(d => d.substring(1));
-  const its = ds.map((d, i) => toGenerator(d, i == 0, i == ds.length - 1));
+  //1. fixing implied starts
+  const pipes = [];
+  const start = firsts[["t", "rt", "d"].includes(ds[0]) ? ds.shift() : "default"];
+  pipes.push(start);
 
-  return function dashExpression() {
-    const origin = this instanceof Element ? [this] :
-      this instanceof Attr ? [this.ownerElement] :
-        this instanceof AutoList ? this.nodes :
-          [eventLoop.attribute.ownerElement];
-    const pipeGenerator = pipeGenerators(its, origin);
-    let res = [...pipeGenerator];
-    if (!res.length)
-      throw "dash-rule returned empty: " + fullname;
-    res = res.length === 1 ? res[0] :
-      res[0] instanceof Element ? HTMLElementList(res) :
-        AttrList(res);
-    return new EventLoop.ReactionOrigin(res);
-  };
+
+  if (ds[0][0] === "-")
+    ds.unshift("down");
+
+  for (let i = 0; i < ds.length; i++) {
+    const d = ds[i];
+    let exp;
+    //inlining the querySelector
+    //todo we must make sure that querySelectors are not added twice in a row.
+    //todo if they are, then they are nested. and we should just space .join(" ") them
+    if (exp = miniQuerySelector(d))
+      pipes[pipes.length - 1] = pipes[pipes.length - 1].replace("*", exp);
+    else if (exp = direction(d, i) || attrQuerySelector(d, i, ds.length))
+      pipes.push(exp);
+    else
+      throw DoubleDots.SyntaxError("DashRule unknown");
+  }
+
+  const iters = pipes.map((pipe, i) => `for (let el${i} of ${pipe})`);
+  iters.push(`res.push(el${pipes.length - 1})`);
+  const body = iters.map((str, i) => "  ".repeat(i + 1) + str).join("\n");
+  return DoubleDots.importBasedEval(wrapper(body, fullname));
 }
 
 document.Reactions.defineRule("-", dashRule);
