@@ -28,7 +28,7 @@
     }
 
     nextReaction() {
-      this.#i++;
+      // this.#i++;
       return this.getReaction();
     }
 
@@ -36,12 +36,14 @@
      * @returns true if the loop can continue, false if the loop should abort
      */
     run(threadMode = false) {
-      for (let re = this.getReaction(); re; re = this.nextReaction()) {
+      for (let re = this.getReaction(); re !== undefined; re = this.nextReaction()) {
         //1. process native reactions
         if (re === "") {
           threadMode = true;
+          this.#runSuccess(this.#inputs[this.#i]);
           continue;
         }
+        //todo this one
         if (re.startsWith("catch"))
           continue;
 
@@ -78,8 +80,8 @@
               res.then(oi => this.#runSuccess(oi))
                 .catch(error => this.#runError(error))
                 .finally(_ => __eventLoop.loop());
-                //todo these sync delays needs to have a max timeout.
-                //todo thus, we need to have some max timers
+              //todo these sync delays needs to have a max timeout.
+              //todo thus, we need to have some max timers
               return true; //abort outside loop
             }
           }
@@ -98,7 +100,7 @@
         if (this.#names[this.#i] === "catch" || this.#names[this.#i] === catchKebab)
           return;
 
-      this.#i = this.#names.length;
+      // this.#i = this.#names.length;
       const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
       //todo add the at + reactionIndex + self + input to the ErrorEvent, so that we know which attribute caused the error
       //todo or just the at, and then just read the data from the _eventLoop?
@@ -107,16 +109,23 @@
 
     #runSuccess(res) {
       this.#outputs[this.#i] = res;
-
-      const next = this.#i + (res instanceof EventLoop.ReactionJump ? res.value : 1);
-      if (next >= this.#names.length)
-        this.#i = this.#names.length; //todo I need to update the #selves and #inputs
-      else if (res instanceof EventLoop.ReactionOrigin) {
+      if (res === EventLoop.Break) {
+        this.#i = this.#names.length;
+      } else if (res instanceof EventLoop.ReactionJump) {
+        const next = this.#i + res.value;
+        this.#selves[next] = this.#selves[this.#i];
+        this.#inputs[next] = this.#inputs[this.#i];
+        this.#i = next;
+      } else if (res instanceof EventLoop.ReactionOrigin) {
+        const next = this.#i + 1;
         this.#selves[next] = res.value;
-        this.#inputs[next] = this.#inputs[next - 1];
+        this.#inputs[next] = this.#inputs[this.#i];
+        this.#i = next;
       } else {
-        this.#selves[next] = this.#selves[next - 1];
+        const next = this.#i + 1;
+        this.#selves[next] = this.#selves[this.#i];
         this.#inputs[next] = res;
+        this.#i = next;
       }
     }
   }
@@ -157,7 +166,6 @@
 
   //external interface
   window.EventLoop = class EventLoop {
-    //todo move the static classes to DoubleDots namespace?
     static ReactionJump = class ReactionJump {
       constructor(n) {
         n = parseInt(n);
@@ -166,6 +174,8 @@
         this.value = n;
       }
     };
+
+    static Break = {};
 
     static ReactionOrigin = class ReactionOrigin {
       constructor(obj) {
@@ -185,6 +195,8 @@
         // throw new DoubleDotsSpreadReactionError("SpreadReactions must be passed a spreadable oi argument");
       };
     };
+
+    //todo freeze the ReactionOrigin, SpreadReaction, ReactionJump, Break.
 
     get event() {
       return __eventLoop.task.event;
