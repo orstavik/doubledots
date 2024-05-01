@@ -20,23 +20,23 @@
 </div>
 
 <script>
-  document.Reactions.define("log", function(){
-    console.log(__eventLoop.getFrame().event)
-  })
   document.Reactions.define("turnon", function(){
     console.log("turning on");
-    this.ownerElement.previousElementSibling.style.display = "block"
+    let tooltip = this.ownerElement.previousElementSibling
+    tooltip.style.display = "block"
   })
   document.Reactions.define("turnoff", function(){
     console.log("turning off");
-    this.ownerElement.previousElementSibling.style.display = "none"
-    this.ownerElement.previousElementSibling.style.left = "0px"
-    this.ownerElement.previousElementSibling.style.top = "0px"
+    let tooltip = this.ownerElement.previousElementSibling
+    tooltip.style.display = "none"
+    tooltip.style.left = "0px"
+    tooltip.style.top = "0px"
   })
   document.Reactions.define("move", function(){
     console.log("moving");
-    this.ownerElement.previousElementSibling.style.left = __eventLoop.getFrame().event.clientX + "px"
-    this.ownerElement.previousElementSibling.style.top = __eventLoop.getFrame().event.clientY + "px"
+    let tooltip = this.ownerElement.previousElementSibling
+    tooltip.style.left = __eventLoop.getFrame().event.clientX + "px"
+    tooltip.style.top = __eventLoop.getFrame().event.clientY + "px"
   })
 </script>
 
