@@ -6,37 +6,39 @@
 <script src="../src/6_load_DoubleDots.js"></script>
 <script src="../src/triggers/PropagationSimple.js"></script>
 <style>
-  .tooltip{
+  .tooltip {
     position: absolute;
     display: none;
     pointer-events: none;
   }
+  .tooltip.active {
+    display: block;
+  }
 </style>
 <div>
   <div class="tooltip">Following the cursor</div>
-  <div class="hovered" style="border: solid; width: 50vw; height: 50vh;" mouseenter:turnon mousemove:move mouseleave:turnoff>
+  <div class="hovered" style="border: solid; width: 50vw; height: 50vh;"
+   mouseenter:sibling:on:move 
+   mousemove:sibling:move
+   mouseleave:sibling:off
+  >
     <p>HOVER ME</p>
   </div>
 </div>
 
 <script>
-  document.Reactions.define("turnon", function(){
-    console.log("turning on");
-    let tooltip = this.ownerElement.previousElementSibling
-    tooltip.style.display = "block"
-  })
-  document.Reactions.define("turnoff", function(){
-    console.log("turning off");
-    let tooltip = this.ownerElement.previousElementSibling
-    tooltip.style.display = "none"
-    tooltip.style.left = "0px"
-    tooltip.style.top = "0px"
-  })
-  document.Reactions.define("move", function(){
-    console.log("moving");
-    let tooltip = this.ownerElement.previousElementSibling
-    tooltip.style.left = __eventLoop.getFrame().event.clientX + "px"
-    tooltip.style.top = __eventLoop.getFrame().event.clientY + "px"
-  })
+  document.Reactions.define("sibling", function () {
+    return new EventLoop.ReactionOrigin(this.ownerElement.previousElementSibling);
+  });
+  document.Reactions.define("on", function () {
+    this.classList.add("active");
+  });
+  document.Reactions.define("off", function () {
+    this.classList.remove("active");
+  });
+  document.Reactions.define("move", function () {
+    const {clientX, clientY} = eventLoop.event;
+    this.style.left = clientX + "px";
+    this.style.top = clientY + "px";
+  });
 </script>
-
