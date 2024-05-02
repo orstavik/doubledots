@@ -37,8 +37,9 @@
 <script>
   document.Reactions.defineRule('loadmodal_', function(fullname) {
     console.log(fullname);
+    let slug = fullname.split('_')[1]
     return function() {
-      this.ownerElement.parentElement.parentElement.firstElementChild.querySelector('h1').innerText = `Modal ${fullname.split('_')[1]}`;
+      this.ownerElement.parentElement.parentElement.firstElementChild.querySelector('h1').innerText = `Modal ${slug}`;
     };
   });
 
