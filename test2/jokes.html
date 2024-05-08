@@ -1,0 +1,43 @@
+<script src="../../src/1_1_DoubleDots.js"></script>
+<script src="../../src/1_2_AttrCustom.js"></script>
+<script src="../../src/2_2_nativeMethods.js"></script>
+<script src="../../src/3_definition_registers_v4.js"></script>
+<script src="../../src/4_eventLoop_v2.js"></script>
+<script src="../../src/6_load_DoubleDots.js"></script>
+<script src="../../src/triggers/PropagationSimple.js"></script>
+
+<div>
+  <button click:getjoke_:checklenght:displayone:displaytwo>LOAD</button>
+  <section></section>
+</div>
+
+<script>
+  document.Reactions.defineRule("getjoke_", function () {
+    return async function getjoke() {
+      const result = await fetch("https://v2.jokeapi.dev/joke/Programming?blacklistFlags=nsfw,religious,political,racist,sexist,explicit")
+      return result.json();
+    };
+  });
+  document.Reactions.define("checklenght", function (data) {
+    if (data.type === "twopart") {
+      console.log('twopart');
+      console.log(data);
+      return [data.setup, data.delivery];
+    } else {
+      console.log('one part');
+      console.log(data);
+      return [data.joke];
+    }
+  });
+  document.Reactions.define("displayone", function (io) {
+    if (io.length > 1) {
+      return io;
+    }
+    this.ownerElement.parentElement.querySelector("section").innerHTML = `<p>${io[0]}</p>`;
+    this.ownerElement.innerHTML = "LOAD ANOTHER";
+  });
+  document.Reactions.define("displaytwo", function (io) {
+    this.ownerElement.parentElement.querySelector("section").innerHTML = `<p>${io[0]}</p><p>${io[1]}</p>`;
+    this.ownerElement.innerHTML = "LOAD ANOTHER";
+  });
+</script>
