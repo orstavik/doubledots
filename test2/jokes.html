@@ -7,37 +7,26 @@
 <script src="../../src/triggers/PropagationSimple.js"></script>
 
 <div>
-  <button click:getjoke_:checklenght:displayone:displaytwo>LOAD</button>
+  <button
+    click::load-json:displayone:hasdelivery:sleep_4000:displaytwo="https://v2.jokeapi.dev/joke/Programming?blacklistFlags=nsfw,religious,political,racist,sexist,explicit"
+    >LOAD JOKE</button>
   <section></section>
 </div>
 
 <script>
-  document.Reactions.defineRule("getjoke_", function () {
-    return async function getjoke() {
-      const result = await fetch("https://v2.jokeapi.dev/joke/Programming?blacklistFlags=nsfw,religious,political,racist,sexist,explicit")
-      return result.json();
-    };
+  document.Reactions.defineRule("sleep_", function (fullname) {
+    const ms = parseInt(fullname.split("_")[1]);
+    return async oi => (await DoubleDots.sleep(ms), oi);
   });
-  document.Reactions.define("checklenght", function (data) {
-    if (data.type === "twopart") {
-      console.log('twopart');
-      console.log(data);
-      return [data.setup, data.delivery];
-    } else {
-      console.log('one part');
-      console.log(data);
-      return [data.joke];
-    }
+  document.Reactions.define("load-json", async _ => await (await (fetch(this.value)).json()));
+  document.Reactions.define("displayone", function (oi) {
+    this.ownerElement.nextElementSibling.innerHTML = `<p>${oi.setup || oi.joke}</p>`;
   });
-  document.Reactions.define("displayone", function (io) {
-    if (io.length > 1) {
-      return io;
-    }
-    this.ownerElement.parentElement.querySelector("section").innerHTML = `<p>${io[0]}</p>`;
-    this.ownerElement.innerHTML = "LOAD ANOTHER";
+  document.Reactions.define("displaytwo", function (oi) {
+    this.ownerElement.nextElementSibling.innerHTML = `<p>${oi.setup}</p><p>${oi.delivery}</p>`;
   });
-  document.Reactions.define("displaytwo", function (io) {
-    this.ownerElement.parentElement.querySelector("section").innerHTML = `<p>${io[0]}</p><p>${io[1]}</p>`;
-    this.ownerElement.innerHTML = "LOAD ANOTHER";
+  document.Reactions.define("hasdelivery", function (oi) {
+    if(!oi.delivery)
+      return EventLoop.Break;
   });
 </script>
