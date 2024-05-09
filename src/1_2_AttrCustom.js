@@ -7,22 +7,21 @@
     // upgrade(){ super.upgrade(); ... }
     // remove(){ ...; super.remove() }
 
-    get trigger() {
-      const [trigger, ...reactions] = this.name.split(":");
-      Object.defineProperties(this, {
+    static #makeRT(at) {
+      let [trigger, ...reactions] = at.name.split(":");
+      reactions.length === 1 && !reactions[0] && reactions.pop();
+      Object.defineProperties(at, {
         "trigger": { value: trigger, enumerable: true },
         "reactions": { value: reactions, enumerable: true },
       });
-      return this.trigger;
+    }
+
+    get trigger() {
+      return AttrCustom.#makeRT(this), this.trigger;
     }
 
     get reactions() {
-      const [trigger, ...reactions] = this.name.split(":");
-      Object.defineProperties(this, {
-        "trigger": { value: trigger, enumerable: true },
-        "reactions": { value: reactions, enumerable: true },
-      });
-      return this.reactions;
+      return AttrCustom.#makeRT(this), this.reactions;
     }
 
     isConnected() {
@@ -45,11 +44,15 @@
     }
 
     static upgradeBranch(...els) {
-      for (let el of els)
+      for (let el of els) {
+        for (let at of el.attributes)
+          if (at.name.includes(":"))
+            AttrCustom.upgrade(at);
         for (let desc of el.querySelectorAll("*"))
           for (let at of desc.attributes)
             if (at.name.includes(":"))
               AttrCustom.upgrade(at);
+      }
       //todo we don't want to run the eventLoop until all the attr are upgraded.
     }
 
@@ -59,7 +62,7 @@
       if (!Def)
         Def = AttrUnknown;
       if (Def instanceof Promise) {
-        Def.resolve(Def => this.upgrade(Def, at));
+        Def.resolve(Def => at.upgrade(Def, at));
         Def = AttrPromise;
       }
       try {
@@ -191,10 +194,10 @@
   }
 
   /**
- * AttrMutation is the only needed main base for MutationObserver.
- * With AttrMutation we can deprecate MutationObserver.
- * All other MutationObserver triggers should use AttrMutation.
- */
+   * AttrMutation is the only needed main base for MutationObserver.
+   * With AttrMutation we can deprecate MutationObserver.
+   * All other MutationObserver triggers should use AttrMutation.
+   */
   class AttrMutation extends AttrCustom {
     upgrade() {
       const observer = new MutationObserver(this.run.bind(this));
