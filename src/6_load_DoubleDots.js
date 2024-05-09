@@ -40,15 +40,20 @@ function monkeyPatch(proto, prop, fun) {
 
   const insertAdjacentHTMLOG = Element_p.insertAdjacentHTML;
   function insertAdjacentHTML_DD(position, ...args) {
-    //red bug!
-    console.log("bob");
-    const root = position === "beforebegin" || position === "afterend" ? this.parentNode : this;
-    const index = root.children.indexOf(this);
-    const length = root.children.length;
+    //todo test the different versions here
+    let root, index;
+    if (position === "afterbegin")
+      root = this, index = 0;
+    else if (position === "beforeend")
+      root = this, index = this.children.length;
+    else if (position === "beforebegin")
+      root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this);
+    else if (position === "afterend")
+      root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this) + 1;
+    const childCount = root.children.length;
     insertAdjacentHTMLOG.call(this, position, ...args);
-    const length2 = root.children.length;
-    const added = length2 - length;
-    const newRoots = root.children.slice(index, length); //, added);? not length?
+    const addCount = root.children.length - childCount;
+    const newRoots = Array.from(root.children).slice(index, index+addCount);
     AttrCustom.upgradeBranch(...newRoots);
   }
 
