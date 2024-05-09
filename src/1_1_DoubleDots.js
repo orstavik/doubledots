@@ -1,4 +1,19 @@
 (function () {
+  const dce = document.createElement;
+  const ael = EventTarget.prototype.addEventListener;
+  const si = setInterval;
+  const st = setTimeout;
+
+  async function sleep(ms) {
+    return await new Promise(r => st(r, ms));
+  }
+
+  function nextTick(cb) {
+    const a = dce.call(document, "audio");
+    ael.call(a, "ratechange", cb);
+    a.playbackRate = 2;
+  }
+
   class AttrWeakSet extends Set {
     static #bigSet = new Set(); //wr => AttrWeakSet
     static #key;
@@ -7,7 +22,7 @@
     static gc() {
       let active, l;
       for (let wr of AttrWeakSet.#bigSet) {
-        if (l = wr.ref())
+        if (l = wr.deref())
           for (let a of l)
             a.isConnected ? (active = true) : (l.delete(a), a.remove());
         else
@@ -23,7 +38,7 @@
     }
 
     add(at) {
-      AttrWeakSet.#key ??= setInterval(AttrWeakSet.gc, AttrWeakSet.GC);
+      AttrWeakSet.#key ??= si(AttrWeakSet.gc, AttrWeakSet.GC);
       super.add(at);
     }
   }
@@ -194,6 +209,8 @@
 
     },
     AttrWeakSet,
+    nextTick,
+    sleep,
     nativeEvents,
     kebabToPascal,
     pascalToKebab,
