@@ -1,6 +1,7 @@
 export async function onRequest({ request }) {
   try {
-    const filePaths = getFiles(new URL('/src', request.url));
+    // const filePaths = getFiles(new URL('/src', request.url));
+    const filePaths = ['/src/1_1_DoubleDots.js', '1_2_AttrCustom.js'];
     const fileTexts = filePaths.map(async path =>
       (await fetch(new Request(new URL(path, request.url)))).text());
     await Promise.all(fileTexts);
