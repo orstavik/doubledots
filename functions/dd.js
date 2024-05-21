@@ -22,6 +22,7 @@ async function getFiles(url) {
   const fileNames = [];
   for (let match; match = /<a href="([^"]+)">/g.exec(html);)
     fileNames.push(match[1]);
+
   console.log("santa", fileNames.length);
-  return fileNames;
+  return fileNames.map(path => new URL(path, url.href));
 }
