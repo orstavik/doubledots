@@ -5,7 +5,7 @@ export async function onRequest({ request }) {
     const fileTextPromises = filePaths.map(async path =>
       (await fetch(new Request(new URL(path, request.url)))).text()
     );
-    await Promise.all(fileTexts);
+    const fileTexts = await Promise.all(fileTextPromises);
     const res = fileTexts.join('\n\n');
     return new Response(res, {
       headers: {
