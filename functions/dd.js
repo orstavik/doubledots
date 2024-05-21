@@ -17,10 +17,10 @@ export async function onRequest({ request }) {
 
 
 async function getFiles(url) {
-  console.log("santa", url.href);
   const html = await (await fetch(url)).text();
   const fileNames = [];
   for (let match; match = /<a href="([^"]+)">/g.exec(html);)
     fileNames.push(match[1]);
+  console.log("santa", fileNames.length);
   return fileNames;
 }
