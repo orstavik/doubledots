@@ -1,9 +1,11 @@
-export async function onRequest({ request }) {
+export async function onRequest({ request, env }) {
   try {
     // const filePaths = getFiles(new URL('/src', request.url));
     const filePaths = ['/src/1_1_DoubleDots.js', '/src/1_2_AttrCustom.js'];
+    const bob = await (await env.ASSETS.fetch(new URL('/src/'))).text();
+    console.log("boh", bob);
     const fileTextPromises = filePaths.map(async path =>
-      (await fetch(new Request(new URL(path, request.url)))).text()
+      (await env.ASSETS.fetch(new URL(path, request.url))).text()
     );
     const fileTexts = await Promise.all(fileTextPromises);
     const res = fileTexts.join('\n\n');
