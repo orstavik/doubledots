@@ -15,6 +15,7 @@ export async function onRequest({ request, env }) {
       }
     });
   } catch (e) {
+    console.log(e);
     return new Response('Error making a framework file', { status: 500 });
   }
 }
