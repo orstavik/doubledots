@@ -2,7 +2,7 @@
   "name": "doubledots",
   "version": "1.0.0",
   "scripts": {
-    "build": "node build/cfBuild.js"
+    "build": "node cfBuild.js"
   },
   "dependencies": {}
 }
