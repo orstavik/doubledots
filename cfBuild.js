@@ -2,16 +2,37 @@ const fs = require('fs');
 const path = require('path');
 
 // Function to recursively generate the directory structure as a JSON object
-function dirList(dir) {
+function makeTree(dir) {
   const res = {};
   for (let item of fs.readdirSync(dir)) {
     const p = path.join(dir, item);
-    res[item] = fs.statSync(p).isDirectory() ? dirList(p) : 1;
+    res[item] = fs.statSync(p).isDirectory() ? makeTree(p) : 1;
   }
   return res;
 }
 
-const result = dirList(__dirname);
-const filename = path.join(__dirname, 'hello.json');
-fs.writeFileSync(filename, JSON.stringify(result, null, 2), 'utf8');
-console.log('hello sunshine.');
+function filterDirectories(tree, func) {
+  for (let [k, v] of Object.entries(tree))
+    if (v instanceof Object)
+      func(k) ? delete tree[k] : filterDirectories(v, func);
+}
+
+const result = makeTree(__dirname);
+const result2 = filterDirectories(result, name => name[0] === 0);
+const result3 = JSON.stringify(result2, null, 2);
+
+fs.writeFileSync(path.join(__dirname, 'manifest.json'), result3, 'utf8');
+
+console.log(`
+
+
+
+####### :: ########
+${result3}
+####### :: ########
+
+
+
+
+
+`);
