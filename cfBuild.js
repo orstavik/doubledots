@@ -20,10 +20,10 @@ function filterDirectories(tree, func) {
 
 function main() {
   const result = makeTree(__dirname);
-  const result2 = filterDirectories(result, name => name[0] === 0);
-  const result3 = JSON.stringify(result2, null, 2);
-  fs.writeFileSync(path.join(__dirname, 'manifest.json'), result3, 'utf8');
-  return result3;
+  filterDirectories(result, name => name[0] === 0);
+  const json = JSON.stringify(result, null, 2);
+  fs.writeFileSync(path.join(__dirname, 'manifest.json'), json, 'utf8');
+  return json;
 }
 
 let res;
