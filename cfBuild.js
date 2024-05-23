@@ -17,18 +17,27 @@ function filterDirectories(tree, func) {
       func(k) ? delete tree[k] : filterDirectories(v, func);
 }
 
-const result = makeTree(__dirname);
-const result2 = filterDirectories(result, name => name[0] === 0);
-const result3 = JSON.stringify(result2, null, 2);
 
-fs.writeFileSync(path.join(__dirname, 'manifest.json'), result3, 'utf8');
+function main() {
+  const result = makeTree(__dirname);
+  const result2 = filterDirectories(result, name => name[0] === 0);
+  const result3 = JSON.stringify(result2, null, 2);
+  fs.writeFileSync(path.join(__dirname, 'manifest.json'), result3, 'utf8');
+  return result3;
+}
 
+let res;
+try {
+  res = main();
+} catch (err) {
+  res = JSON.stringify(err, null, 2);
+}
 console.log(`
 
 
 
 ####### :: ########
-${result3}
+${res}
 ####### :: ########
 
 
@@ -36,3 +45,4 @@ ${result3}
 
 
 `);
+
