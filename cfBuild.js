@@ -5,8 +5,8 @@ const path = require('path');
 function dirList(dir) {
   const res = {};
   for (let item of fs.readdirSync(dir)) {
-    const path = path.join(dir, item);
-    res[item] = fs.statSync(path).isDirectory() ? dirList(path) : 1;
+    const p = path.join(dir, item);
+    res[item] = fs.statSync(p).isDirectory() ? dirList(p) : 1;
   }
   return res;
 }
