@@ -20,7 +20,7 @@ function filterDirectories(tree, func) {
 
 function main() {
   const result = makeTree(__dirname);
-  filterDirectories(result, name => name[0] === 0);
+  filterDirectories(result, name => name[0] === ".");
   const json = JSON.stringify(result, null, 2);
   fs.writeFileSync(path.join(__dirname, 'manifest.json'), json, 'utf8');
   return json;
