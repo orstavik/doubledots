@@ -1,7 +1,6 @@
 const fs = require('fs');
 const path = require('path');
 
-// Function to recursively generate the directory structure as a JSON object
 function makeTree(dir) {
   const res = {};
   for (let item of fs.readdirSync(dir)) {
@@ -33,16 +32,8 @@ try {
   res = JSON.stringify(err, null, 2);
 }
 console.log(`
-
-
-
-####### :: ########
-${res}
-####### :: ########
-
-
-
-
-
+============== :: ================
+${res.substring(0, 5000)}
+============== :: ================
 `);
 
