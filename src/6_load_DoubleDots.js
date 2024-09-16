@@ -29,13 +29,13 @@ function monkeyPatch(proto, prop, fun) {
   const Element_innerHTML_OG = Object.getOwnPropertyDescriptor(Element_p, "innerHTML").set;
   const innerHTML_DD_el = function innerHTML_DD(val) {
     Element_innerHTML_OG.call(this, val);
-    AttrCustom.upgradeBranch(this);
+    AttrCustom.upgradeBranch(...this.children); //todo untested fix from project
   };
 
   const ShadowRoot_innerHTML_OG = Object.getOwnPropertyDescriptor(ShadowRoot_p, "innerHTML").set;
   const innerHTML_DD_sr = function innerHTML_DD(val) {
     ShadowRoot_innerHTML_OG.call(this, val);
-    AttrCustom.upgradeBranch(this);
+    AttrCustom.upgradeBranch(...this.children); //todo untested fix from project
   };
 
   const insertAdjacentHTMLOG = Element_p.insertAdjacentHTML;
