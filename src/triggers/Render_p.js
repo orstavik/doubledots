@@ -7,6 +7,36 @@
 
 (function () {
 
+  
+  const EMPTY = [];
+  class AttributeIterator {
+    [Symbol.iterator]() { return this; }
+    constructor(root, Type = Attr) {
+      this.elIt = document.createNodeIterator(root, NodeFilter.SHOW_ELEMENT);
+      this.el = this.elIt.nextNode();
+      this.attributes = this.el ? Array.from(this.el.attributes) : EMPTY;
+      this.i = 0;
+      this.attr = null;
+      this.Type = Type;
+    }
+    next() {
+      while (this.el?.isConnected) {
+        while (this.i < this.attributes.length) {
+          const attr = this.attributes[this.i++];
+          if (attr.ownerElement) //skip removed attributes
+            if (attr instanceof this.Type) //if Type === Attr, then no filter
+              return { value: this.attr = attr, done: false };
+        }
+        this.el = this.elIt.nextNode();
+        this.i = 0;
+        this.attributes = this.el ? Array.from(this.el.attributes) : EMPTY;
+      }
+      this.attr = null;
+      return { done: true };
+    }
+  }
+
+
   let db = {};
   let E;
   let started;
@@ -18,88 +48,55 @@
     propagate(document.documentElement);
   }
 
-  function checkScope(el) {
-    if (E && !E.scope.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_CONTAINED_BY)
-      throw "mutation outside scope: " + E.scope + " >! " + el;
-  }
-
-  function getParentPost(el) {
-    for (; el; el = el.parentElement)
-      for (let at of el.attributes)
-        if (at instanceof PostSetter)
-          return at;
-  }
-
   class PostAttr extends AttrCustom {
-    upgrade() { checkScope(this.ownerElement); E || this.onChange(true); }
-    set value(v) {
-      super.value = v; checkScope(this.ownerElement); E || this.onChange();
+    upgrade() { this.check() && this.onChange(true); }
+    set value(v) { super.value = v; this.check() && this.onChange(); }
+    get value() { return super.value; }
+    check() {
+      if (!started) return false;
+      if (!E) return true;
+      if (E.scope.contains(this.ownerElement) && E.scope !== this.ownerElement) return false;
+      throw new Error("Mutation outside scope during cascade: " + E.scope + " >! " + this.ownerElement);
     }
-    get value() { return super.value; };
   }
 
   class PostGetter extends PostAttr {
     onChange(upgrade) {
-      if(!started)
+      const post = this.post;
+      if (upgrade && post === undefined)
         return;
-      const post = getParentPost(this.ownerElement)?.post;
-      if (post === undefined && upgrade)
-        return;
-      const e = new Event(this.trigger);
+      const e = new Event(this.trigger.split("_")[0]);
       e.post = post;
       eventLoop.dispatch(e, this);
     }
+    get post() {
+      for (let el = this.ownerElement; el; el = el.parentElement)
+        for (let at of el.attributes)
+          if (at instanceof PostSetter)
+            return at.post;
+    }
   }
   class PostSetter extends PostAttr {
-    onChange() { started && propagate(this.ownerElement); }
+    onChange() { propagate(this.ownerElement); }
     get post() {
       return this.value === "*" ? { db, keys: Object.keys(db) } : db[this.value];
     }
   }
 
-  class PostEvent extends Event {
-    constructor() {
-      super("post");
+
+  class CascadeEvent extends Event {
+    constructor(type, it) {
+      super(type);
+      this.it = it;
     }
-    setScope(el) {
-      this.scope = el;
-      this.attributes = el && [...el.attributes];
-    }
+    get post() { return this.it.attr?.post; }
+    get scope() { return this.it.el; }
   }
 
   function propagate(start) {
-    const elIt = document.createNodeIterator(start, NodeFilter.SHOW_ELEMENT);
-    let i = 0;
-
-    E = new PostEvent();
-    E.setScope(elIt.nextNode());
-
-    const iterable = {
-      next() {
-        while (E.scope) {
-          while (i < E.attributes.length) {
-            const a = E.attributes[i++];  
-            if(!a.ownerElement)
-              continue;
-            if (a instanceof PostGetter) {
-              const postSetter = getParentPost(E.scope);
-              //todo here we can do a test against known changes
-              //     on the getter.
-              E.post = postSetter?.post;
-              return { value: a };
-            }
-          }
-          i = 0;
-          E.setScope(elIt.nextNode());
-        }
-        E = undefined;
-        return { done: true };
-      },
-      [Symbol.iterator]() {
-        return this;
-      }
-    };
-    eventLoop.dispatchBatch(E, iterable);
+    const it = new AttributeIterator(start, PostGetter);
+    E = new CascadeEvent("post", it);
+    eventLoop.dispatchBatch(E, it);
   }
 
   document.Reactions.define("pstate", pstate);
