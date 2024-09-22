@@ -8,25 +8,6 @@
     };
   }
 
-  function handlebars({ post }) {
-    return this.value.replace(/\{\{(\w+)\}\}/g, (_, m) => m.split(".").reduce((a, b) => a[b], post));
-  }
-
-  function at_(rule) {
-    let [_, name, value] = rule.split("_");
-    name = name.replaceAll("..", ":");
-    if (value === undefined)
-      return function () { return this.ownerElement.getAttribute(name); };
-    if (value === ".i")
-      return function (i) { this.ownerElement.setAttribute(name, i); };
-    return function () { this.ownerElement.setAttribute(name, value); };
-  }
-
-  //todo replace with .el.inner-text_.i ??
-  function setInnerText(i) {
-    return this.ownerElement.innerText = i;
-  }
-
   /*
   * `p_:first-child:for_p.._of_property`
   */
@@ -81,34 +62,6 @@
     };
   }
 
-  document.Reactions.defineRule("for_", for_);
+  // document.Reactions.defineRule("for_", for_);
   document.Reactions.defineRule("fetch_", fetch_);
-  document.Reactions.defineRule("at_", at_);
-  document.Reactions.define("handlebars", handlebars);
-  document.Reactions.define("inner-text", setInnerText);
-  document.Reactions.define("first-child", function firstChild() {
-    return this.ownerElement.firstElementChild;
-  });
-
-  // const types = new WeakMap();
-  // function handlebar({ post }) {
-  //   const el = this.ownerElement;
-  //   let { templ, innerText } = types.get(this) || {};
-  //   if (!templ) {
-  //     innerText = this.value === "innerText";
-  //     templ = innerText ? el.innerText : el.getAttribute(this.value);
-  //     types.set(this, { templ, innerText });
-  //   }
-  //   const txt = templ.replace(/\{\{(\w+)\}\}/g, (_, m) => m.split(".").reduce(
-  //     (a, b) => (!b || a[b] === undefined) ? "" : a[b], post));
-  //   innerText ? el.innerText = txt : el.setAttribute(this.value, txt);
-  // }
-  // document.Reactions.define("handlebar", handlebar);
-
-  // function allpropsattr({ post }) {
-  //   for (let [k, v] of Object.entries(post))
-  //     this.ownerElement.setAttribute(k, v);
-  //   return post;
-  // }
-  // document.Reactions.define("allpropsattr", allpropsattr);
 })();

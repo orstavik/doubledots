@@ -24,13 +24,13 @@ function* bodyTasks(el, skips = "template, [p\\:]", ii = []){
       const ii2 = [...ii, i];
       for(let {name, value} of n.attributes)
         if(value.indexOf("{{")>=0)
-          yield (n, now) => ii2.reduce((n,i)=>n.childNodes[i], n).setAttribute(name, processBraces(value, now));       
+          yield (n, now) => ii2.reduce((e,i)=>e.childNodes[i], n).setAttribute(name, processBraces(value, now));       
       yield* bodyTasks(n, skips, ii2);
     } else if (n instanceof Text) {
       const txt = n.textContent;
       const ii2 = [...ii, i];
       if(txt.indexOf("{{")>=0)
-        yield (n, now) => ii2.reduce((n,i)=>n.childNodes[i], n).textContent = processBraces(txt, now);
+        yield (n, now) => ii2.reduce((e,i)=>e.childNodes[i], n).textContent = processBraces(txt, now);
     }
   }
 }
@@ -58,17 +58,29 @@ function tBrace(template, {post: now}){
   this.ownerElement.textContent = null;
   for (let cb of this.__tasks.head)
     cb(this.ownerElement, now);
-  this.ownerElement.insertAdjacentClone("beforeend", template, root => { 
-    for (let cb of this.__tasks.body)
-      cb(root, now);  
-  });
+  const clone = template.cloneNode(true);
+  for (let cb of this.__tasks.body)
+    cb(clone, now);  
+  this.ownerElement.append(clone);
 }
 
 document.Reactions.define("brace", brace);
 document.Reactions.define("tbrace", tBrace);
 
+function getHoistTemplate(el, name = el.tagName.toLowerCase()){
+  let res = document.head.querySelector(`template[name="${name}"]`);
+  if(res)
+    return res;
+  el = el.firstElementChild;
+  if(!(el instanceof HTMLTemplateElement))
+    return;
+  el.setAttribute("name", name);
+  document.head.append(el);
+  return el;
+}
+
 function template(){
-  return this.__template ?? document.head.querySelector(`template[name="${this.ownerElement.tagName.toLowerCase()}"]`).content ?? this.ownerElement;
+  return this.__template ??= getHoistTemplate(this.ownerElement)?.content;
 }
 document.Reactions.define("template", template);
 

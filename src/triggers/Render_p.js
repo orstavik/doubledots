@@ -7,7 +7,6 @@
 
 (function () {
 
-  
   const EMPTY = [];
   class AttributeIterator {
     [Symbol.iterator]() { return this; }
@@ -36,37 +35,57 @@
     }
   }
 
-
-  let db = {};
-  let E;
-  let started;
-
-  function pstate(oi) {
-    if (E) throw new Error("Never update post db during down propagation");
-    started = true;
-    db = Object.assign({}, db, oi);
-    propagate(document.documentElement);
+  class PostChangeIterator extends AttributeIterator {
+    constructor(postCache, root, Type = Attr) {
+      super(root, Type);
+      this.postCache = postCache;
+    }
+    next() {
+      while (true) {
+        const i = super.next();
+        if (i.done) return i;
+        const attr = i.value, post = attr.post;
+        if (post !== this.postCache.get(attr)) {
+          this.postCache.set(attr, post);
+          return i;
+        }
+      }
+    }
   }
 
+  let E;
+  const postCache = new WeakMap();
+
   class PostAttr extends AttrCustom {
-    upgrade() { this.check() && this.onChange(true); }
+    upgrade() { this.check() && this.onChange(); }
     set value(v) { super.value = v; this.check() && this.onChange(); }
     get value() { return super.value; }
     check() {
-      if (!started) return false;
-      if (!E) return true;
-      if (E.scope.contains(this.ownerElement) && E.scope !== this.ownerElement) return false;
+      if (!E)
+        return false;
+      if (E !== eventLoop.event && this.post !== postCache.get(this))
+        return true;
+      if (E.scope.contains(this.ownerElement) && E.scope !== this.ownerElement)
+        return false;
       throw new Error("Mutation outside scope during cascade: " + E.scope + " >! " + this.ownerElement);
     }
   }
 
+
+  let db = {};
+
+  function pstate(oi) {
+    if (E && E !== eventLoop.event)
+      throw new Error("Never update post db during down propagation");
+    db = Object.assign({}, db, oi);
+    propagate(document.documentElement);
+  }
+  window.pstate = pstate;
+
   class PostGetter extends PostAttr {
-    onChange(upgrade) {
-      const post = this.post;
-      if (upgrade && post === undefined)
-        return;
+    onChange() {
       const e = new Event(this.trigger.split("_")[0]);
-      e.post = post;
+      e.post = this.post;
       eventLoop.dispatch(e, this);
     }
     get post() {
@@ -76,13 +95,21 @@
             return at.post;
     }
   }
+
+  function postGetter(rule) {
+    const [_, prop] = rule.split("_");
+    return !prop ? PostGetter :
+      class PostGetterX extends PostGetter {
+        get post() { return super.post?.[prop]; }
+      };
+  }
+
   class PostSetter extends PostAttr {
     onChange() { propagate(this.ownerElement); }
     get post() {
       return this.value === "*" ? { db, keys: Object.keys(db) } : db[this.value];
     }
   }
-
 
   class CascadeEvent extends Event {
     constructor(type, it) {
@@ -94,12 +121,12 @@
   }
 
   function propagate(start) {
-    const it = new AttributeIterator(start, PostGetter);
+    const it = new PostChangeIterator(postCache, start, PostGetter);
     E = new CascadeEvent("post", it);
     eventLoop.dispatchBatch(E, it);
   }
 
   document.Reactions.define("pstate", pstate);
   document.Triggers.define("p", PostSetter);
-  document.Triggers.define("p_", PostGetter);
+  document.Triggers.defineRule("p_", postGetter);
 })();
