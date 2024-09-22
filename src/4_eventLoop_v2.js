@@ -1,4 +1,11 @@
 (function () {
+  //.attachShadow(/*always open*/); is necessary to capture the full composedPath of customEvents.
+  const attachShadowOG = HTMLElement.prototype.attachShadow;
+  HTMLElement.prototype.attachShadow = function attachShadowforceModeOpen(...args) {
+    (args[0] ??= {}).mode = "open";
+    return attachShadowOG.apply(this, args);
+  }
+
   class MicroFrame {
     #i = 0;
     #names;
@@ -6,7 +13,7 @@
     #outputs;
     #selves;
 
-    constructor(at, event) {
+    constructor(event, at) {
       this.at = at;
       this.event = event;
       this.#names = this.at.reactions;
@@ -67,9 +74,9 @@
               return true;
             }
           }
-          const input = this.#inputs[this.#i];
           const self = this.#selves[this.#i];
-          const res = this.#outputs[this.#i] = func.call(self, input);
+          //todo this.#inputs.slice().reverse() is inefficient.
+          const res = this.#outputs[this.#i] = func.apply(self, this.#inputs.slice().reverse());
           if (res instanceof Promise) {
             if (threadMode) {
               res.then(oi => this.#runSuccess(oi))
@@ -132,33 +139,30 @@
 
   class __EventLoop {
     #stack = [];
-    #i = 0;
-    //#stack[#i] is the position in the event loop
-
-    //task is the task currently running reactions.
-    //This is different from #stack[#i] when tasks are continued in thread mode. 
+    #started = [];
     task;
 
-    getFrame() {
-      return this.#i < this.#stack.length ? this.#stack[this.#i] : undefined;
-    }
-
-    nextFrame() {
-      this.#i++;
-      return this.getFrame();
-    }
-
+    //called both to start and restart the loop.
     loop() {
-      for (this.task = this.getFrame(); this.task; this.task = this.nextFrame())
-        if (this.task.run()) //when task.run() returns true it is awaiting promise in sync mode.
-          return;
+      while (this.#stack[0]) {
+        const { event, iterator } = this.#stack[0];
+        for (let attr of iterator) {
+          //the iterator remembers its next position if the loop is broken.
+          this.task = new MicroFrame(event, attr);
+          this.#started.push(this.task);
+          //task.run() returns true when it awaits a promise in sync mode.
+          if (this.task.run())
+            return;
+          this.task = undefined;
+        }
+        this.#stack.shift();
+      }
     }
 
-    batch(event, ...attrs) {
-      const ready = this.#i === this.#stack.length;
-      for (let at of attrs)
-        this.#stack.push(new MicroFrame(at, event));
-      ready && this.loop();
+    batch(event, iterable) {
+      const iterator = iterable[Symbol.iterator]();
+      if (this.#stack.push({ event, iterator }) === 1)
+        this.loop();
     }
   }
 
@@ -199,23 +203,28 @@
     //todo freeze the ReactionOrigin, SpreadReaction, ReactionJump, Break.
 
     get event() {
-      return __eventLoop.task.event;
+      return __eventLoop.task?.event;
     }
 
     get attribute() {
-      return __eventLoop.task.at;
+      return __eventLoop.task?.at;
     }
 
     get reaction() {
-      return __eventLoop.task.getReaction();
+      return __eventLoop.task?.getReaction();
     }
 
     get reactionIndex() {
-      return __eventLoop.task.getReactionIndex();
+      return __eventLoop.task?.getReactionIndex();
     }
 
-    dispatch(event, ...attrs) {
-      __eventLoop.batch(event, ...attrs);
+    dispatch(event, attr) {
+      __eventLoop.batch(event, [attr]);
+    }
+
+    //todo rename to propagate
+    dispatchBatch(event, iterable) {
+      __eventLoop.batch(event, iterable);
     }
   };
   Object.defineProperty(window, "eventLoop", { value: new EventLoop() });

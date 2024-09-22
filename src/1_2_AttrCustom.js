@@ -36,7 +36,7 @@
       return this.ownerElement.removeAttribute(this.name);
     }
 
-    //todo remove this and only use eventLoop.dispatch(e, ...attrs);
+    //todo remove this and only use eventLoop.dispatchBatch(e, attrs);
     dispatchEvent(e) {
       if (!this.isConnected)
         throw new DoubleDots.ReactionError("dispatch on disconnected attribute.");
@@ -45,15 +45,23 @@
 
     static upgradeBranch(...els) {
       for (let el of els) {
-        for (let at of el.attributes)
-          if (at.name.includes(":"))
-            AttrCustom.upgrade(at);
-        for (let desc of el.querySelectorAll("*"))
-          for (let at of desc.attributes)
-            if (at.name.includes(":"))
-              AttrCustom.upgrade(at);
+        if (el instanceof Element)
+          this.upgradeElementRoot(el);
+        else if (el instanceof DocumentFragment)
+          for (let c of el.children)
+            this.upgradeElementRoot(c);
       }
       //todo we don't want to run the eventLoop until all the attr are upgraded.
+    }
+
+    static upgradeElementRoot(el) {
+      for (let at of el.attributes)
+        if (at.name.includes(":"))
+          AttrCustom.upgrade(at);
+      for (let desc of el.querySelectorAll("*"))
+        for (let at of desc.attributes)
+          if (at.name.includes(":"))
+            AttrCustom.upgrade(at);
     }
 
     static upgrade(at, Def) {
@@ -189,7 +197,8 @@
       // if (!this.isConnected)
       //   return this.remove();
       stopProp.call(e);
-      eventLoop.dispatch(e, ...this.register);
+      // eventLoop.dispatch(e, ...this.register);
+      eventLoop.dispatchBatch(e, this.register);
     }
   }
 

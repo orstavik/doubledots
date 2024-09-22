@@ -25,6 +25,13 @@ function monkeyPatch(proto, prop, fun) {
 
 (function (Element_p, ShadowRoot_p) {
 
+  const Specializers = {
+    "cloneNode": [Node.prototype, DocumentFragment.prototype],
+    "innerHTML": [Element.prototype, HTMLTemplateElement.prototype],
+    "insertAdjacentHTML": [Element.prototype, HTMLTemplateElement.prototype],
+  };
+  for (let [m, [TOP, DOWN]] of Object.entries(Specializers))
+    Object.defineProperty(DOWN, m, Object.getOwnPropertyDescriptor(TOP, m));
 
   const Element_innerHTML_OG = Object.getOwnPropertyDescriptor(Element_p, "innerHTML").set;
   const innerHTML_DD_el = function innerHTML_DD(val) {
@@ -53,7 +60,7 @@ function monkeyPatch(proto, prop, fun) {
     const childCount = root.children.length;
     insertAdjacentHTMLOG.call(this, position, ...args);
     const addCount = root.children.length - childCount;
-    const newRoots = Array.from(root.children).slice(index, index+addCount);
+    const newRoots = Array.from(root.children).slice(index, index + addCount);
     AttrCustom.upgradeBranch(...newRoots);
   }
 
@@ -83,8 +90,85 @@ function monkeyPatch(proto, prop, fun) {
   monkeyPatch(Element_p, "setAttribute", setAttribute_DD);
 })(Element.prototype, ShadowRoot.prototype);
 
+(function () {
+  //todo we need the innerHTML and insertAdjacentHTML and setAttribute to be added to the nativeMethods.
+
+  //JS injections is allowed when we
+  //1) move elements within the same rootNode (no upgrade of AttrCustom)
+  //2) move elements from one DocumentFragment to another (no upgrade of AttrCustom)
+  //3) inject elements *from* DocumentFragments to an .isConnected element (DO upgrade of AttrCustom)
+  //* otherwise just fail.
+  function checkRoot(root, child, r = root.getRootNode(), cr = child?.getRootNode()) {
+    if (!(child instanceof Element) || cr === r || (cr instanceof DocumentFragment && r instanceof DocumentFragment))
+      return false;
+    if (root.isConnected && cr instanceof DocumentFragment)
+      return true;
+    throw new DoubleDots.InsertElementFromJSError(root, child);
+
+  }
+  const EMPTY = [];
+  function sameRootFirstArg(child) {
+    return checkRoot(this, child) ? [child] : EMPTY;
+  }
+  function sameRootSecond(_, child) {
+    return checkRoot(this, child) ? [child] : EMPTY;
+  }
+  function sameRootSpreadArg(...args) {
+    const r = this.getRootNode();
+    return args.filter(child => checkRoot(this, child, r));
+  }
+
+  const Mask = {
+    "Element.prototype": {
+      appendChild: sameRootFirstArg,
+      insertBefore: sameRootFirstArg,
+      append: sameRootSpreadArg,
+      prepend: sameRootSpreadArg,
+      insertAdjacentElement: sameRootSecond,
+    },
+    "Document.prototype": {
+      appendChild: sameRootFirstArg,
+      insertBefore: sameRootFirstArg,
+      append: sameRootSpreadArg,
+      prepend: sameRootSpreadArg,
+    },
+    "DocumentFragment.prototype": {
+      appendChild: sameRootFirstArg,
+      insertBefore: sameRootFirstArg,
+      append: sameRootSpreadArg,
+      prepend: sameRootSpreadArg,
+    }
+  };
+
+  function monkeyPatch(proto, prop, value) {
+    Object.defineProperty(proto, prop, {
+      ...Object.getOwnPropertyDescriptor(proto, prop), value
+    });
+  }
+
+  function verifyAndUpgrade(OG, verify) {
+    return function (...args) {
+      const upgrades = verify.call(this, ...args);
+      const res = OG.apply(this, args);
+      upgrades.length && AttrCustom.upgradeBranch(...upgrades);
+      return res;
+    };
+  }
+
+  for (let [path, objMask] of Object.entries(Mask)) {
+    path = path.split(".");
+    const obj = path.reduce((o, p) => o[p], window);
+    const nativeObj = path.reduce((o, p) => o[p] ??= {}, DoubleDots.nativeMethods);
+    for (let [prop, verifyMethod] of Object.entries(objMask)) {
+      const OG = nativeObj[prop] = obj[prop];
+      const newFunc = verifyAndUpgrade(OG, verifyMethod);
+      monkeyPatch(obj, prop, newFunc);
+    }
+  }
+})();
+
 (function (aelOG) {
   if (document.readyState !== "loading")
     return AttrCustom.upgradeBranch(document.htmlElement);
   aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));
-})(DoubleDots.nativeMethods.EventTarget.prototype.addEventListener);
+})(EventTarget.prototype.addEventListener);

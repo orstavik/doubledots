@@ -193,6 +193,8 @@
   }
 
   window.DoubleDots = {
+    nativeMethods: {},
+
     DoubleDotsError,
     ThisArrowFunctionError,
     TriggerNameError,
