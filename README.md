@@ -11,3 +11,35 @@ npx http-server -p 3000 --cors -S -C test/cert.pem -K test/key.pem
 ```
 
 2. Then open in [https://127.0.0.1:3000/test](https://127.0.0.1:3000/test) your browser.
+
+## `cdn.jsdelivr.net`
+
+### link to the framework
+
+```
+https://cdn.jsdelivr.net/combine/
+gh/orstavik/doubledots@latest/src/1_1_DoubleDots.js,
+gh/orstavik/doubledots@latest/src/1_2_AttrCustom.js,
+gh/orstavik/doubledots@latest/src/3_definition_registers_v4.js,
+gh/orstavik/doubledots@latest/src/4_eventLoop_v2.js,
+gh/orstavik/doubledots@latest/src/6_load_DoubleDots.js,
+gh/orstavik/doubledots@latest/src/7_nativeMethods.js,
+gh/orstavik/doubledots@latest/src/triggers/PropagationSimple.js,
+```
+=> 
+```
+https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@latest/src/1_1_DoubleDots.js,gh/orstavik/doubledots@latest/src/1_2_AttrCustom.js,gh/orstavik/doubledots@latest/src/3_definition_registers_v4.js,gh/orstavik/doubledots@latest/src/4_eventLoop_v2.js,gh/orstavik/doubledots@latest/src/6_load_DoubleDots.js,gh/orstavik/doubledots@latest/src/7_nativeMethods.js,gh/orstavik/doubledots@latest/src/triggers/PropagationSimple.js
+```
+
+### link to render testing 
+
+```
+https://cdn.jsdelivr.net/combine/
+gh/orstavik/doubledots@latest/src/triggers/Render_p.js,
+gh/orstavik/doubledots@latest/test_render/tools.js,
+gh/orstavik/doubledots@latest/test_render/brace.js
+```
+
+```
+https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@latest/src/triggers/Render_p.js,gh/orstavik/doubledots@latest/test_render/tools.js,gh/orstavik/doubledots@latest/test_render/brace.js
+```
