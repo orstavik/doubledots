@@ -57,16 +57,19 @@ class LoopCube {
 }
 
 class LoopCubeAttr extends LoopCube {
-  constructor(old, now, childNodes, templDocFrag, attr, qs) {
+  constructor(old, now, childNodes, templDocFrag, prefix, qs) {
     super(old, now, childNodes, templDocFrag);
-    this.attr = attr;
+    this.prefix = prefix;
     this.qs = qs;
   }
 
   task(i) {
     for (let j = 0, start = i * this.tl; j < this.tl; j++)
       if (this.nowChildNodes[start + j].matches?.(this.qs))
-        return this.nowChildNodes[start + j].setAttribute(this.attr, this.now[i]);
+        for (let a of this.nowChildNodes[start + j].attributes)
+          if (a.name.match(this.prefix))
+            return a.value = this.now[i];
+    //we don't need to set the value. we might just duplicate random template/text.
   }
 }
 /*
@@ -94,7 +97,7 @@ class LoopCubeAttr extends LoopCube {
 //todo trim the template to remove ws text nodes before and after the template.
 function tloop_(rule) {
   //todo add rule syntax checks
-  let [loop, _attr, _qs] = rule.split("_")[1];
+  let [_, _attr, _qs] = rule.split("_")[1];
   _attr = _attr?.replaceAll("..", ":");
   _qs ??= "*";
 
@@ -108,8 +111,9 @@ function tloop_(rule) {
     this.__loop_cache = now;
     if (!now?.length)
       return this.ownerElement.innerHTML = "";
-    const _attr2 = _attr ?? this.trigger.split("_")[0] + ":";
-    const cube = new LoopCubeAttr(old, now, this.ownerElement.childNodes, docFrag, _attr2, _qs);
+
+    const triggerPrefix = new RegExp("^" + (_attr?? this.trigger.split(/_|:/)[0]) + "(_|:)");
+    const cube = new LoopCubeAttr(old, now, this.ownerElement.childNodes, docFrag, triggerPrefix, _qs);
     cube.reuse1to1();
     cube.reuseOthers();
     cube.removeUnusedOld();

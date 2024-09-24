@@ -10,11 +10,6 @@
   <script src="./tools.js"></script>
   <script src="./brace.js"></script>
   <script src="./tloop.js"></script>
-  <template>
-    ---
-    <li p: p_:brace>Hello {{name}}: {{employees}} or {{fullname}}</li>
-    xxx
-  </template>
 </head>
 
 <body _load::fetch_json:pstate="./companies.json">
@@ -22,8 +17,8 @@
   <section p:="*">
     <ol p_keys:template:tloop_>
       <template>
-        ---
-        <li p: p_:brace>Hello {{name}}: {{employees}} or {{fullname}}</li>
+        ooo
+        <li p:brace>Hello {{name}}: {{employees}} or {{fullname}}</li>
         xxx
       </template>    
     </ol>
