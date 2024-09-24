@@ -15,17 +15,20 @@ function* hostTasks(el){
       yield (n, now) => n.setAttribute(name, processBraces(value, now));       
 }
 
-function* bodyTasks(el, skips = "template, [p\\:]", ii = []){
-  for (let i = 0; i < el.childNodes.length; i++) {
+function* bodyTasks(el, attr, ii = []){
+  main: for (let i = 0; i < el.childNodes.length; i++) {
     let n = el.childNodes[i];
     if (n instanceof Element) {
-      if (n.matches(skips))
+      if (n instanceof HTMLTemplateElement)
         continue;
+      for (let a of n.attributes)
+        if (attr.sameType(a))
+         continue main;
       const ii2 = [...ii, i];
       for(let {name, value} of n.attributes)
         if(value.indexOf("{{")>=0)
           yield (n, now) => ii2.reduce((e,i)=>e.childNodes[i], n).setAttribute(name, processBraces(value, now));       
-      yield* bodyTasks(n, skips, ii2);
+      yield* bodyTasks(n, attr, ii2);
     } else if (n instanceof Text) {
       const txt = n.textContent;
       const ii2 = [...ii, i];
@@ -35,15 +38,15 @@ function* bodyTasks(el, skips = "template, [p\\:]", ii = []){
   }
 }
 
-function makeTasks(head, body){
+function makeTasks(head, body, attr){
   head = [...hostTasks(head)];
-  body = [...bodyTasks(body)];
+  body = [...bodyTasks(body, attr)];
   const all = [...head, ...body];
   return { all, head, body };
 }
 
 function brace({post: now}){
-  this.__tasks ??= makeTasks(this.ownerElement, this.ownerElement);
+  this.__tasks ??= makeTasks(this.ownerElement, this.ownerElement, this);
   for (let cb of this.__tasks.all)
     cb(this.ownerElement, now);
 }
@@ -54,7 +57,7 @@ function tBrace(template, {post: now}){
       cb(this.ownerElement, now);
     return;
   }
-  this.__tasks = makeTasks(this.ownerElement, template);
+  this.__tasks = makeTasks(this.ownerElement, template, this);
   this.ownerElement.textContent = null;
   for (let cb of this.__tasks.head)
     cb(this.ownerElement, now);

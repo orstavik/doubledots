@@ -4,7 +4,7 @@
 //4. During propagation, mutations are only allowed on descendant elements of the current PostAttr being iterated. Mutations during propagation do *not* trigger any propagation. 
 //5. During propagation, the db cannot be modified.
 
-(function () {
+function pTriggerGroup(PREFIX, EVENT) {
 
   //generic class for iterating attr down in the dom. Can filter for AttrCustom types.
   class AttributeIterator {
@@ -93,8 +93,9 @@
           if (at instanceof PostAttr)
             return at;
     }
-    get TYPE(){
-      return PostAttr;
+    sameType(attr) {
+      return attr.name.startsWith(PREFIX + ":") ||
+        attr.name.startsWith(PREFIX + "_") && attr.name.indexOf(":") >= 0;
     }
   }
 
@@ -114,7 +115,7 @@
   }
 
   class PostEvent extends Event {
-    constructor(it) { super("post"); this.it = it; }
+    constructor(it) { super(EVENT); this.it = it; }
     get post() { return this.it.attr?.post; }
     get scope() { return this.it.el; }
     get active() { return !!this.it.attr; }
@@ -125,7 +126,8 @@
     eventLoop.dispatchBatch(E, E.it);
   }
 
-  document.Reactions.define("pstate", pstate);
-  document.Triggers.define("p", PostAttr);
-  document.Triggers.defineRule("p_", postAttr);
-})();
+  document.Reactions.define(PREFIX + "state", pstate);
+  document.Triggers.define(PREFIX, PostAttr);
+  document.Triggers.defineRule(PREFIX + "_", postAttr);
+};
+pTriggerGroup("p", "post");

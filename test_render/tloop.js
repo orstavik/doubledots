@@ -57,9 +57,9 @@ class LoopCube {
 }
 
 class LoopCubeAttr extends LoopCube {
-  constructor(old, now, childNodes, templDocFrag, prefix, qs) {
+  constructor(old, now, childNodes, templDocFrag, attr, qs) {
     super(old, now, childNodes, templDocFrag);
-    this.prefix = prefix;
+    this.attr = attr;
     this.qs = qs;
   }
 
@@ -67,7 +67,7 @@ class LoopCubeAttr extends LoopCube {
     for (let j = 0, start = i * this.tl; j < this.tl; j++)
       if (this.nowChildNodes[start + j].matches?.(this.qs))
         for (let a of this.nowChildNodes[start + j].attributes)
-          if (a.name.match(this.prefix))
+          if (this.attr.sameType(a))
             return a.value = this.now[i];
     //we don't need to set the value. we might just duplicate random template/text.
   }
@@ -112,8 +112,7 @@ function tloop_(rule) {
     if (!now?.length)
       return this.ownerElement.innerHTML = "";
 
-    const triggerPrefix = new RegExp("^" + (_attr?? this.trigger.split(/_|:/)[0]) + "(_|:)");
-    const cube = new LoopCubeAttr(old, now, this.ownerElement.childNodes, docFrag, triggerPrefix, _qs);
+    const cube = new LoopCubeAttr(old, now, this.ownerElement.childNodes, docFrag, this, _qs);
     cube.reuse1to1();
     cube.reuseOthers();
     cube.removeUnusedOld();
