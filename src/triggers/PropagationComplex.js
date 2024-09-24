@@ -21,7 +21,8 @@
       propagate(e) {
         let path = e.composedPath();
         !e.composed && (path = this.fixNonComposedPaths(path));
-        eventLoop.dispatch(e, ...this.getAttributes(e.type, path));
+        // eventLoop.dispatch(e, ...this.getAttributes(e.type, path));
+        eventLoop.dispatchBatch(e, this.getAttributes(e.type, path));
       }
 
       fixNonComposedPaths(path) {
