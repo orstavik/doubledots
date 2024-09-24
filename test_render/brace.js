@@ -9,26 +9,20 @@ function processBraces(txt, post){
   return txt.replace(/\{\{([^}{]+)\}\}/g, (_, expr) => dotPathGet(expr, post));
 }
 
-function* hostTasks(el){
-  for(let {name, value} of el.attributes)
-    if(value.indexOf("{{")>=0)
-      yield (n, now) => n.setAttribute(name, processBraces(value, now));       
-}
-
 function* bodyTasks(el, attr, ii = []){
-  main: for (let i = 0; i < el.childNodes.length; i++) {
+  for (let i = 0; i < el.childNodes.length; i++) {
     let n = el.childNodes[i];
     if (n instanceof Element) {
-      if (n instanceof HTMLTemplateElement)
-        continue;
-      for (let a of n.attributes)
-        if (attr.sameType(a))
-         continue main;
+      let skip = n instanceof HTMLTemplateElement; //always skip template insides
       const ii2 = [...ii, i];
-      for(let {name, value} of n.attributes)
+      for(let a of n.attributes){
+        skip ||= attr.sameType(a);
+        const {name, value} = a;
         if(value.indexOf("{{")>=0)
           yield (n, now) => ii2.reduce((e,i)=>e.childNodes[i], n).setAttribute(name, processBraces(value, now));       
-      yield* bodyTasks(n, attr, ii2);
+      }
+      if(!skip)
+        yield* bodyTasks(n, attr, ii2);
     } else if (n instanceof Text) {
       const txt = n.textContent;
       const ii2 = [...ii, i];
@@ -38,32 +32,23 @@ function* bodyTasks(el, attr, ii = []){
   }
 }
 
-function makeTasks(head, body, attr){
-  head = [...hostTasks(head)];
-  body = [...bodyTasks(body, attr)];
-  const all = [...head, ...body];
-  return { all, head, body };
-}
-
 function brace({post: now}){
-  this.__tasks ??= makeTasks(this.ownerElement, this.ownerElement, this);
-  for (let cb of this.__tasks.all)
+  this.__tasks ??= [...bodyTasks(this.ownerElement, this)];
+  for (let cb of this.__tasks)
     cb(this.ownerElement, now);
 }
 
 function tBrace(template, {post: now}){
   if(this.__tasks){
-    for (let cb of this.__tasks.all)
+    for (let cb of this.__tasks)
       cb(this.ownerElement, now);
     return;
   }
-  this.__tasks = makeTasks(this.ownerElement, template, this);
-  this.ownerElement.textContent = null;
-  for (let cb of this.__tasks.head)
-    cb(this.ownerElement, now);
+  this.__tasks = [...bodyTasks(template, this)];
   const clone = template.cloneNode(true);
-  for (let cb of this.__tasks.body)
-    cb(clone, now);  
+  for (let cb of this.__tasks)
+    cb(clone, now);
+  this.ownerElement.textContent = null;
   this.ownerElement.append(clone);
 }
 
