@@ -82,7 +82,10 @@ function pTriggerGroup(PREFIX, EVENT) {
       throw new Error("Post mutation outside scope: " + E.scope + " >! " + this.ownerElement);
     }
     get post() {
-      return !this.value ? this.ancestor?.post : db?.[this.value];
+      return db == null ? undefined :
+        !this.value ? this.ancestor?.post :
+          this.value == "*" ? db :
+            db[this.value];
     }
     get ancestor() {
       for (let el = this.ownerElement.parentElement; el; el = el.parentElement)
@@ -114,6 +117,7 @@ function pTriggerGroup(PREFIX, EVENT) {
   class PostEvent extends Event {
     constructor(it) { super(EVENT); this.it = it; }
     get post() { return this.it.attr?.post; }
+    get db() { return db; } //todo db is mutable here..
     get scope() { return this.it.el; }
     get active() { return !!this.it.attr; }
   }

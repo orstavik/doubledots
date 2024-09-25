@@ -18,29 +18,29 @@ npx http-server -p 3000 --cors -S -C test/cert.pem -K test/key.pem
 
 ```
 https://cdn.jsdelivr.net/combine/
-gh/orstavik/doubledots@a.3/src/1_1_DoubleDots.js,
-gh/orstavik/doubledots@a.3/src/1_2_AttrCustom.js,
-gh/orstavik/doubledots@a.3/src/3_definition_registers_v4.js,
-gh/orstavik/doubledots@a.3/src/4_eventLoop_v2.js,
-gh/orstavik/doubledots@a.3/src/6_load_DoubleDots.js,
-gh/orstavik/doubledots@a.3/src/7_nativeMethods.js,
-gh/orstavik/doubledots@a.3/src/triggers/PropagationSimple.js,
+gh/orstavik/doubledots@a.4/src/1_1_DoubleDots.js,
+gh/orstavik/doubledots@a.4/src/1_2_AttrCustom.js,
+gh/orstavik/doubledots@a.4/src/3_definition_registers_v4.js,
+gh/orstavik/doubledots@a.4/src/4_eventLoop_v2.js,
+gh/orstavik/doubledots@a.4/src/6_load_DoubleDots.js,
+gh/orstavik/doubledots@a.4/src/7_nativeMethods.js,
+gh/orstavik/doubledots@a.4/src/triggers/PropagationSimple.js,
 ```
 => 
 ```
-https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@a.3/src/1_1_DoubleDots.js,gh/orstavik/doubledots@a.3/src/1_2_AttrCustom.js,gh/orstavik/doubledots@a.3/src/3_definition_registers_v4.js,gh/orstavik/doubledots@a.3/src/4_eventLoop_v2.js,gh/orstavik/doubledots@a.3/src/6_load_DoubleDots.js,gh/orstavik/doubledots@a.3/src/7_nativeMethods.js,gh/orstavik/doubledots@a.3/src/triggers/PropagationSimple.js
+https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@a.4/src/1_1_DoubleDots.js,gh/orstavik/doubledots@a.4/src/1_2_AttrCustom.js,gh/orstavik/doubledots@a.4/src/3_definition_registers_v4.js,gh/orstavik/doubledots@a.4/src/4_eventLoop_v2.js,gh/orstavik/doubledots@a.4/src/6_load_DoubleDots.js,gh/orstavik/doubledots@a.4/src/7_nativeMethods.js,gh/orstavik/doubledots@a.4/src/triggers/PropagationSimple.js
 ```
 
 ### link to render testing 
 
 ```
 https://cdn.jsdelivr.net/combine/
-gh/orstavik/doubledots@a.3/src/triggers/Render_p.js,
-gh/orstavik/doubledots@a.3/test_render/tools.js,
-gh/orstavik/doubledots@a.3/test_render/brace.js,
-gh/orstavik/doubledots@a.3/test_render/tloop.js
+gh/orstavik/doubledots@a.4/src/triggers/Render_p.js,
+gh/orstavik/doubledots@a.4/test_render/tools.js,
+gh/orstavik/doubledots@a.4/test_render/brace.js,
+gh/orstavik/doubledots@a.4/test_render/tloop.js
 ```
 
 ```
-https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@a.3/src/triggers/Render_p.js,gh/orstavik/doubledots@a.3/test_render/tools.js,gh/orstavik/doubledots@a.3/test_render/brace.js,gh/orstavik/doubledots@a.3/test_render/tloop.js
+https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@a.4/src/triggers/Render_p.js,gh/orstavik/doubledots@a.4/test_render/tools.js,gh/orstavik/doubledots@a.4/test_render/brace.js,gh/orstavik/doubledots@a.4/test_render/tloop.js
 ```

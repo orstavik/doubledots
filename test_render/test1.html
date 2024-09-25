@@ -6,21 +6,22 @@
   <script src="../src/6_load_DoubleDots.js"></script>
   <script src="../src/7_nativeMethods.js"></script>
   <script src="../src/triggers/PropagationSimple.js"></script>
-  <script src="../src/triggers/Render_p.js"></script>
+  <script src="./Render_p.js"></script>
   <script src="./tools.js"></script>
   <script src="./brace.js"></script>
   <script src="./tloop.js"></script>
+  <script>
+    document.Reactions.define("object.keys", e => ({ post: Object.keys(e.db) }));
+  </script>
 </head>
 
 <body _load::fetch_json:pstate="./companies.json">
   <h1>Hello Companies</h1>
-  <section p:="*">
-    <ol p_keys:template:tloop_>
-      <template>
-        ooo
-        <li p:brace>Hello {{name}}: {{employees}} or {{fullname}}</li>
-        xxx
-      </template>    
-    </ol>
-  </section>
+  <ol p:object.keys:template:tloop_="*">
+    <template>
+      ooo
+      <li p:brace>Hello {{name}}: {{employees}} or {{fullname}}</li>
+      xxx
+    </template>
+  </ol>
 </body>
