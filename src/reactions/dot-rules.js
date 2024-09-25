@@ -4,14 +4,15 @@ const scopes = {
   "t.": "window.eventLoop.event.target.",
   "w.": "window.",
   "d.": "window.document.",
-  "oi.": "oi.",  //the input argument
-  "at.": "window.eventLoop.attribute.",
-  "el.": "window.eventLoop.attribute.ownerElement.",
+  "oi.": "oi.",  //the input argument  //todo this should be i??
+  "at.": "window.eventLoop.attribute.", //todo same as this.??
+  "el.": "window.eventLoop.attribute.ownerElement.", //todo same as this.ownerElement??
   "this.": "this.",
   "window.": "window.",
   "document.": "document."
 };
 
+//todo must rename oi to i, because of the change of structures.
 function processRef(prop) {
   for (let prefix in scopes)
     if (prop.startsWith(prefix))
@@ -27,7 +28,7 @@ function textToExp(txt) {
   args = args.map(arg => processRef(arg) || primitives.test(arg) ? arg : `"${arg}"`);
   const sargs = args.join(", ");
   const setter = !args.length ? "" : args.length === 1 ? `=${sargs}` : `=[${sargs}]`;
-  return `(${ref} instanceof Function ? ${ref}() : (${ref}${setter}))`;
+  return `(${ref} instanceof Function ? ${ref}(${sargs}) : (${ref}${setter}))`;
 }
 
 function DotReactionRule(fullname) {

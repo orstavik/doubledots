@@ -4,7 +4,7 @@
   HTMLElement.prototype.attachShadow = function attachShadowforceModeOpen(...args) {
     (args[0] ??= {}).mode = "open";
     return attachShadowOG.apply(this, args);
-  }
+  };
 
   class MicroFrame {
     #i = 0;
@@ -40,7 +40,10 @@
     }
 
     /**
-     * @returns true if the loop can continue, false if the loop should abort
+     * @returns <undefined> when the task is emptied, or is awaiting in async mode, 
+     * which both means that the event loop can continue.
+     * @returns <this> current task when the task is not emptied 
+     * and we must wait for it in sync mode.
      */
     run(threadMode = false) {
       for (let re = this.getReaction(); re !== undefined; re = this.nextReaction()) {
@@ -65,13 +68,13 @@
 
           if (func instanceof Promise) {
             if (threadMode) {
-              func.then(_ => (__eventLoop.task = this).run(threadMode));
-              return;
+              func.then(_ => __eventLoop.asyncContinue(this));
+              return; //continue outside loop
             } else {
-              func.then(_ => __eventLoop.loop());
+              func.then(_ => __eventLoop.syncContinue());
               //todo these sync delays needs to have a max timeout.
               //todo thus, we need to have some max timers
-              return true;
+              return this; //halt outside loop
             }
           }
           const self = this.#selves[this.#i];
@@ -81,15 +84,15 @@
             if (threadMode) {
               res.then(oi => this.#runSuccess(oi))
                 .catch(error => this.#runError(error))
-                .finally(_ => (__eventLoop.task = this).run(threadMode));
+                .finally(_ => __eventLoop.asyncContinue(this));
               return; //continue outside loop
             } else {
               res.then(oi => this.#runSuccess(oi))
                 .catch(error => this.#runError(error))
-                .finally(_ => __eventLoop.loop());
+                .finally(_ => __eventLoop.syncContinue());
               //todo these sync delays needs to have a max timeout.
               //todo thus, we need to have some max timers
-              return true; //abort outside loop
+              return this; //halt outside loop
             }
           }
           this.#runSuccess(res);
@@ -97,7 +100,6 @@
           this.#runError(error);
         }
       }
-      __eventLoop.task = undefined; //todo is it necessary?
     }
 
     #runError(error) {
@@ -142,18 +144,24 @@
     #started = [];
     task;
 
-    //called both to start and restart the loop.
+    syncContinue() {
+      if (!(this.task = this.task.run()))
+        this.loop();
+    }
+
+    asyncContinue(task) {
+      (this.task = task).run(true);
+    }
+
     loop() {
       while (this.#stack[0]) {
         const { event, iterator } = this.#stack[0];
         for (let attr of iterator) {
-          //the iterator remembers its next position if the loop is broken.
           this.task = new MicroFrame(event, attr);
           this.#started.push(this.task);
-          //task.run() returns true when it awaits a promise in sync mode.
-          if (this.task.run())
+          //if task.run() not emptied, abort to halt eventloop
+          if (this.task = this.task.run()) 
             return;
-          this.task = undefined;
         }
         this.#stack.shift();
       }

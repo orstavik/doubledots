@@ -32,13 +32,13 @@ function* bodyTasks(el, attr, ii = []) {
   }
 }
 
-function brace({ post: now }) {
+function brace(now) {
   this.__tasks ??= [...bodyTasks(this.ownerElement, this)];
   for (let cb of this.__tasks)
     cb(this.ownerElement, now);
 }
 
-function tBrace(template, { post: now }) {
+function tBrace(template, now) {
   if (this.__tasks) {
     for (let cb of this.__tasks)
       cb(this.ownerElement, now);

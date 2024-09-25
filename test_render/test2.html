@@ -6,6 +6,7 @@
 <script src="../src/6_load_DoubleDots.js"></script>
 <script src="../src/7_nativeMethods.js"></script>
 <script src="../src/triggers/PropagationSimple.js"></script>
+<script src="../src/reactions/dot-rules.js"></script>
 <script src="./Render_p.js"></script>
 <script src="./brace.js"></script>
 <script src="./tools.js"></script>
@@ -22,8 +23,8 @@
 </head>
 
 <body _load::fetch_json:pstate="./companies.json">
-  <main p:template:tbrace="company/2" template-name="{{name}}"></main>
-  <section p:brace="company/1" name="{{name}}">
+  <main p:oi.post:template:tbrace="company/2" template-name="{{name}}"></main>
+  <section p:oi.post:brace="company/1" name="{{name}}">
     <h1>Company: {{name}}</h1>
     <template>
       <div>no change {{name}}</div>

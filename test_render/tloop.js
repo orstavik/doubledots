@@ -101,7 +101,7 @@ function tloop_(rule) {
   _attr = _attr?.replaceAll("..", ":");
   _qs ??= "*";
 
-  return function (docFrag, { post: now }) {
+  return function (docFrag,  now) {
     if (!Array.isArray(now))
       throw new Error("tloop #2 argument is not an array.");
     if (!(docFrag instanceof DocumentFragment) || !docFrag.children.length)
