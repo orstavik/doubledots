@@ -192,10 +192,20 @@
     }
   }
 
+  class AsyncDefinitionError extends DoubleDotsError {
+    constructor(msg, fullname, rule, RuleFun) {
+      super(`DoubleDots definition loading failed: ${msg}`);
+      this.fullname = fullname;
+      this.rule = rule;
+      this.RuleFun = RuleFun;
+    }
+  }
+
   window.DoubleDots = {
     nativeMethods: {},
 
     DoubleDotsError,
+    AsyncDefinitionError,
     ThisArrowFunctionError,
     TriggerNameError,
     DefinitionNameError,

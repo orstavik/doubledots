@@ -20,6 +20,9 @@
           throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname}' exists.`);
       // this.#ruleRE = new RegExp(`^(${Object.keys(this.#rules).join("|")}).*`, "g");
       this.#rules[prefix] = FunFun;
+      FunFun instanceof Promise && FunFun
+        .then(newFunFun => this.#rules[prefix] = newFunFun)
+        .catch(err => this.#rules[prefix] = DoubleDots.definitionError(err, null, prefix, null));
     }
 
     define(fullname, Def) {
@@ -32,23 +35,39 @@
         if (fullname.startsWith(r))
           throw new DefinitionError(`name/rule conflict: trying to add '${fullname}' when rule '${r}' exists.`);
       this.#definitions[fullname] = Def;
+      Def instanceof Promise && Def
+        .then(newDef => this.#definitions[fullname] = newDef)
+        .catch(err => this.#definitions[fullname] = DoubleDots.definitionError(err, fullname, null, null));
+    }
+
+    #processRule(fullname, rule, FunFun) {
+      if (FunFun instanceof Promise)
+        return this.#definitions[fullname] = FunFun
+          .then(newFunFun => (FunFun = newFunFun)(fullname))
+          .catch(err => DoubleDots.definitionError(err, null, rule, null))
+          .then(newDef => this.#definitions[fullname] = newDef)
+          .catch(err => this.#definitions[fullname] = DoubleDots.definitionError(err, fullname, rule, FunFun));
+
+      try {
+        if(FunFun instanceof Error)
+          throw FunFun; 
+        const Def = this.#definitions[fullname] = FunFun(fullname);
+        Def instanceof Promise && Def
+          .then(newDef => this.#definitions[fullname] = newDef)
+          .catch(err => this.#definitions[fullname] = DoubleDots.definitionError(err, fullname, rule, FunFun));
+        return Def;
+      } catch (err) {
+        return this.#definitions[fullname] = DoubleDots.definitionError(err, fullname, rule, FunFun);
+      }
     }
 
     #checkViaRule(fullname) {
-      for (let [rule, FunFun] of Object.entries(this.#rules))
-        if (fullname.startsWith(rule)) {
-          //todo what if FunFun throws an error here?
-          const Def = FunFun(fullname);
-          if (Def instanceof Promise)
-            Def.then(newDef => this.#definitions[fullname] = newDef)
-          // .catch(_=> );
-          //todo and catch the error if the Promise
-          return this.#definitions[fullname] = Def;
-
-        }
       // alternative logic using a regex to match the name. Not sure this is better
       // for (let [_, prefix] of fullname.matchAll(this.#ruleRE))
       //   return this.#definitions[fullname] = this.#rules[prefix](fullname);
+      for (let [rule, FunFun] of Object.entries(this.#rules))
+        if (fullname.startsWith(rule))
+          return this.#processRule(fullname, rule, FunFun);
     }
 
     get(fullname) {

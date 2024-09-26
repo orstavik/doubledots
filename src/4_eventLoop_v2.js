@@ -65,7 +65,8 @@
           const func = this.at.getRootNode().Reactions.get(re);
           if (!func)
             throw new DoubleDots.MissingReaction("No reaction definition.");
-
+          if (func instanceof Error)
+            throw func;
           if (func instanceof Promise) {
             if (threadMode) {
               func.then(_ => __eventLoop.asyncContinue(this));
@@ -103,6 +104,7 @@
     }
 
     #runError(error) {
+      console.error(error);
       this.#outputs[this.#i] = error;
       const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, '-$&').toLowerCase();
       for (this.#i++; this.#i < this.#names.length; this.#i++)
@@ -160,7 +162,7 @@
           this.task = new MicroFrame(event, attr);
           this.#started.push(this.task);
           //if task.run() not emptied, abort to halt eventloop
-          if (this.task = this.task.run()) 
+          if (this.task = this.task.run())
             return;
         }
         this.#stack.shift();
