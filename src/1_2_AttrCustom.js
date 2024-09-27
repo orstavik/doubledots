@@ -72,7 +72,7 @@
       if(Def instanceof Error)
         throw Def; //debugger; //todo not implemented. I think it just should throw and be handled outside. Trigger errors are not hidden by the system. Reaction errors are.
       if (Def instanceof Promise) {
-        Def.then(Def => at.upgrade(Def, at));
+        Def.then(Def => AttrCustom.upgrade(at, Def));
         Def = AttrPromise;
       }
       try {
