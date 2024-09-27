@@ -55,6 +55,7 @@ function tBrace(template, now) {
 document.Reactions.define("brace", brace);
 document.Reactions.define("tbrace", tBrace);
 
+//todo trim the template to remove ws text nodes before and after the template??
 function getHoistTemplate() {
   let el = this.ownerElement;
   const name = el.tagName.toLowerCase();
@@ -70,9 +71,9 @@ function getHoistTemplate() {
 }
 
 function cacheBullish(cb) {
-  let c;
+  let id = Math.random();
   return function (...args) {
-    return c ??= cb.apply(this, args);
+    return this["__c"+id] ??= cb.apply(this, args);
   };
 }
 

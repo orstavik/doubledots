@@ -5,8 +5,18 @@
 <script src="../src/4_eventLoop_v2.js"></script>
 <script src="../src/6_load_DoubleDots.js"></script>
 <script src="../src/7_nativeMethods.js"></script>
+<script src="../src/8_reactionLoader.js"></script>
+
+1. we need the group. defineGroup is something that we need to be able to call. 
+function(prefix, root=document) is the convention.
+<link rel="prefetch" base="@root" _load:make-import-map:jsdelivr.net-build-link:set_href:fetch_href::runDefinitions="fetch_=:reaction_,P=group,trigger:,group," />
+
+
 <script src="../src/triggers/PropagationSimple.js"></script>
 <script src="../src/reactions/dot-rules.js"></script>
+<scrip src="@root/P.js"></scrip>
+<scrip src="@root/brace.js"></scrip>
+<script src="@root/fetch_.js"></script>
 <script src="./Render_p.js"></script>
 <script src="./brace.js"></script>
 <script src="./tools.js"></script>
