@@ -38,7 +38,8 @@
   //todo any define reactions should only be called :once.
   //todo if it is triggered many times, things will always error
   document.Reactions.define("define", function defineReaction() {
-    define(new URL(this.value, this.ownerElement.getAttribute("src") || location),
-      this.ownerDocument);
+    const src = this.ownerElement.getAttribute("src");
+    const base = src ? new URL(src, location) : location;
+    define(new URL(this.value, base), this.ownerDocument);
   });
 })();
