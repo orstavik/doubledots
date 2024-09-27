@@ -274,27 +274,35 @@
     }
   });
 
+  /**
+   * ## `DoubleDots.Reference` rules.
+   * 
+   * 1. the resource inside the module file is identified by the value||name.
+   * 2. Names starting with upCase imply Triggers `/[^a-zA-Z]*[A-Z]/`
+   *    Names starting with lowCase imply Reactions `/[^a-zA-Z]*[A-Z]/`
+   * 3. Names ending with `/[a-zA-Z]/` are regular definitions.
+   *    Names ending with non-letters such as `/_-\./` are rules.
+   * 4. The refName is a snake-case of the CamelCaseName.
+   *    The first letter (in trigger references) are not `-`prefixed.
+   */
   class Reference {
     constructor(url, name, value) {
       this.url = url;
       this.name = name;
-      this.fullname = name.toLowerCase();
+      this.fullname = DoubleDots.pascalToKebab(DoubleDots.pascalToCamel(name));
       this.value = value || "";
-      this.type = name.match(/^_*[A-Z]/) ? "Triggers" : "Reactions";
-      this.rule = "define" + (name.endsWith("_") ? "Rule" : "");
+      this.type = /^_*[A-Z]/.test(name) ? "Triggers" : "Reactions";
+      this.rule = /[\._-]$/.test(name) ? "defineRule" : "define";
     }
 
     async getDefinition() {
       const module = await import(this.url);
       if (!module || typeof module !== "object" && !(module instanceof Object))
         return new AsyncDefinitionError(`URL is not an es6 module: ${this.url}`);
-      if (this.value in module)
-        return module[this.value];
-      if (module.default?.[this.value])
-        return module.default[this.value];
-      if (this.value)
-        return new AsyncDefinitionError(`ES6 module doesn't contain resource: ${this.value}`);
-      return module[this.name] ?? module.default?.[this.name] ?? new AsyncDefinitionError(`ES6 module doesn't contain resource for name=value: ${this.name}=${this.value}`);
+      const lookup = this.value || this.name;
+      return module[lookup] ??
+        module.default?.[lookup] ??
+        new AsyncDefinitionError(`ES6 module doesn't contain resource: ${lookup}`);
     }
 
     static *parse(url) {

@@ -67,11 +67,15 @@
   })();
 
   function kebabToPascal(str) {
-    return str.replace(/-+/g, "-").replace(/-./g, match => match[1].toUpperCase());
+    return str.replace(/-[a-z]/g, c => c[1].toUpperCase());
   }
 
   function pascalToKebab(str) {
-    return str.replace(/[A-Z]/g, '-$0').toLowerCase();
+    return str.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
+  }
+
+  function pascalToCamel(str) {
+    return str.replace(/^(_*)([A-Z])/, (_, _s, c) => _s + c.toLowerCase());
   }
 
   /**
@@ -192,6 +196,7 @@
     nativeEvents,
     kebabToPascal,
     pascalToKebab,
+    pascalToCamel,
     up, left, right, roots, hosts, downwide,
     importBasedEval,
     miniQuerySelector
