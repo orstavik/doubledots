@@ -4,6 +4,7 @@
     constructor(url, name, value) {
       this.url = url;
       this.name = name;
+      this.fullname = name.toLowerCase();
       this.value = value || "";
       this.type = name.match(/^_*[A-Z]/) ? "Triggers" : "Reactions";
       this.rule = "define" + (name.endsWith("_") ? "Rule" : "");
@@ -15,9 +16,11 @@
         return definitionError(`URL is not an es6 module: ${this.url}`);
       if (this.value in module)
         return module[this.value];
+      if (module.default?.[this.value])
+        return module.default[this.value];
       if (this.value)
         return definitionError(`ES6 module doesn't contain resource: ${this.value}`);
-      return module[this.name] ?? module.default ?? definitionError(`ES6 module doesn't contain resource for name=value: ${this.name}=${this.value}`);
+      return module[this.name] ?? module.default?.[this.name] ?? definitionError(`ES6 module doesn't contain resource for name=value: ${this.name}=${this.value}`);
     }
 
     static *parse(url) {
@@ -33,7 +36,7 @@
 
   async function define(url, root) {
     for (let ref of Reference.parse(url))
-      root[ref.type][ref.rule](ref.name, ref.getDefinition());
+      root[ref.type][ref.rule](ref.fullname, ref.getDefinition());
   };
   DoubleDots.define = define;
 

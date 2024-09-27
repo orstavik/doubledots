@@ -168,6 +168,12 @@ function monkeyPatch(proto, prop, fun) {
 })();
 
 (function (aelOG) {
+  DoubleDots.AttrEmpty = class AttrEmpty extends AttrCustom {
+    upgrade() { 
+      eventLoop.dispatch(new Event(""), this); 
+    }
+  };
+  document.Triggers.define("_", DoubleDots.AttrEmpty);
   if (document.readyState !== "loading")
     return AttrCustom.upgradeBranch(document.htmlElement);
   aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));
