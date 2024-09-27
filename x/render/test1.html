@@ -1,18 +1,23 @@
 <head>
-<script src="../src/1_1_DoubleDots.js"></script>
-<script src="../src/1_2_AttrCustom.js"></script>
-<script src="../src/3_definition_registers_v4.js"></script>
-<script src="../src/4_eventLoop_v2.js"></script>
-<script src="../src/6_load_DoubleDots.js"></script>
-<script src="../src/7_nativeMethods.js"></script>
-<script src="../src/8_reactionLoader.js"></script>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+  <script src="../../src/8_DD_define.js"></script>
+  
+  <script src="../../src/triggers/PropagationSimple.js"></script>
+
+  <script src="/x/PropagationSimple/prop.js?_Load&Click"></script>
+
+  <script _load:define="./log.js?bob#log&log_&info&info_&warn_&error&error_&trace_"></script>
 
 1. we need the group. defineGroup is something that we need to be able to call. 
 function(prefix, root=document) is the convention.
 <link rel="prefetch" base="@root" _load:make-import-map:jsdelivr.net-build-link:set_href:fetch_href::runDefinitions="fetch_=:reaction_,P=group,trigger:,group," />
 
 
-<script src="../src/triggers/PropagationSimple.js"></script>
 <script src="../src/reactions/dot-rules.js"></script>
 <scrip src="@root/P.js"></scrip>
 <scrip src="@root/brace.js"></scrip>

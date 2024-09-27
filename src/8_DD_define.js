@@ -1,31 +1,39 @@
 (function () {
 
-  class DefMap {
-    constructor(hashSearch) {
-      if (!hashSearch)
-        throw DoubleDots.SyntaxError("DoubleDot.Definition map missing in  url: " + url);
-      hashSearch = hashSearch.entries?.() ?? hashSearch.split("&").map(s => s.split("="));
-      for (let [name, value] of hashSearch) {
-        const type = name[0] === name[0].toLowerCase() ? "Reactions" : "Triggers";
-        const rule = name.endsWith("_") ? "Rule" : "";
-        this[name] = { type, rule, value };
-      }
+  class Reference {
+    constructor(url, name, value) {
+      this.url = url;
+      this.name = name;
+      this.value = value || "";
+      this.type = name.match(/^_*[A-Z]/) ? "Triggers" : "Reactions";
+      this.rule = "define" + (name.endsWith("_") ? "Rule" : "");
     }
-  };
-  DoubleDots.DefMap = DefMap;
 
-  async function getModuleProp(url, module, prop) {
-    module = await module;
-    if (!module || typeof module !== "object" && !(module instanceof Object))
-      return definitionError(`Module is not an object: ${url}`);
-    return module[prop] ?? module.default ?? definitionError(`No property "${prop}" in module: ${url}`);
+    async getDefinition() {
+      const module = await import(this.url);
+      if (!module || typeof module !== "object" && !(module instanceof Object))
+        return definitionError(`URL is not an es6 module: ${this.url}`);
+      if (this.value in module)
+        return module[this.value];
+      if (this.value)
+        return definitionError(`ES6 module doesn't contain resource: ${this.value}`);
+      return module[this.name] ?? module.default ?? definitionError(`ES6 module doesn't contain resource for name=value: ${this.name}=${this.value}`);
+    }
+
+    static *parse(url) {
+      const hashSearch = (url.hash || url.search).slice(1);
+      if (!hashSearch)
+        throw DoubleDots.SyntaxError("DoubleDots.Reference not in url: " + url);
+      const refs = hashSearch.entries?.() ?? hashSearch.split("&").map(s => s.split("="));
+      for (let [name, value] of refs)
+        yield new Reference(url, name, value);
+    }
   }
+  DoubleDots.Reference = Reference;
 
-  async function define(url, root = this.ownerDocument) {
-    const modulePromise = import(url);
-    const defs = new DefMap((url.hash || url.search).slice(1));
-    for (let [def, { type, rule, value }] of Object.entries(defs))
-      root[type]["define" + rule](def, getModuleProp(url, modulePromise, value || def));
+  async function define(url, root) {
+    for (let ref of Reference.parse(url))
+      root[ref.type][ref.rule](ref.name, ref.getDefinition());
   };
   DoubleDots.define = define;
 
