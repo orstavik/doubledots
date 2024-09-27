@@ -167,13 +167,26 @@ function monkeyPatch(proto, prop, fun) {
   }
 })();
 
-(function (aelOG) {
-  DoubleDots.AttrEmpty = class AttrEmpty extends AttrCustom {
-    upgrade() { 
-      eventLoop.dispatch(new Event(""), this); 
-    }
+//_:define  => must be installed to enable the loading of doubledots triggers and reactions.
+(function () {
+
+  //Att!! Only call the :define reaction once, either using _: or :once
+  //_:define="url?name=value" 
+  function define() {
+    const src = this.ownerElement.getAttribute("src");
+    const base = src ? new URL(src, location) : location;
+    DoubleDots.define(new URL(this.value, base), this.ownerDocument);
+  }
+
+  class AttrEmpty extends AttrCustom {
+    upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
   };
-  document.Triggers.define("_", DoubleDots.AttrEmpty);
+
+  document.Reactions.define("define", define);
+  document.Triggers.define("_", AttrEmpty);
+})();
+
+(function (aelOG) {
   if (document.readyState !== "loading")
     return AttrCustom.upgradeBranch(document.htmlElement);
   aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));

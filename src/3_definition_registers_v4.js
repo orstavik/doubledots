@@ -1,6 +1,48 @@
 (function () {
+  class DefinitionError extends DoubleDots.DoubleDotsError {
+    constructor(msg, fullname, rule, RuleFun) {
+      super(msg);
+      this.fullname = fullname;
+      this.rule = rule;
+      this.RuleFun = RuleFun;
+    }
+  }
 
-  const DefinitionError = DoubleDots.DefinitionError;
+  class TriggerNameError extends DefinitionError {
+    constructor(fullname) {
+      super(`Trigger name/prefix must begin with english letter or '_'.\n${fullname} begins with '${fullname[0]}'.`);
+    }
+
+    static check(name) {
+      if (!name.match(/[a-z_].*/))
+        throw new TriggerNameError(name);
+    }
+  }
+
+  class DefinitionNameError extends DefinitionError {
+    constructor(name) {
+      super(`DoubleDots definition names and rule prefixes can only contain /^[a-z0-9_\.-]*$/: ${name}`);
+    }
+    static check(name) {
+      if (!name.match(/^[a-z0-9_\.-]*$/))
+        throw new DefinitionNameError(name);
+    }
+  }
+
+  class AsyncDefinitionError extends DefinitionError {
+    constructor(msg, fullname, rule, RuleFun) {
+      super(msg, fullname, rule, RuleFun);
+      //side-effect in constructor!!
+      document.documentElement.dispatchEvent(new ErrorEvent(this));
+    }
+  }
+
+  Object.assign(DoubleDots, {
+    DefinitionError,
+    TriggerNameError,
+    DefinitionNameError,
+    AsyncDefinitionError
+  });
 
   class DefinitionsMap {
 
@@ -11,7 +53,7 @@
     defineRule(prefix, FunFun) {
       //FunFun can be either a Function that given the prefix will produce either a class or a Function.
       //FunFun can also be a Promise.
-      DoubleDots.DefinitionNameError.check(prefix);
+      DefinitionNameError.check(prefix);
       for (let r of Object.keys(this.#rules))
         if (r.startsWith(prefix) || prefix.startsWith(r))
           throw new DefinitionError(`rule/rule conflict: trying to add '${prefix}' when '${r}' exists.`);
@@ -22,13 +64,13 @@
       this.#rules[prefix] = FunFun;
       FunFun instanceof Promise && FunFun
         .then(newFunFun => this.#rules[prefix] = newFunFun)
-        .catch(err => this.#rules[prefix] = DoubleDots.definitionError(err, null, prefix, null));
+        .catch(err => this.#rules[prefix] = new AsyncDefinitionError(err, null, prefix));
     }
 
     define(fullname, Def) {
       //Def can be either a class or a Function.
       //Def can also be a Promise.
-      DoubleDots.DefinitionNameError.check(fullname);
+      DefinitionNameError.check(fullname);
       if (fullname in this.#definitions)
         throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
       for (let r of Object.keys(this.#rules))
@@ -37,27 +79,27 @@
       this.#definitions[fullname] = Def;
       Def instanceof Promise && Def
         .then(newDef => this.#definitions[fullname] = newDef)
-        .catch(err => this.#definitions[fullname] = DoubleDots.definitionError(err, fullname, null, null));
+        .catch(err => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname));
     }
 
     #processRule(fullname, rule, FunFun) {
       if (FunFun instanceof Promise)
         return this.#definitions[fullname] = FunFun
           .then(newFunFun => (FunFun = newFunFun)(fullname))
-          .catch(err => DoubleDots.definitionError(err, null, rule, null))
+          .catch(err => new AsyncDefinitionError(err, null, rule, null))
           .then(newDef => this.#definitions[fullname] = newDef)
-          .catch(err => this.#definitions[fullname] = DoubleDots.definitionError(err, fullname, rule, FunFun));
+          .catch(err => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
 
       try {
-        if(FunFun instanceof Error)
-          throw FunFun; 
+        if (FunFun instanceof Error)
+          throw FunFun;
         const Def = this.#definitions[fullname] = FunFun(fullname);
         Def instanceof Promise && Def
           .then(newDef => this.#definitions[fullname] = newDef)
-          .catch(err => this.#definitions[fullname] = DoubleDots.definitionError(err, fullname, rule, FunFun));
+          .catch(err => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
         return Def;
       } catch (err) {
-        return this.#definitions[fullname] = DoubleDots.definitionError(err, fullname, rule, FunFun);
+        return this.#definitions[fullname] = new DefinitionError(err, fullname, rule, FunFun);
       }
     }
 
@@ -173,18 +215,18 @@
   function TriggerSyntaxCheck(DefMap) {
     return class TriggerMap extends DefMap {
       defineRule(prefix, FunFun) {
-        DoubleDots.TriggerNameError.check(prefix);
+        TriggerNameError.check(prefix);
         super.defineRule(prefix, FunFun);
       }
 
       define(fullname, Def) {
-        DoubleDots.TriggerNameError.check(fullname);
+        TriggerNameError.check(fullname);
         super.define(fullname, Def);
       }
     };
   }
 
-  function ReactionThisInArrowCheck(DefMap) {
+  function ReactionThisInArrowCheck(DefMap) { //todo add this to Reaction maps?
     return class ReactionMapNoThisInArrow extends DefMap {
       define(fullname, Def) {
         DoubleDots.ThisArrowFunctionError.check(Def);
@@ -231,11 +273,52 @@
       }
     }
   });
+
+  class Reference {
+    constructor(url, name, value) {
+      this.url = url;
+      this.name = name;
+      this.fullname = name.toLowerCase();
+      this.value = value || "";
+      this.type = name.match(/^_*[A-Z]/) ? "Triggers" : "Reactions";
+      this.rule = "define" + (name.endsWith("_") ? "Rule" : "");
+    }
+
+    async getDefinition() {
+      const module = await import(this.url);
+      if (!module || typeof module !== "object" && !(module instanceof Object))
+        return new AsyncDefinitionError(`URL is not an es6 module: ${this.url}`);
+      if (this.value in module)
+        return module[this.value];
+      if (module.default?.[this.value])
+        return module.default[this.value];
+      if (this.value)
+        return new AsyncDefinitionError(`ES6 module doesn't contain resource: ${this.value}`);
+      return module[this.name] ?? module.default?.[this.name] ?? new AsyncDefinitionError(`ES6 module doesn't contain resource for name=value: ${this.name}=${this.value}`);
+    }
+
+    static *parse(url) {
+      const hashSearch = (url.hash || url.search).slice(1);
+      if (!hashSearch)
+        throw DoubleDots.SyntaxError("DoubleDots.Reference not in url: " + url);
+      const refs = hashSearch.entries?.() ?? hashSearch.split("&").map(s => s.split("="));
+      for (let [name, value] of refs)
+        yield new Reference(url, name, value);
+    }
+  }
+
+  async function define(url, root) {
+    for (let ref of Reference.parse(url))
+      root[ref.type][ref.rule](ref.fullname, ref.getDefinition());
+  };
+
   Object.assign(DoubleDots, {
     DefinitionsMap,
     DefinitionsMapLock,
     DefinitionsMapDOM,
     DefinitionsMapDOMOverride,
-    DefinitionsMapAttrUnknown
+    DefinitionsMapAttrUnknown,
+    Reference,
+    define,
   });
 })();

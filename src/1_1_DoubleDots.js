@@ -171,46 +171,12 @@
     }
   }
 
-  class TriggerNameError extends DoubleDotsError {
-    constructor(fullname) {
-      super(`Trigger name/prefix must begin with english letter or '_'.\n${fullname} begins with '${fullname[0]}'.`);
-    }
-
-    static check(name) {
-      if (!name.match(/[a-z_].*/))
-        throw new TriggerNameError(name);
-    }
-  }
-
-  class DefinitionNameError extends DoubleDotsError {
-    constructor(name) {
-      super(`DoubleDots definition names and rule prefixes can only contain /^[a-z0-9_\.-]*$/: ${name}`);
-    }
-    static check(name) {
-      if (!name.match(/^[a-z0-9_\.-]*$/))
-        throw new DefinitionNameError(name);
-    }
-  }
-
-  class AsyncDefinitionError extends DoubleDotsError {
-    constructor(msg, fullname, rule, RuleFun) {
-      super(`DoubleDots definition loading failed: ${msg}`);
-      this.fullname = fullname;
-      this.rule = rule;
-      this.RuleFun = RuleFun;
-    }
-  }
-
   window.DoubleDots = {
     nativeMethods: {},
 
     DoubleDotsError,
-    AsyncDefinitionError,
     ThisArrowFunctionError,
-    TriggerNameError,
-    DefinitionNameError,
     DeprecationError: class DeprecationError extends DoubleDotsError { },
-    DefinitionError: class DefinitionError extends DoubleDotsError { },
     MissingReaction: class MissingReaction extends DoubleDotsError { },
     DisconnectedError: class DisconnectedError extends DoubleDotsError { },
     TriggerUpgradeError: class TriggerUpgradeError extends DoubleDotsError {
