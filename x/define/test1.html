@@ -6,14 +6,16 @@
   <script src="../../src/6_load_DoubleDots.js"></script>
   <script src="../../src/7_nativeMethods.js"></script>
 
-  <script _:define="./log.js?bob#log&log_&info&info_&warn_&error&error_&trace_"></script>
+  <script _:define="./log.js?bob#log&log_&info&info_&warn_&warn1_&warn2_&error&error_&trace_"></script>
 </head>
 
 <body>
   <h1 _:log_one:log="alice">hello</h1>
   <h2 _:info_two:info="bob">sunshine</h2>
   <h3 _:warn_three>sunshine</h3>
-  <h4 _:error_three>sunshine</h4>
+  <h3 _:warn1_four>sunshine</h3>
+  <h3 _:warn2_five>sunshine</h3>
+  <h4 _:error_six>sunshine</h4>
   <h5 _:error="sh...">sunshine</h5>
-  <h6 _:trace_four>sunshine</h6>
+  <h6 _:trace_seven>sunshine</h6>
 </body>

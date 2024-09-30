@@ -117,22 +117,96 @@
     }
   }
 
-  class DefinitionsMapAttrUnknown extends DefinitionsMap {
+  /**
+   * Whenever you request an unknown definition, 
+   * you get an UnknownDefinition Promise.
+   * When later a matching definition is added,
+   * this promise will resolve with the new definition.
+   * If this promise is rejected from the outside,
+   * The UnknownDefinitionsMap will automatically clean
+   * itself up.
+   * 
+   * To avoid memory leaks with !isConnected attributes,
+   * a 10sec loop checks the UnknownDefinitions and removes 
+   * any disconnected Promises.
+   */
+  class UnknownDefinition extends Promise {
+    constructor(attr) {
+      let A, B;
+      super((a, b) => (A = a, B = b));
+      this.resolve = A, this.reject = B, this.attr = attr;
+    }
+  }
+  DoubleDots.UnknownDefinition = UnknownDefinition;
 
+  class PromiseMap {
+    unknowns = {};
+    #interval;
+
+    make(fullname, attr) {
+      const p = new UnknownDefinition(attr);
+      (this.unknowns[fullname] ??= []).push(p);
+      p.catch(_ => this.remove(fullname, p));
+      this.#interval || this.#cleanLoop();
+      return p;
+    }
+
+    async #cleanLoop() {
+      this.#interval = true;
+      while (true) {
+        await new Promise(r => setTimeout(r, 10000));
+        const all = Object.entries(this.unknowns);
+        if (!all.length)
+          return this.#interval = false;
+        for (let [fullname, promises] of all)
+          for (let p of promises.filter(p => !p.attr.isConnected))
+            this.remove(fullname, p);
+      }
+    }
+
+    remove(fullname, p) {
+      const promises = this.unknowns[fullname];
+      if (!promises)
+        return;
+      const i = promises.indexOf(p);
+      if (i < 0)
+        return;
+      promises.splice(i, 1);
+      !promises.length && delete this.unknowns[fullname];
+    }
+
+    complete(fullname) {
+      const promises = this.unknowns[fullname];
+      delete this.unknowns[fullname];
+      for (let p of promises || [])
+        try { p.resolve(); } catch (_) { } //Att!! handle errors outside
+    }
+    completeRule(rule) {
+      for (let fullname in this.unknowns)
+        if (fullname.startsWith(rule))
+          this.complete(fullname);
+    }
+  }
+
+  class UnknownDefinitionsMap extends DefinitionsMap {
+    #unknowns = new PromiseMap();
     define(fullname, Def) {
       super.define(fullname, Def);
-      for (let at of AttrUnknown.matchesDefinition(fullname))
-        at.upgradeUpgrade(Def);
+      this.#unknowns.complete(fullname);
     }
 
     defineRule(rule, FunClass) {
       super.defineRule(rule, FunClass);
-      for (let at of AttrUnknown.matchesRule(rule))
-        at.upgradeUpgrade(this.get(fullname));
+      this.#unknowns.completeRule(rule);
+    }
+
+    //todo add attr
+    get(fullname, attr) {
+      return super.get(fullname) ?? this.#unknowns.make(fullname, attr);
     }
   }
 
-  class DefinitionsMapLock extends DefinitionsMap {
+  class DefinitionsMapLock extends UnknownDefinitionsMap {
     #lock;
     defineRule(rule, FunFun) {
       if (this.#lock)
@@ -239,7 +313,7 @@
   Object.defineProperties(Document.prototype, {
     Reactions: {
       get: function () {
-        const map = new DefinitionsMap();
+        const map = new UnknownDefinitionsMap();
         Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
         return map;
       }
@@ -247,7 +321,7 @@
     Triggers: {
       configurable: true,
       get: function () {
-        const TriggerMap = TriggerSyntaxCheck(DefinitionsMapAttrUnknown);
+        const TriggerMap = TriggerSyntaxCheck(UnknownDefinitionsMap);
         const map = new TriggerMap();
         Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
         return map;
@@ -325,7 +399,7 @@
     DefinitionsMapLock,
     DefinitionsMapDOM,
     DefinitionsMapDOMOverride,
-    DefinitionsMapAttrUnknown,
+    UnknownDefinitionsMap,
     Reference,
     define,
   });

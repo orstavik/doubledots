@@ -65,15 +65,13 @@
     }
 
     static upgrade(at, Def) {
-      if (!Def)
-        Def = at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0]);
-      if (!Def)
-        Def = AttrUnknown;
-      if(Def instanceof Error)
-        throw Def; //debugger; //todo not implemented. I think it just should throw and be handled outside. Trigger errors are not hidden by the system. Reaction errors are.
+      Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
+      if (Def instanceof Error)
+        throw Def;
       if (Def instanceof Promise) {
+        Object.setPrototypeOf(at, AttrUnknown.prototype);
         Def.then(Def => AttrCustom.upgrade(at, Def));
-        Def = AttrPromise;
+        return;
       }
       try {
         Object.setPrototypeOf(at, Def.prototype);
@@ -82,43 +80,14 @@
         throw new DoubleDots.TriggerUpgradeError(Def.name + ".upgrade() caused an error. Triggers shouldn't cause errors.");
       }
     }
-  };
+  }
   class AttrImmutable extends AttrCustom {
     remove() { /* cannot be removed */ }
-  };
+    //set value() { /* cannot be changed */ }
+    //get value() { return super.value; }
+  }
 
-  class AttrPromise extends AttrCustom { };
-
-  class AttrUnknown extends AttrCustom {
-
-    static #unknowns = new DoubleDots.AttrWeakSet();
-
-    upgrade() {
-      AttrUnknown.#unknowns.add(this);
-    }
-
-    upgradeUpgrade(Def) {
-      AttrUnknown.#unknowns.delete(this);
-      AttrCustom.upgrade(this, Def);
-    }
-
-    remove() {
-      AttrUnknown.#unknowns.delete(this);
-      super.remove();
-    }
-
-    static *matchesDefinition(name) {
-      for (let at of AttrUnknown.#unknowns)
-        if (name === at.trigger)
-          yield at;
-    }
-
-    static *matchesRule(rule) {
-      for (let at of AttrUnknown.#unknowns)
-        if (at.trigger.startsWith(rule))
-          yield at;
-    }
-  };
+  class AttrUnknown extends AttrCustom { }
 
   const stopProp = Event.prototype.stopImmediatePropagation;
   const addEventListenerOG = EventTarget.prototype.addEventListener;
@@ -302,7 +271,6 @@
     AttrCustom,
     AttrImmutable,
     AttrUnknown,
-    AttrPromise,
     AttrMutation,
     AttrIntersection,
     AttrResize

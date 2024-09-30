@@ -33,6 +33,23 @@ export const warn_ = (async function () {
   };
 })();
 
+export const warn1_ = (async function () {
+  await new Promise(r => setTimeout(r, 1000));
+  return function warn1_(rule) {
+    const [_, ...args] = rule.split("_");
+    return _ => console.warn("warn1_", ...args);
+  };
+})();
+
+export const warn2_ = (async function () {
+  await new Promise(r => setTimeout(r, 1000));
+  return function warn2_(rule) {
+    const [_, ...args] = rule.split("_");
+    throw new Error("testing warn2_");
+    // return _ => console.warn("warn2_", ...args);
+  };
+})();
+
 export const error = (async function () {
   await new Promise(r => setTimeout(r, 1000));
   throw new Error("testing error");

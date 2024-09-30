@@ -6,6 +6,9 @@
     return attachShadowOG.apply(this, args);
   };
 
+  class EventLoopError extends DoubleDots.DoubleDotsError { }
+  DoubleDots.EventLoopError = EventLoopError;
+
   class MicroFrame {
     #i = 0;
     #names;
@@ -60,17 +63,19 @@
         //2. check isConnected
         try {
           if (!this.at.isConnected)
-            throw new DoubleDots.DisconnectedError("Disconnected"); //todo should this be an error??
+            throw new EventLoopError("Disconnected: " + this.at);
+          //todo should this be an error??
 
-          const func = this.at.getRootNode().Reactions.get(re);
-          if (!func)
-            throw new DoubleDots.MissingReaction("No reaction definition.");
+          const func = this.at.getRootNode().Reactions.get(re, this.at);
           if (func instanceof Error)
             throw func;
           if (func instanceof Promise) {
             if (threadMode) {
               func.then(_ => __eventLoop.asyncContinue(this));
               return; //continue outside loop
+            } else if (func instanceof DoubleDots.UnknownDefinition) {
+              return this.#runError(new EventLoopError("Reaction not found: " + re));
+              //RulePromise, DefinitionPromise
             } else {
               func.then(_ => __eventLoop.syncContinue());
               //todo these sync delays needs to have a max timeout.
