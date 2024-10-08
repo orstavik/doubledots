@@ -1,0 +1,70 @@
+{
+  "company/1": {
+    "name": "Acme",
+    "employees": [
+      {
+        "fullname": "Bobby Jones",
+        "phone": "12345",
+        "friends": [
+          {
+            "fullname": "Alice Smith",
+            "phone": "67890"
+          },
+          {
+            "fullname": "Jensen Lee",
+            "phone": "54321"
+          }
+        ]
+      },
+      {
+        "fullname": "Alice Smith",
+        "phone": "67890",
+        "friends": []
+      },
+      {
+        "fullname": "Jensen Lee",
+        "phone": "54321",
+        "friends": []
+      }
+    ]
+  },
+  "company/2": {
+    "name": "Globex",
+    "employees": [
+      {
+        "fullname": "Clark Kent",
+        "phone": "555-0001",
+        "friends": [
+          {
+            "fullname": "Diana Prince",
+            "phone": "555-0002"
+          },
+          {
+            "fullname": "Bruce Wayne",
+            "phone": "555-0003"
+          }
+        ]
+      },
+      {
+        "fullname": "Diana Prince",
+        "phone": "555-0002",
+        "friends": [
+          {
+            "fullname": "Clark Kent",
+            "phone": "555-0001"
+          }
+        ]
+      },
+      {
+        "fullname": "Bruce Wayne",
+        "phone": "555-0003",
+        "friends": [
+          {
+            "fullname": "Clark Kent",
+            "phone": "555-0001"
+          }
+        ]
+      }
+    ]
+  }
+}

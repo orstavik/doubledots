@@ -1,0 +1,31 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="v1.js" _:define="?P&pupdate"></script>
+  <script type="module" src="/x/fetch/v1.js" _:define="?fetch_json"></script>
+  <script>
+    function log_(rule) {
+      const [_, ...params] = rule.split("_");
+      return function log(...args) {
+        console.log(...params);
+        console.log(...args);
+      };
+
+    }
+    document.Reactions.defineRule("log_", log_);
+  </script>
+</head>
+
+<body _::fetch_json:pupdate="companies.json">
+  <div p:log_1>
+    <div p:log_2>
+      <h1 p:log_3>Hello sunshine</h1>
+    </div>
+  </div>
+
+</body>
