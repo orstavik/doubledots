@@ -1,0 +1,31 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="/x/fetch/v1.js" _:define="?fetch_json"></script>
+  <script type="module" src="v1.js" _:define="?erUpdate&Er"></script>
+</head>
+
+<script>
+  function friendEmployeeCompany({er}) {
+    const $friend = "person/jensen";
+    const $employee = er.parent($friend, "person", "friends");
+    const $company = er.parent($employee, "company", "employees");
+    return er.resolve($company, { $friend, $employee, $company });
+  }
+
+  function log(i) {
+    console.log(JSON.stringify(i, null, 2));
+  }
+
+  document.Reactions.define("friend-employee-company", friendEmployeeCompany);
+  document.Reactions.define("log", log);
+</script>
+
+<div _::fetch_json:er-update="companies.json">
+  <h1 er:friend-employee-company:log>hello sunshine</h1>
+</div>
