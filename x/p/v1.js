@@ -64,3 +64,21 @@ export class P extends AttrCustom {
     eventLoop.dispatchBatch(e, IT);
   }
 }
+
+export function pupdate(obj) {
+  const p = new AttributeIterator(this.ownerElement, P).next().value;
+  p.value = JSON.stringify(obj);
+}
+
+//we need wrap in a class that can have a two way map between string and object,
+//with a max limit of entries, where the most used entries are kept first, and
+//where the string is the json equivalent of the obj
+//and we only have getters, so that if the object is not there when you ask with the string, the object is made using Json.parse, and vice versa when you give a string.
+// const objToJson = new WeakMap();
+// const jsonToObj = {}; //todo this one we need to weakify
+// function toJson(obj){
+
+// }
+// function fromJson(str){
+
+// }
