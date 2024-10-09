@@ -6,22 +6,26 @@
   <script src="../../src/6_load_DoubleDots.js"></script>
   <script src="../../src/7_nativeMethods.js"></script>
 
-  <script type="module" src="v1.js" _:define="?P&pupdate"></script>
+  <script type="module" src="v1.js" _:define="?P"></script>
   <script type="module" src="/x/fetch/v1.js" _:define="?fetch_json"></script>
+
   <script>
+    function setPAttribute(obj) {
+      this.ownerElement.setAttribute("p:", JSON.stringify(obj));
+    }
     function log_(rule) {
       const [_, ...params] = rule.split("_");
       return function log(...args) {
         console.log(...params);
         console.log(...args);
       };
-
     }
+    document.Reactions.define("set-p..-attribute", setPAttribute);
     document.Reactions.defineRule("log_", log_);
   </script>
 </head>
 
-<body _::fetch_json:pupdate="companies.json">
+<body _::fetch_json:set-p..-attribute="companies.json">
   <div p:log_1>
     <div p:log_2>
       <h1 p:log_3>Hello sunshine</h1>
