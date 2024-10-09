@@ -22,4 +22,5 @@
   });
 })(String, Number, Boolean);
 
-//todo check with for example airbnb and google code style guides for more dev time hard checks that can be added.
+//todo check with for example airbnb and google code
+//     style guides for more dev time hard checks that can be added.
