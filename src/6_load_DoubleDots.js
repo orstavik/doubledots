@@ -73,10 +73,10 @@ function monkeyPatch(proto, prop, fun) {
     //1. treat the normal normal
     if (!name.includes(":"))
       return setAttributeOG.call(this, name, value);
-    //2. if the name is 
+    //2. if the name is DoubleDots
     let at = getAttributeNodeOG.call(this, name);
     if (at) {
-      at.value = value;
+      at.value !== value && (at.value = value);
       return;
     }
     setAttributeOG.call(this, name, value);

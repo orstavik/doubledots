@@ -76,6 +76,7 @@
       try {
         Object.setPrototypeOf(at, Def.prototype);
         at.upgrade?.();
+        at.value && (at.value = at.value);
       } catch (err) {
         throw new DoubleDots.TriggerUpgradeError(Def.name + ".upgrade() caused an error. Triggers shouldn't cause errors.");
       }
