@@ -131,20 +131,22 @@
    * any disconnected Promises.
    */
   class UnknownDefinition extends Promise {
-    constructor(attr) {
-      let A, B;
-      super((a, b) => (A = a, B = b));
-      this.resolve = A, this.reject = B, this.attr = attr;
+    static make(attr) {
+      let resolve, reject;
+      const promise = new UnknownDefinition((a, b) => {
+        resolve = a;
+        reject = b;
+      });
+      return Object.assign(promise, { resolve, reject, attr });
     }
   }
-  DoubleDots.UnknownDefinition = UnknownDefinition;
 
   class PromiseMap {
     unknowns = {};
     #interval;
 
     make(fullname, attr) {
-      const p = new UnknownDefinition(attr);
+      const p = UnknownDefinition.make(attr);
       (this.unknowns[fullname] ??= []).push(p);
       p.catch(_ => this.remove(fullname, p));
       this.#interval || this.#cleanLoop();
@@ -372,11 +374,11 @@
     async getDefinition() {
       const module = await import(this.url);
       if (!module || typeof module !== "object" && !(module instanceof Object))
-        return new AsyncDefinitionError(`URL is not an es6 module: ${this.url}`);
+        throw new TypeError(`URL is not an es6 module: ${this.url}`);
       const lookup = this.value || this.name;
-      return module[lookup] ??
-        module.default?.[lookup] ??
-        new AsyncDefinitionError(`ES6 module doesn't contain resource: ${lookup}`);
+      const def = module[lookup] ?? module.default?.[lookup];
+      if (def) return def;
+      throw new TypeError(`ES6 module doesn't contain resource: ${lookup}`);
     }
 
     static *parse(url) {
@@ -400,6 +402,7 @@
     DefinitionsMapDOM,
     DefinitionsMapDOMOverride,
     UnknownDefinitionsMap,
+    UnknownDefinition,
     Reference,
     define,
   });
