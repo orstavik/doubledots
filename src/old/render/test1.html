@@ -1,0 +1,41 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="/x/PropagationSimple/prop.js" _:define="?Load&Click"></script>
+  <script type="module" src="/x/dotRules/dot.js" _:define="?oi."></script>
+  <script type="module" src="./Render_p2.js" _:define="?P&pstate"></script>
+  <script type="module" src="./brace2.js" _:define="brace&template&tbrace"></script>
+  <script type="module" src="./tools2.js" _:define="?fetch_"></script>
+  <!-- <script src="./Render_p.js"></script>
+  <script src="./brace.js"></script>
+  <script src="./tools.js"></script> -->
+  <template name="main">
+    <h1>Template Company: {{name}}</h1>
+    <template>
+      <div>no change {{name}}</div>
+    </template>
+    <div p: href="/no/change/{{name}}">no change</div>
+    <div>
+      <div href="employees/{{employees}}">some employees: {{employees}}</div>
+    </div>
+  </template>
+</head>
+
+<body _load::fetch_json:pstate="./companies.json">
+  <main p:oi.post:template:tbrace="company/2" template-name="{{name}}"></main>
+  <section p:oi.post:brace="company/1" name="{{name}}">
+    <h1>Company: {{name}}</h1>
+    <template>
+      <div>no change {{name}}</div>
+    </template>
+    <div p: href="/no/change/{{name}}">no change {{name}} {{employees}}</div>
+    <div>
+      <div href="employees/{{employees}}">{{employees}}</div>
+    </div>
+  </section>
+</body>

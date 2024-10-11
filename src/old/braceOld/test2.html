@@ -1,0 +1,26 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="/x/dotRule/dot.js" _:define="?oi."></script>
+  <script type="module" src="/x/fetch/v1.js" _:define="?fetch_json"></script>
+  <script type="module" src="/x/template/v1.js" _:define="?template"></script>
+  <script type="module" src="/x/p/v1.js" _:define="?P&pupdate&loop"></script>
+  <script type="module" src="v1.js" _:define="?brace"></script>
+</head>
+
+<body _::fetch_json:pupdate="companies.json">
+  <div p:brace>
+    test for empty rules
+    <ol p:oi.data.company1.employees:template:loop>
+      <template>
+        this should have two rules
+        <li p:brace name="{{name}}">hello {{name}} company</li>
+      </template>
+    </ol>
+  </div>
+</body>

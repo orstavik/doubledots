@@ -1,0 +1,24 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="v1.js" _:define="?P&pupdate"></script>
+  <script type="module" src="/x/fetch/v1.js" _:define="?fetch_json"></script>
+
+<body _load::fetch_json:pupdate="./companies.json">
+  <main p:brace name="{{name}}"></main>
+  <section>
+    <h1>Company: {{name}}</h1>
+    <template>
+      <div>no change {{name}}</div>
+    </template>
+    <div p: href="/no/change/{{name}}">no change {{name}} {{employees}}</div>
+    <div>
+      <div href="employees/{{employees}}">{{employees}}</div>
+    </div>
+  </section>
+</body>

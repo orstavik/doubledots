@@ -1,0 +1,21 @@
+<title>replaceAll Function Test</title>
+<script src="jsonpathish.js"></script>
+
+<script></script>
+<h1>Test topLevelParse Function</h1>
+
+<script type="module">
+  const tests = [
+    "[@name == 'John']",
+    "age >= 30 && age < 50",
+    "status == true || active == false",
+    "name *= 'Jo*' && age >= 25",
+    "id[status == true]"
+  ];
+  const companies = (await fetch("companies.json")).json();
+  for (let test of tests) {
+    debugger
+    const func = topLevelParse(test);
+    func(companies);
+  }
+</script>
