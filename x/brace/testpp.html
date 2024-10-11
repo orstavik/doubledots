@@ -1,0 +1,40 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="/x/dotRule/dot.js" _:define="?oi."></script>
+  <script type="module" src="/x/fetch/v1.js" _:define="?fetch_json"></script>
+  <script type="module" src="/x/template/v1.js" _:define="?template_"></script>
+  <script type="module" src="/x/pp/v1.js" _:define="?Pp&pp&loop"></script>
+  <script type="module" src="v1.js" _:define="?brace"></script>
+  <script>
+    document.Reactions.define("log", function (...args) {
+      console.log(this, ...args);
+    });
+  </script>
+
+  <template name="company">
+    <li pp:oi.data:brace hello="mr/s {{fullname}} !!">employee fullname is {{fullname}} -- {{nothing}} -- 
+      <template is-processed="this will be altered {{fullname}}"> 
+        {{not.processed}}
+      </template>
+    </li>
+
+  </template>
+
+</head>
+
+<body _::fetch_json:pp="/x/pp/companies.json"> <!-- body.pp is the object -->
+  <!-- here is a magic pupdate. It will populate the p: from above. -->
+  <main>
+    <div pp:log="company1">
+      <ol pp:oi.data:template_company:loop=".employees">
+        <!--  -->
+      </ol>
+    </div>
+  </main>
+</body>
