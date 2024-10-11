@@ -9,7 +9,7 @@
   <script type="module" src="/x/dotRule/dot.js" _:define="?oi."></script>
   <script type="module" src="/x/fetch/v1.js" _:define="?fetch_json"></script>
   <script type="module" src="/x/template/v1.js" _:define="?template_"></script>
-  <script type="module" src="v1.js" _:define="?Pp&pp&loop_"></script>
+  <script type="module" src="v1.js" _:define="?Pp&pp&loop"></script>
   <script>
     document.Reactions.define("log", function(...args){
       console.log(this, ...args);
@@ -26,11 +26,8 @@
   <!-- here is a magic pupdate. It will populate the p: from above. -->
   <main>
     <div pp:log="company1">
-      <ol pp:oi.data:loop_company=".employees">
-        <!-- here is a magic loop. It will loop over the array and create a new template for each item. -->
-        <li pp:=".1">the name of the company is {{name}} company1.employees.1</li>
-        <li pp:=".2">the name of the company is {{name}}</li>
-        <li pp:=".3">the name of the company is {{name}}</li>
+      <ol pp:oi.data:template_company:loop=".employees">
+        <!--  -->
       </ol>
     </div>
   </main>

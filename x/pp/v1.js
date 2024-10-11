@@ -120,32 +120,93 @@ export class Pp extends AttrCustom {
   get value() { return super.value; }
 }
 
+class LoopCube {
+  static compareSmall(old, now){
+    const exact = new Array(now.length);
+    const unused = [];
+    if (!old?.length)
+      return { exact, unused };
+    main: for (let o = 0; o < old.length; o++) {
+      for (let n = 0; n < now.length; n++) {
+        if (!exact[n] && old[o] === now[n]) {
+          exact[n] = o;
+          continue main;
+        }
+      }
+      unused.push(o);
+    }
+    return { exact, unused };  
+  }
 
-//loop starting
-function firstAttrStartsWith(root, startsWith){
-  for (let el of root.querySelectorAll("*"))
-    for (let a of el.attributes)
-      if (a.name.startsWith(startsWith))
-        return a;
+  constructor(root, template) {
+    this.root = root;
+    this.template = template;
+    this.tl = template.childNodes.length;
+    this.now = [];
+    this.root.textContent = "";
+  }
+
+  getTemplClone() {
+    return this.template.cloneNode(true).childNodes;
+  }
+
+  moveToRes(n, o, now, old, scale) {
+    n *= scale;
+    o *= scale;
+    for (let i = 0; i < scale; i++)
+      now[n + i] = old[o + i];
+  }
+
+  step(now = []) {
+    const old = this.now;
+    this.now = now;
+    const { exact, unused } = LoopCube.compareSmall(old, now);
+
+    const oldNodes = this.root.childNodes;
+    const nowNodes = new Array(now.length * this.tl);
+    for (let n = 0; n < exact.length; n++) {
+      const o = exact[n];
+      if (o != null) {
+        this.moveToRes(n, o, nowNodes, oldNodes, this.tl);
+      } else {
+        unused.length ?
+          this.moveToRes(n, unused.pop(), nowNodes, oldNodes, this.tl) :
+          this.moveToRes(n, 0, nowNodes, this.getTemplClone(), this.tl);
+        this.task(nowNodes, n);
+      }
+    }
+    const removeNodes = [];
+    for (let u = unused.pop(), i = 0; u != null; i++, u = unused.pop())
+      this.moveToRes(i, u, removeNodes, oldNodes, this.tl);
+    return nowNodes;
+  }
+
+  task(i) { }
 }
 
-export function loop_(rule) {
-  const [_, templateName] = rule.split("_");
-  let triggerName = "pp:";
-  return function loop(now) {
-    if (!Array.isArray(now))
-      throw new Error("loop #2 argument is not an array.");
-    const el = this.ownerElement;
-    //todo get the template from the head or 1st child
-    const template = document.head.querySelector(`template[name="${templateName}"]`).content;
-    if (!(template instanceof DocumentFragment) || !template.children.length)
-      throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");
-    el.innerText = "";
-    for (let i = 0; i < now.length; i++) {
-      const clone = template.cloneNode(true);
-      const attr = firstAttrStartsWith(clone, triggerName);
-      attr.value = "." + i;
-      el.append(clone);
-    }
-  };
+class LoopCubeAttr extends LoopCube {
+  constructor(root, template, attr) {
+    super(root, template);
+    this.attr = attr;
+    this.triggerName = attr.trigger + ":";
+  }
+
+  task(nowNodes, i) {
+    for (let j = 0, start = i * this.tl; j < this.tl; j++)
+      if (nowNodes[start + j].attributes)
+        for (let a of nowNodes[start + j].attributes)
+          if (a.name.startsWith(this.triggerName))
+            return a.value = "." + i;
+  }
+}
+
+export function loop(template, now) {
+  const triggerName = "pp";
+  if (!Array.isArray(now))
+    throw new Error("loop #2 argument is not an array.");
+  if (!(template instanceof DocumentFragment) || !template.children.length)
+    throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");
+  const el = this.ownerElement;
+  const res = (this.__loop ??= new LoopCubeAttr(el, template, this)).step(now);
+  res.length ? el.append(...res) : el.innerText = "";
 }
