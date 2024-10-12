@@ -36,8 +36,8 @@ function makeAll() {
   res["Domcontentloaded"] = DCLTrigger;
   return res;
 }
-const dynamics = makeAll();
-export default dynamics;
+const dynamicSimpleProp = makeAll();
+export default dynamicSimpleProp;
 
 /**
 # SimplePropagation

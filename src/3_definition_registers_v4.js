@@ -376,8 +376,12 @@
       if (!module || typeof module !== "object" && !(module instanceof Object))
         throw new TypeError(`URL is not an es6 module: ${this.url}`);
       const lookup = this.value || this.name;
-      const def = module[lookup] ?? module.default?.[lookup];
+      const def = module[lookup];
       if (def) return def;
+      for (let [k, v] of Object.entries(module))
+        if (k.startsWith("dynamic"))
+          if (v[lookup])
+            return v[lookup];
       throw new TypeError(`ES6 module doesn't contain resource: ${lookup}`);
     }
 

@@ -61,11 +61,11 @@ function JumpReactionRule(fullname) {
   return DoubleDots.importBasedEval(`_ => new EventLoop.ReactionJump(${n})`);
 }
 
-const dynamics = {};
+const dynamicDots = {};
 for (let prefix in scopes)
-  dynamics[prefix] = DotReactionRule;
-dynamics["x."] = BreakOnFalseReactionRule;
-dynamics["y."] = BreakOnTrueReactionRule;
-dynamics["j."] = JumpReactionRule;
+  dynamicDots[prefix] = DotReactionRule;
+dynamicDots["x."] = BreakOnFalseReactionRule;
+dynamicDots["y."] = BreakOnTrueReactionRule;
+dynamicDots["j."] = JumpReactionRule;
 
-export default dynamics;
+export { dynamicDots as dynamicsDots };
