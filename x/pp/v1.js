@@ -185,8 +185,8 @@ class LoopCube {
 }
 
 class LoopCubeAttr extends LoopCube {
-  constructor(root, template, attr) {
-    super(root, template);
+  constructor(attr, template) {
+    super(attr.ownerElement, template);
     this.attr = attr;
     this.triggerName = attr.trigger + ":";
   }
@@ -207,6 +207,6 @@ export function loop(template, now) {
   if (!(template instanceof DocumentFragment) || !template.children.length)
     throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");
   const el = this.ownerElement;
-  const res = (this.__loop ??= new LoopCubeAttr(el, template, this)).step(now);
+  const res = (this.__loop ??= new LoopCubeAttr(this, template)).step(now);
   res.length ? el.append(...res) : el.innerText = "";
 }
