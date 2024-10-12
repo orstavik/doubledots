@@ -14,13 +14,13 @@
     #names;
     #inputs;
     #outputs;
-    #selves;
+    // #selves;
 
     constructor(event, at) {
       this.at = at;
       this.event = event;
       this.#names = this.at.reactions;
-      this.#selves = [at];
+      // this.#selves = [at];
       this.#inputs = [event];
       this.#outputs = [];
     }
@@ -83,9 +83,9 @@
               return this; //halt outside loop
             }
           }
-          const self = this.#selves[this.#i];
+          // const self = this.#selves[this.#i];
           //todo this.#inputs.slice().reverse() is inefficient.
-          const res = this.#outputs[this.#i] = func.apply(self, this.#inputs.slice().reverse());
+          const res = this.#outputs[this.#i] = func.apply(this.at, this.#inputs.slice().reverse());
           if (res instanceof Promise) {
             if (threadMode) {
               res.then(oi => this.#runSuccess(oi))
@@ -127,19 +127,19 @@
       this.#outputs[this.#i] = res;
       if (res === EventLoop.Break) {
         this.#i = this.#names.length;
-      } else if (res instanceof EventLoop.ReactionJump) {
+      } else if (res instanceof EventLoop.ReactionJump) { //this also looks frail
         const next = this.#i + res.value;
-        this.#selves[next] = this.#selves[this.#i];
+        // this.#selves[next] = this.#selves[this.#i];
         this.#inputs[next] = this.#inputs[this.#i];
         this.#i = next;
-      } else if (res instanceof EventLoop.ReactionOrigin) {
-        const next = this.#i + 1;
-        this.#selves[next] = res.value;
-        this.#inputs[next] = this.#inputs[this.#i];
-        this.#i = next;
+      // } else if (res instanceof EventLoop.ReactionOrigin) {
+      //   const next = this.#i + 1;
+      //   // this.#selves[next] = res.value;
+      //   this.#inputs[next] = this.#inputs[this.#i];
+      //   this.#i = next;
       } else {
         const next = this.#i + 1;
-        this.#selves[next] = this.#selves[this.#i];
+        // this.#selves[next] = this.#selves[this.#i];
         this.#inputs[next] = res;
         this.#i = next;
       }
