@@ -31,37 +31,28 @@ class AttributeIterator {
 }
 
 class PpIterator extends AttributeIterator {
-  constructor(root) {
-    super(root, Pp);
+  constructor(root, Type = Attr) {
+    super(root, Type);
     this.stack = [];
   }
-
   next() {
     const i = super.next();
     if (i.done) return i;
-    const attr = i.value;
-    while (this.stack.length && !this.stack.at(-1).ownerElement.contains(attr.ownerElement))
-      this.stack.pop();
-    this.stack.push(i.value);
+    while (this.stack.length && !this.stack[0].el.contains(this.attr.ownerElement))
+      this.stack.shift();
+    const pathEl = this.makePath(i.value, this.stack[0]?.path);
+    this.stack.unshift(pathEl);
     return i;
   }
 
-  get currentPath() {
-    return this.attr.value[0] === "." ?
-      this.#getRelativePath() :
-      this.attr.value.split(".");
+  makePath({ ownerElement: el, value: path }, parentPath = []) {
+    path = path.split(".");
+    path = path[0] ? path : [...parentPath, ...path.slice(1)];
+    return { el, path };
   }
 
-  #getRelativePath() {
-    let path = [];
-    for (let i = this.stack.length - 1; i >= 0; i--) {
-      const attr = this.stack[i];
-      if (attr.value[0] === ".")
-        path = [...attr.value.slice(1).split("."), ...path];
-      else
-        return [...attr.value.split("."), ...path];
-    }
-    return path;
+  get currentPath() {
+    return this.stack[0].path;
   }
 }
 
@@ -79,15 +70,13 @@ class PpEvent extends Event {
   }
 
   get data() {
-    const path = IT.currentPath;
-    return path.reduce((res, seg) => res[seg], this.root);
+    return IT.currentPath.reduce((o, p) => o?.[p], this.root);
   }
 }
 
 function propagate(scope, pp) {
-  IT = new PpIterator(scope);
-  const e = new PpEvent("pp", pp, IT);
-  eventLoop.dispatchBatch(e, IT);
+  IT = new PpIterator(scope, Pp);
+  eventLoop.dispatchBatch(new PpEvent("pp", pp, IT), IT);
 }
 
 let IT;
@@ -121,7 +110,7 @@ export class Pp extends AttrCustom {
 }
 
 class LoopCube {
-  static compareSmall(old, now){
+  static compareSmall(old, now) {
     const exact = new Array(now.length);
     const unused = [];
     if (!old?.length)
@@ -135,7 +124,7 @@ class LoopCube {
       }
       unused.push(o);
     }
-    return { exact, unused };  
+    return { exact, unused };
   }
 
   constructor(root, template) {
@@ -206,7 +195,6 @@ export function loop(template, now) {
     throw new Error("loop #2 argument is not an array.");
   if (!(template instanceof DocumentFragment) || !template.children.length)
     throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");
-  const el = this.ownerElement;
   const res = (this.__loop ??= new LoopCubeAttr(this, template)).step(now);
-  res.length ? el.append(...res) : el.innerText = "";
+  res.length ? this.ownerElement.append(...res) : this.ownerElement.innerText = "";
 }
