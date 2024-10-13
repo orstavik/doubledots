@@ -14,6 +14,7 @@ class ER {
     return this.parents(ref, type, prop).next().value;
   }
 
+  //todo this can loop forever, when we have a person with a friend that has a friend that is the first person. This won't work.
   resolve(key, vars) {
     const res = Object.assign({}, vars, this.posts[key]);
     for (let p in res)
@@ -31,8 +32,13 @@ export class Er extends AttrCustom {
   }
 }
 
-export function erUpdate(posts) {
-  const e = new Event("er");
-  e.er = new ER(posts);
-  eventLoop.dispatchBatch(e, triggers);
+class ErEvent extends Event {
+  constructor(type, er) {
+    super(type);
+    this.er = new ER(er);
+  }
+}
+
+export function er(posts) {
+  eventLoop.dispatchBatch(new ErEvent("er", posts), triggers);
 }

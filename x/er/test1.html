@@ -7,7 +7,7 @@
   <script src="../../src/7_nativeMethods.js"></script>
 
   <script type="module" src="/x/fetch/v1.js" _:define="?fetch_json"></script>
-  <script type="module" src="v1.js" _:define="?erUpdate&Er"></script>
+  <script type="module" src="v1.js" _:define="?Er&er"></script>
 </head>
 
 <script>
@@ -26,6 +26,6 @@
   document.Reactions.define("log", log);
 </script>
 
-<div _::fetch_json:er-update="companies.json">
+<div _::fetch_json:er="companies.json">
   <h1 er:friend-employee-company:log>hello sunshine</h1>
 </div>
