@@ -38,7 +38,7 @@ class PpIterator extends AttributeIterator {
   next() {
     const i = super.next();
     if (i.done) return i;
-    while (this.stack.length && !this.stack[0].el.contains(this.attr.ownerElement))
+    while (this.stack.length && !this.stack[0].el.contains(this.el))
       this.stack.shift();
     const pathEl = this.makePath(i.value, this.stack[0]?.path);
     this.stack.unshift(pathEl);
@@ -108,6 +108,28 @@ export class Pp extends AttrCustom {
   }
   get value() { return super.value; }
 }
+
+function loopTask(template, key, triggerName) {
+  const clone = template.cloneNode(true);
+  for (let c of clone.children)
+    for (let a of c.attributes)
+      if (a.name.startsWith(triggerName))
+        return (a.value = "." + key), clone;
+  return clone;
+}
+
+export function loop(template, now) {
+  if (!(template instanceof DocumentFragment) || !template.children.length)
+    throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");
+  if (typeof now !== 'object')
+    throw new Error("loop #2 argument is not an object.");
+  const trigger = this.trigger + ":";
+  this.ownerElement.textContent = "";
+  for (let key of now instanceof Array ? now.map((_, i) => i) : Object.keys(now))
+    this.ownerElement.append(...loopTask(template, key, trigger).childNodes);
+}
+
+//Optimization attemps. Skipped for now.
 
 class LoopCube {
   static compareSmall(old, now) {
@@ -189,7 +211,7 @@ class LoopCubeAttr extends LoopCube {
   }
 }
 
-export function loop(template, now) {
+function loopOptimal(template, now) {
   const triggerName = "pp";
   if (!Array.isArray(now))
     throw new Error("loop #2 argument is not an array.");
