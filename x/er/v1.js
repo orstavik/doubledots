@@ -14,7 +14,17 @@ class ER {
     return this.parents(ref, type, prop).next().value;
   }
 
-  //todo this can loop forever, when we have a person with a friend that has a friend that is the first person. This won't work.
+  //todo this can loop forever, when we have a person with a friend 
+  //     that has a friend that is the first person. This won't work.
+  //
+  //todo 1. we need to go width first.
+  //todo 2. we need to check the path. If we are going from:
+  //        person / [friends] / person / [friends]
+  //        then we need to stop at the 2nd [friends].
+  //        we should only resolve person[friends] relationship *once*.
+  //        when we meet person[friends] 2nd time, we should just skip it.
+  //        this means that when we meet "person" the second time, 
+  //        we should skip all the arrays.
   resolve(key, vars) {
     const res = Object.assign({}, vars, this.posts[key]);
     for (let p in res)
