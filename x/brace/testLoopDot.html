@@ -1,0 +1,23 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="/x/dotRule/dot.js?oi." _:define></script>
+  <script type="module" src="/x/template/v1.js?template" _:define></script>
+  <script type="module" src="/x/pp/v1.js?Pp&pp&loop" _:define></script>
+  <script type="module" src="v1.js?brace" _:define></script>
+  <script>
+    document.Reactions.define("ab", _=> ({a: "A", b:"B"}));
+  </script>
+
+<body _:ab:pp>
+  <ol pp:oi.data:template:loop>
+    <template>
+      <li pp:oi.data:brace>{{.}}</li>
+    </template>
+  </ol>
+</body>

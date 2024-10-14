@@ -1,4 +1,6 @@
 function dotPathGet(dotPath, obj) {
+  if (dotPath === ".")
+    return obj;
   for (let p of dotPath.split("."))
     if (!(obj = obj?.[p]))
       return obj === 0 ? obj : "";
