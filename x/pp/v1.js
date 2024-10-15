@@ -69,6 +69,7 @@ class PpEvent extends Event {
     this.root = root;
   }
 
+  //todo should i return IT.currentPath...?
   get data() {
     return IT.currentPath.reduce((o, p) => o?.[p], this.root);
   }
@@ -118,6 +119,8 @@ function loopTask(template, key, triggerName) {
   return clone;
 }
 
+//In objects, properties starting with "#" such as 
+//"#key" or "#private" will be excluded by the :loop.
 export function loop(template, now) {
   if (!(template instanceof DocumentFragment) || !template.children.length)
     throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");
@@ -125,7 +128,10 @@ export function loop(template, now) {
     throw new Error("loop #2 argument is not an object.");
   const trigger = this.trigger + ":";
   this.ownerElement.textContent = "";
-  for (let key of now instanceof Array ? now.map((_, i) => i) : Object.keys(now))
+  const keys = now instanceof Array ?
+    now.map((_, i) => i) :
+    Object.keys(now).filter(p => !p.startsWith("#"));
+  for (let key of keys)
     this.ownerElement.append(...loopTask(template, key, trigger).childNodes);
 }
 
