@@ -69,9 +69,15 @@ class PpEvent extends Event {
     this.root = root;
   }
 
-  //todo should i return IT.currentPath...?
+  //return IT.currentPath.reduce((o, p) => o?.[p], this.root);
   get data() {
-    return IT.currentPath.reduce((o, p) => o?.[p], this.root);
+    let v = this.root;
+    let k;
+    for (k of IT.currentPath)
+      v = v?.[k];
+    return v instanceof Object ?
+      Object.assign({ "#key": k }, v) :
+      { "#key": k, "#value": v };
   }
 }
 
