@@ -18,8 +18,8 @@
   </script>
 
   <template name="company">
-    <li pp:oi.data:brace hello="mr/s {{fullname}} !!">employee fullname is {{fullname}} -- {{nothing}} -- 
-      <template is-processed="this will be altered {{fullname}}"> 
+    <li pp:brace hello="mr/s {{fullname}} !!">employee fullname is {{fullname}} -- {{nothing}} --
+      <template is-processed="this will be altered {{fullname}}">
         {{not.processed}}
       </template>
     </li>
@@ -27,13 +27,10 @@
 
 </head>
 
-<body _::fetch_json:pp="/x/pp/companies.json"> <!-- body.pp is the object -->
-  <!-- here is a magic pupdate. It will populate the p: from above. -->
-  <main>
-    <div pp:log="company1">
-      <ol pp:oi.data:template_company:loop=".employees">
-        <!--  -->
-      </ol>
-    </div>
-  </main>
+<body _::fetch_json:pp="companies.json">
+  <div pp:log="company1">
+    <ol pp:template_company:loop=".employees">
+      <!--  -->
+    </ol>
+  </div>
 </body>

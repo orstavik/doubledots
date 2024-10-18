@@ -15,9 +15,9 @@
   </script>
 
 <body _:ab:pp>
-  <ol pp:oi.data:template:loop>
+  <ol pp:template:loop>
     <template>
-      <li pp:oi.data:brace>{{.}}</li>
+      <li pp:brace>{{#key}}: {{#value}}</li>
     </template>
   </ol>
 </body>

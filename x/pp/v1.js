@@ -70,7 +70,7 @@ class PpEvent extends Event {
   }
 
   //return IT.currentPath.reduce((o, p) => o?.[p], this.root);
-  get data() {
+  get [Event.data]() {
     let v = this.root;
     let k;
     for (k of IT.currentPath)
