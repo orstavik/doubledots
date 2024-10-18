@@ -18,33 +18,33 @@ npx http-server -p 3000 --cors -S -C test/cert.pem -K test/key.pem
 
 ```
 https://cdn.jsdelivr.net/combine/
-gh/orstavik/doubledots@b.7/src/1_1_DoubleDots.js,
-gh/orstavik/doubledots@b.7/src/1_2_AttrCustom.js,
-gh/orstavik/doubledots@b.7/src/3_definition_registers_v4.js,
-gh/orstavik/doubledots@b.7/src/4_eventLoop_v2.js,
-gh/orstavik/doubledots@b.7/src/6_load_DoubleDots.js,
-gh/orstavik/doubledots@b.7/src/7_nativeMethods.js
+gh/orstavik/doubledots@b.9/src/1_1_DoubleDots.js,
+gh/orstavik/doubledots@b.9/src/1_2_AttrCustom.js,
+gh/orstavik/doubledots@b.9/src/3_definition_registers_v4.js,
+gh/orstavik/doubledots@b.9/src/4_eventLoop_v2.js,
+gh/orstavik/doubledots@b.9/src/6_load_DoubleDots.js,
+gh/orstavik/doubledots@b.9/src/7_nativeMethods.js
 ```
 => 
 ```
-https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@b.7/src/1_1_DoubleDots.js,gh/orstavik/doubledots@b.7/src/1_2_AttrCustom.js,gh/orstavik/doubledots@b.7/src/3_definition_registers_v4.js,gh/orstavik/doubledots@b.7/src/4_eventLoop_v2.js,gh/orstavik/doubledots@b.7/src/6_load_DoubleDots.js,gh/orstavik/doubledots@b.7/src/7_nativeMethods.js
+https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@b.9/src/1_1_DoubleDots.js,gh/orstavik/doubledots@b.9/src/1_2_AttrCustom.js,gh/orstavik/doubledots@b.9/src/3_definition_registers_v4.js,gh/orstavik/doubledots@b.9/src/4_eventLoop_v2.js,gh/orstavik/doubledots@b.9/src/6_load_DoubleDots.js,gh/orstavik/doubledots@b.9/src/7_nativeMethods.js
 ```
 
 ### link to render testing 
 
 ```
 https://cdn.jsdelivr.net/combine/
-gh/orstavik/doubledots@b.7/x/brace/v1.js,
-gh/orstavik/doubledots@b.7/x/dotRule/dot.js,
-gh/orstavik/doubledots@b.7/x/er/v1.js,
-gh/orstavik/doubledots@b.7/x/fetch/v1.js,
-gh/orstavik/doubledots@b.7/x/pp/v1.js,
-gh/orstavik/doubledots@b.7/x/PropagationSimple/prop.js,
-gh/orstavik/doubledots@b.7/x/template/v1.js
+gh/orstavik/doubledots@b.9/x/brace/v1.js,
+gh/orstavik/doubledots@b.9/x/dotRule/dot.js,
+gh/orstavik/doubledots@b.9/x/er/v1.js,
+gh/orstavik/doubledots@b.9/x/fetch/v1.js,
+gh/orstavik/doubledots@b.9/x/pp/v1.js,
+gh/orstavik/doubledots@b.9/x/PropagationSimple/prop.js,
+gh/orstavik/doubledots@b.9/x/template/v1.js
 ```
 
 ```
-https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@b.7/x/brace/v1.js,gh/orstavik/doubledots@b.7/x/dotRule/dot.js,gh/orstavik/doubledots@b.7/x/er/v1.js,gh/orstavik/doubledots@b.7/x/fetch/v1.js,gh/orstavik/doubledots@b.7/x/pp/v1.js,gh/orstavik/doubledots@b.7/x/PropagationSimple/prop.js,gh/orstavik/doubledots@b.7/x/template/v1.js
+https://cdn.jsdelivr.net/combine/gh/orstavik/doubledots@b.9/x/brace/v1.js,gh/orstavik/doubledots@b.9/x/dotRule/dot.js,gh/orstavik/doubledots@b.9/x/er/v1.js,gh/orstavik/doubledots@b.9/x/fetch/v1.js,gh/orstavik/doubledots@b.9/x/pp/v1.js,gh/orstavik/doubledots@b.9/x/PropagationSimple/prop.js,gh/orstavik/doubledots@b.9/x/template/v1.js
 ```
 
 ## definitions

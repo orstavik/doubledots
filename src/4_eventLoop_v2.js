@@ -6,6 +6,7 @@
     return attachShadowOG.apply(this, args);
   };
 
+  Event.data = Symbol("Event data");
   class EventLoopError extends DoubleDots.DoubleDotsError { }
   DoubleDots.EventLoopError = EventLoopError;
 
@@ -21,7 +22,7 @@
       this.event = event;
       this.#names = this.at.reactions;
       // this.#selves = [at];
-      this.#inputs = [event];
+      this.#inputs = [event[Event.data] ?? event];
       this.#outputs = [];
     }
 
