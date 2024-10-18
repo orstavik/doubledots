@@ -10,25 +10,12 @@
   <script type="module" src="/x/fetch/v1.js?fetch_json" _:define></script>
   <script type="module" src="/x/template/v1.js?template_" _:define></script>
   <script type="module" src="v1.js?Pp&pp&loop" _:define></script>
-  <script>
-    document.Reactions.define("log", function(...args){
-      console.log(this, ...args);
-    })
-  </script>
-
-  <template name="company">
-    <li pp:>the name of the company is {{name}}</li>
-  </template>
-
 </head>
 
-<body _::fetch_json:pp="companies.json"> <!-- body.pp is the object -->
-  <!-- here is a magic pupdate. It will populate the p: from above. -->
-  <main>
-    <div pp:log="company1">
-      <ol pp:template_company:loop=".employees">
-        <!--  -->
-      </ol>
-    </div>
-  </main>
+<body _::fetch_json:pp="companies.json">
+  <div pp:log="company1">
+    <ol _t: pp:_t:loop=".employees">
+      <li pp:>the name of the company is {{name}}</li>
+    </ol>
+  </div>
 </body>

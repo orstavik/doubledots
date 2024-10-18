@@ -6,7 +6,7 @@
   <script src="../../src/6_load_DoubleDots.js"></script>
   <script src="../../src/7_nativeMethods.js"></script>
 
-  <script type="module" src="/x/dotRule/dot.js?oi." _:define></script>
+  <script type="module" src="/x/dotRule/dot.js?oi.&el." _:define></script>
   <script type="module" src="/x/fetch/v1.js?fetch_json" _:define></script>
   <script type="module" src="/x/template/v1.js?template_" _:define></script>
   <script type="module" src="/x/pp/v1.js?Pp&pp&loop" _:define></script>
@@ -17,20 +17,18 @@
     });
   </script>
 
-  <template name="company">
-    <li pp:brace hello="mr/s {{fullname}} !!">employee fullname is {{fullname}} -- {{nothing}} --
-      <template is-processed="this will be altered {{fullname}}">
-        {{not.processed}}
-      </template>
-    </li>
-  </template>
 
 </head>
 
-<body _::fetch_json:pp="companies.json">
+<body _::fetch_json:pp="/x/pp/companies.json">
   <div pp:log="company1">
-    <ol pp:template_company:loop=".employees">
-      <!--  -->
+    <ol _t: pp:_t:loop=".employees">
+      <li pp:brace hello="mr/s {{fullname}} !!">employee fullname is {{fullname}} -- {{nothing}} --
+        <template is-processed="this will be altered {{fullname}}">
+          {{not.processed}}
+        </template>
+      </li>
+      </template>
     </ol>
   </div>
 </body>
