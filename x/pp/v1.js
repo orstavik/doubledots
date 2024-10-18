@@ -139,6 +139,7 @@ export function loop(template, now) {
     Object.keys(now).filter(p => !p.startsWith("#"));
   for (let key of keys)
     this.ownerElement.append(...loopTask(template, key, trigger).childNodes);
+  return now;
 }
 
 //Optimization attemps. Skipped for now.
@@ -231,4 +232,5 @@ function loopOptimal(template, now) {
     throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");
   const res = (this.__loop ??= new LoopCubeAttr(this, template)).step(now);
   res.length ? this.ownerElement.append(...res) : this.ownerElement.innerText = "";
+  return now;
 }

@@ -1,0 +1,36 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="/x/dotRule/dot.js?oi.&el." _:define></script>
+  <script type="module" src="/x/fetch/v1.js?fetch_json" _:define></script>
+  <script type="module" src="/x/template/v1.js?template_" _:define></script>
+  <script type="module" src="/x/pp/v1.js?Pp&pp&loop" _:define></script>
+  <script type="module" src="v1.js?brace" _:define></script>
+  <script>
+    document.Reactions.define("log", function (...args) {
+      console.log(this, ...args);
+    });
+  </script>
+
+
+</head>
+
+<body _::fetch_json:pp="/x/pp/companies.json">
+  <ol _t: pp:brace:_t:loop="company1" key="{{#key}}">
+    <li pp:brace>
+      {{#key}} = {{#value}}
+    </li>
+  </ol>
+
+  <ul _t: pp:_t:loop:brace="company2" key="{{#key}}">
+    <li pp:brace>
+      {{#key}} = {{#value}}
+    </li>
+  </ul>
+
+</body>

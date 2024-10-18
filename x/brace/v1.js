@@ -33,4 +33,5 @@ export function brace(now) {
   this.__tasks ??= [...bodyTasks(this.ownerElement, this.trigger + ":")];
   for (let cb of this.__tasks)
     cb(this.ownerElement, now);
+  return now;
 }
