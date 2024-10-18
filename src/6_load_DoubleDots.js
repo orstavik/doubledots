@@ -186,6 +186,24 @@ function monkeyPatch(proto, prop, fun) {
   document.Triggers.define("_", AttrEmpty);
 })();
 
+//_t: and :_t => trigger-reaction pair for extracting and retrieving the childNodes as a template.
+(function () {
+  const map = new WeakMap();
+  class _T extends Attr {
+    upgrade() {
+      const t = document.createElement("template");
+      t.innerHTML = this.ownerElement.innerHTML;
+      map.set(this.ownerElement, t.content);
+      this.ownerElement.textContent = "";
+    }
+  }
+  function _t() {
+    return map.get(this.ownerElement);
+  }
+  document.Triggers.define("_t", _T);
+  document.Reactions.define("_t", _t);
+})();
+
 (function (aelOG) {
   if (document.readyState !== "loading")
     return AttrCustom.upgradeBranch(document.htmlElement);

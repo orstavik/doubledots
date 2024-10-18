@@ -57,11 +57,13 @@
     static upgradeElementRoot(el) {
       for (let at of el.attributes)
         if (at.name.includes(":"))
-          AttrCustom.upgrade(at);
-      for (let desc of el.querySelectorAll("*"))
-        for (let at of desc.attributes)
-          if (at.name.includes(":"))
-            AttrCustom.upgrade(at);
+          AttrCustom.upgrade(at); 
+      for (let c of el.children)
+        this.upgradeElementRoot(c);
+      // for (let desc of el.querySelectorAll("*"))
+      //   for (let at of desc.attributes)
+      //     if (at.name.includes(":"))
+      //       AttrCustom.upgrade(at);
     }
 
     static upgrade(at, Def) {
