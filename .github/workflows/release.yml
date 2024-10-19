@@ -16,35 +16,22 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Get current time in GMT
-      id: datetime
-      run: |
-        # Get the current time in GMT
-        echo "YY=$(date -u +'%y')" >> $GITHUB_ENV
-        echo "YYMM=$(date -u +'%y.%m')" >> $GITHUB_ENV
-        echo "YYMMDD=$(date -u +'%y.%m.%d')" >> $GITHUB_ENV
-        echo "YYMMDD_HH=$(date -u +'%y.%m.%d.%H')" >> $GITHUB_ENV
-        echo "YYMMDD_HHMM=$(date -u +'%y.%m.%d.%H.%M')" >> $GITHUB_ENV
-        echo "YYMMDD_HHMMSS=$(date -u +'%y.%m.%d.%H.%M.%S')" >> $GITHUB_ENV
-
     - name: Fetch tags from remote
       run: |
         git fetch --tags
 
-    - name: Determine the shortest available tag
-      id: determine_tag
+    - name: Get current time and determine shortest available tag
+      id: find_available_tag
       run: |
-        # Define possible tags in order of priority
         TAGS=(
-          "main${{ env.YY }}"
-          "main${{ env.YYMM }}"
-          "main${{ env.YYMMDD }}"
-          "main${{ env.YYMMDD_HH }}"
-          "main${{ env.YYMMDD_HHMM }}"
-          "main${{ env.YYMMDD_HHMMSS }}"
+          "main$(date -u +'%y')"
+          "main$(date -u +'%y.%m')"
+          "main$(date -u +'%y.%m.%d')"
+          "main$(date -u +'%y.%m.%d.%H')"
+          "main$(date -u +'%y.%m.%d.%H.%M')"
+          "main$(date -u +'%y.%m.%d.%H.%M.%S')"
         )
-        
-        # Loop through tags and find the first one that doesn't exist
+
         for TAG in "${TAGS[@]}"; do
           if ! git tag -l | grep -q "^$TAG$"; then
             echo "Found tag: $TAG"
@@ -55,8 +42,6 @@ jobs:
         # If all tags exist, exit with error
         echo "All possible tags already exist."
         exit 1
-
-    - uses: actions/checkout@v4
     
     - name: Create a Release
       uses: elgohr/Github-Release-Action@v5
