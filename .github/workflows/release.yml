@@ -14,7 +14,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
 
     - name: Get current time in GMT
       id: datetime
@@ -43,6 +43,7 @@ jobs:
         # Loop through tags and find the first one that doesn't exist
         for TAG in "${TAGS[@]}"; do
           if ! git tag -l | grep -q "^$TAG$"; then
+            echo "Found tag: $TAG"
             echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
             exit 0
           fi
@@ -60,7 +61,7 @@ jobs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
         git tag -a ${{ env.RELEASE_TAG }} -m "Release tag ${{ env.RELEASE_TAG }}"
-        git push origin ${{ env.RELEASE_TAG }}
+        git push --force origin ${{ env.RELEASE_TAG }}
 
     - name: Create GitHub Release
       uses: actions/create-release@v1
