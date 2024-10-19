@@ -71,3 +71,4 @@ jobs:
         body: "Automatically generated release based on dd.js change."
         draft: false
         prerelease: false
+        token: ${{ secrets.GITHUB_TOKEN }}
