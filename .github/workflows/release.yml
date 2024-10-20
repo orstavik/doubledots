@@ -5,7 +5,7 @@ on:
     paths:
       - 'x/**'
       - 'src/dd/**'
-      - '.github/workflows/**'
+#      - '.github/workflows/**'
 
 permissions:
   contents: write
@@ -62,11 +62,13 @@ jobs:
           --target=es2018 \
           --sourcemap \
           --minify
-    
-    - name: Create a Release
-      uses: elgohr/Github-Release-Action@v5
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        title: "Release ${{ env.RELEASE_TAG }}"
-        tag: "${{ env.RELEASE_TAG }}"
+
+    - name: Commit and Push Changes
+      if: env.files_changed == 'true'
+      run: |
+        git config user.name "github-actions"
+        git config user.email "github-actions@github.com"
+        git add dd.js
+        git commit -m "New release tag ${{ env.RELEASE_TAG }}"
+        git tag ${{ env.RELEASE_TAG }}
+        git push origin HEAD --tags
