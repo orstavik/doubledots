@@ -3,7 +3,9 @@ name: Release on dd.js Change
 on:
   push:
     paths:
-      - 'dd.js'  # Only trigger when dd.js is modified
+      - '/x/**'
+      - '/src/dd/**'
+      - '/.github/workflows/**'
 
 permissions:
   contents: write
@@ -16,16 +18,14 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Fetch tags from remote
+    - name: Fetch tags
       run: |
         git fetch --tags
 
-    - name: Get current time and determine shortest available tag
-      id: find_available_tag
+    - name: Create date-fifo tag
+      id: find_date_fifo
       run: |
         TAGS=(
-          "main$(date -u +'%y')"
-          "main$(date -u +'%y.%m')"
           "main$(date -u +'%y.%m.%d')"
           "main$(date -u +'%y.%m.%d.%H')"
           "main$(date -u +'%y.%m.%d.%H.%M')"
@@ -39,9 +39,27 @@ jobs:
             exit 0
           fi
         done
-        # If all tags exist, exit with error
         echo "All possible tags already exist."
         exit 1
+
+    - name: Check if relevant files changed
+      id: dd_is_modified
+      run: |
+        if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^src/dd/'; then
+          echo "must make new dd.js files"
+          echo "files_changed=true" >> $GITHUB_ENV
+        fi
+
+    - name: esbuild dd.js
+      if: env.files_changed == 'true'
+      run: |
+        npx esbuild src/dd/dd.js \
+          --bundle \
+          --outfile=dd.js \
+          --format=iife \
+          --target=es2018 \
+          --sourcemap \
+          --minify
     
     - name: Create a Release
       uses: elgohr/Github-Release-Action@v5
