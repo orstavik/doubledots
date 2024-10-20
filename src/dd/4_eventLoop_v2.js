@@ -15,13 +15,11 @@
     #names;
     #inputs;
     #outputs;
-    // #selves;
 
     constructor(event, at) {
       this.at = at;
       this.event = event;
       this.#names = this.at.reactions;
-      // this.#selves = [at];
       this.#inputs = [event[Event.data] ?? event];
       this.#outputs = [];
     }
