@@ -3,9 +3,9 @@ name: Release on dd.js Change
 on:
   push:
     paths:
-      - '/x/**'
-      - '/src/dd/**'
-      - '/.github/workflows/**'
+      - 'x/**'
+      - 'src/dd/**'
+      - '.github/workflows/**'
 
 permissions:
   contents: write
