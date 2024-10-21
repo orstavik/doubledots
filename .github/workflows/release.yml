@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '*.js'
+      - '*.js.map'
 
 permissions:
   contents: write
