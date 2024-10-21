@@ -1,0 +1,49 @@
+name: Release on dd.js Change
+
+on:
+  push:
+    paths:
+      - '*.js'
+
+permissions:
+  contents: write
+
+jobs:
+  release_job:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Fetch tags
+      run: |
+        git fetch --tags
+
+    - name: Create date-fifo tag
+      id: find_date_fifo
+      run: |
+        TAGS=(
+          "main$(date -u +'%y.%m.%d')"
+          "main$(date -u +'%y.%m.%d.%H')"
+          "main$(date -u +'%y.%m.%d.%H.%M')"
+          "main$(date -u +'%y.%m.%d.%H.%M.%S')"
+        )
+
+        for TAG in "${TAGS[@]}"; do
+          if ! git tag -l | grep -q "^$TAG$"; then
+            echo "Found tag: $TAG"
+            echo "RELEASE_TAG=$TAG" >> $GITHUB_ENV
+            exit 0
+          fi
+        done
+        echo "creating date-fifo release tag number failed."
+        exit 1
+
+    - name: Create a Release
+      uses: elgohr/Github-Release-Action@v5
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        title: "Release ${{ env.RELEASE_TAG }}"
+        tag: "${{ env.RELEASE_TAG }}"
