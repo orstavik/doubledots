@@ -185,31 +185,29 @@ function monkeyPatch(proto, prop, fun) {
 })();
 
 //_t: and :_t => trigger-reaction pair for extracting and retrieving the childNodes as a template. _tt: is an alternative to _t: that will not re-interpret the html-nodes, but it *can only be added in html template text, not via setAttribute() from js*. To implement this, we could add a parameter to upgrade that says what context the current upgrade is called from. It is easy to add such an argument for the simple case when .setAttribute() is done via js.
-(function () {
-  const map = new WeakMap();
-  class _T extends AttrCustom {
-    upgrade() {
-      const t = document.createElement("template");
-      t.innerHTML = this.ownerElement.innerHTML;
-      map.set(this.ownerElement, t.content);
-      this.ownerElement.textContent = "";
-    }
+const map = new WeakMap();
+class _T extends AttrCustom {
+  upgrade() {
+    const t = document.createElement("template");
+    t.innerHTML = this.ownerElement.innerHTML;
+    map.set(this.ownerElement, t.content);
+    this.ownerElement.textContent = "";
   }
-  class _Tt extends AttrCustom {
-    upgrade() {
-      const df = document.createDocumentFragment();
-      df.append(...this.ownerElement.childNodes);
-      map.set(this.ownerElement, df);
-      this.ownerElement.textContent = "";
-    }
+}
+class _Tt extends AttrCustom {
+  upgrade() {
+    const df = document.createDocumentFragment();
+    df.append(...this.ownerElement.childNodes);
+    map.set(this.ownerElement, df);
+    this.ownerElement.textContent = "";
   }
-  function _t() {
-    return map.get(this.ownerElement);
-  }
-  document.Triggers.define("_t", _T);
-  document.Triggers.define("_tt", _Tt);
-  document.Reactions.define("_t", _t);
-})();
+}
+function _t() {
+  return map.get(this.ownerElement);
+}
+document.Triggers.define("_t", _T);
+document.Triggers.define("_tt", _Tt);
+document.Reactions.define("_t", _t);
 
 (function (aelOG) {
   if (document.readyState !== "loading")
