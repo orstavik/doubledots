@@ -4,3 +4,5 @@ npx esbuild x/ddx.js --target=es2018 --outdir=. --bundle --sourcemap --minify
 
 output_files=$(find . -maxdepth 1 -type f -name "*.js" -o -name "*.js.map")
 git add $output_files
+dd_files=$(find src/dd/ -maxdepth 1 -type f  -name "*.js" -o -name "*.js.map")
+git add $dd_files

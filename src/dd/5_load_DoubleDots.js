@@ -200,7 +200,7 @@ class _Tt extends AttrCustom {
     df.append(...this.ownerElement.childNodes);
     map.set(this.ownerElement, df);
     this.ownerElement.textContent = "";
-  }
+  } 
 }
 function _t() {
   return map.get(this.ownerElement);
