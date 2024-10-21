@@ -9,8 +9,9 @@
     }, {
       "label": "release",
       "type": "shell",
-      "command": ".vscode/ddbb.sh && .vscode/pushRelease.sh",
+      "command": ".vscode/pushRelease.sh",
       "group": "build",
+      "dependsOn": "ddbb"
     }
   ]
 }

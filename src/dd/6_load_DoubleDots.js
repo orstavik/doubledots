@@ -1,3 +1,11 @@
+const Specializers = {
+  cloneNode: [Node.prototype, DocumentFragment.prototype],
+  innerHTML: [Element.prototype, HTMLTemplateElement.prototype],
+  insertAdjacentHTML: [Element.prototype, HTMLTemplateElement.prototype],
+};
+for (let [m, [TOP, DOWN]] of Object.entries(Specializers))
+  Object.defineProperty(DOWN, m, Object.getOwnPropertyDescriptor(TOP, m));
+
 // const state = [...document.querySelectorAll("*")];
 //1. Since the DoubleDots is the only script.
 //   The DoubleDots then runs so, we can just iterate on the main document.
@@ -22,17 +30,7 @@ function monkeyPatch(proto, prop, fun) {
   Object.defineProperty(proto, prop, desc);
 }
 
-
 (function (Element_p, ShadowRoot_p) {
-
-  const Specializers = {
-    "cloneNode": [Node.prototype, DocumentFragment.prototype],
-    "innerHTML": [Element.prototype, HTMLTemplateElement.prototype],
-    "insertAdjacentHTML": [Element.prototype, HTMLTemplateElement.prototype],
-  };
-  for (let [m, [TOP, DOWN]] of Object.entries(Specializers))
-    Object.defineProperty(DOWN, m, Object.getOwnPropertyDescriptor(TOP, m));
-
   const Element_innerHTML_OG = Object.getOwnPropertyDescriptor(Element_p, "innerHTML").set;
   const innerHTML_DD_el = function innerHTML_DD(val) {
     Element_innerHTML_OG.call(this, val);
