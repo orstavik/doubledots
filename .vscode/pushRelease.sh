@@ -31,7 +31,7 @@ fi
 output_files=$(find . -maxdepth 1 -type f -name "*.js" -o -name "*.js.map")
 echo "Committing changes: "
 echo $output_files
-# git tag "$new_tag" # redundant
+git tag "$new_tag"
 git add $output_files
 git commit -am "Release $new_tag"
 git push && git push origin "$new_tag"
