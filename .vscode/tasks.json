@@ -6,12 +6,6 @@
       "type": "shell",
       "command": ".vscode/ddbb.sh",
       "group": "build",
-    }, {
-      "label": "release",
-      "type": "shell",
-      "command": ".vscode/pushRelease.sh",
-      "group": "build",
-      "dependsOn": "ddbb"
     }
   ]
 }
