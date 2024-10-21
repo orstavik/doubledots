@@ -4,31 +4,60 @@ class AutoList {
     this.#nodes = nodes;
   }
 
-  *nodes() {
+  *autoListNodes() {
     yield* this.#nodes;
   }
 
-  getter(prop) {
+  autoListGetter(prop) {
     //todo if the output are Elements, or Attrs, then make new AutoList
     return Array.prototype.map.call(this.#nodes, n => n[prop]);
   }
 
-  setter(prop, val) {
+  autoListSetter(prop, val) {
     Array.prototype.map.call(this.#nodes, n => n[prop] = val);
     return this;
   }
 
-  func(prop) {
+  autoListFunc(prop) {
+    //todo if the output are Elements, or Attrs, then make new AutoList
     return (...args) => Array.prototype.map.call(this.#nodes, n => n[prop](...args));
   }
+
+  static lowestSharedPrototype(objs) {
+    let newLow = Object.getPrototypeOf(items[0]);
+    let newLowC = newLow.constructor;
+    for (let o of objs) {
+      if (o instanceof newLowC)
+        continue;
+      while (o = Object.getPrototypeOf(o))
+        if (newLow instanceof o.constructor)
+          newLow = o, newLowC = o.constructor;
+      if (newLowC === Object) break;
+    }
+    return newLow;
+  }
+
+  static make(items) {
+    const lowestProto = this.lowestSharedPrototype(items);
+    const protos = [];
+    for (let p = lowestProto; p.constructor !== Object; p = Object.getPrototypeOf(p))
+      protos.push(p);
+  }
+  //todo continue here
 }
 
-function expandPropsToList(ListClass, ...ItemClasses) {
-  for (let ItemClass of ItemClasses)
-    for (let prop of Object.getOwnPropertyNames(ItemClass.prototype)) {
+function* getPrototypes(obj){
+  while((obj = Object.getPrototypeOf(obj)) !== Object.prototype)
+    yield obj;
+}
+
+function expandPropsToList(ListClass, obj) {
+  const protos = [...getPrototypes(obj)];
+  for (let proto of protos)
+    for (let prop of Object.getOwnPropertyNames(proto)) {
       if (prop in ListClass.prototype)
         continue;
-      const d = Object.getOwnPropertyDescriptor(ItemClass.prototype, prop);
+      const d = Object.getOwnPropertyDescriptor(proto, prop);
       if (d.get) d.get = function () { this.getter(prop); };
       if (d.set) d.set = function (val) { this.setter(prop, val); };
       if (d.value instanceof Function)
@@ -39,8 +68,8 @@ function expandPropsToList(ListClass, ...ItemClasses) {
 
 class HTMLElementList extends AutoList { };
 class AttrList extends AutoList { };
-expandPropsToList(HTMLElementList, HTMLElement, Element, Node, EventTarget);
-expandPropsToList(AttrList, AttrCustom, Attr, Node, EventTarget);
+expandPropsToList(HTMLElementList, HTMLDivElement.prototype);
+expandPropsToList(AttrList, AttrListener.prototype);
 
 //todo move this monad jQuery structure into DoubleDots? Or move it into another file?
 //DoubleDots.Lists
@@ -128,13 +157,13 @@ function dashRule(fullname) {
   for (let i = 0; i < ds.length; i++) {
     const d = ds[i];
     let exp;
-    if (d[0] === "-") { 
+    if (d[0] === "-") {
       // inlining the querySelector, and space.join(" ")ing selectors
       // the space.join(" ") ensures that the implied *down* direction 
       // always applies when direction is implied.
       exp = DoubleDots.miniQuerySelector(d.slice(1));
-      for (;i + 1 < ds.length && ds[i + 1][0] === "-";i++)
-        exp += " " + DoubleDots.miniQuerySelector(ds[i+1].slice(1));
+      for (; i + 1 < ds.length && ds[i + 1][0] === "-"; i++)
+        exp += " " + DoubleDots.miniQuerySelector(ds[i + 1].slice(1));
       pipes.push(pipes.pop().replace("*", exp));
     } else if (exp = direction(d, i) || attrQuerySelector(d, i, ds.length))
       pipes.push(exp);
@@ -142,14 +171,15 @@ function dashRule(fullname) {
       throw DoubleDots.SyntaxError("DashRule unknown: " + d);
   }
   //4. converting pipes to for-loop-chain with correct spaces
-  pipes = pipes.map((exp, i)=> `for (let el${i} of ${exp})`);
+  pipes = pipes.map((exp, i) => `for (let el${i} of ${exp})`);
   pipes.push(`res.push(el${pipes.length - 1})`);
   pipes = pipes.map((str, i) => "  ".repeat(i + 1) + str + "\n");
   //5. returning the finished function txt
   return DoubleDots.importBasedEval(`
 function ${DoubleDots.kebabToPascal(fullname.slice(1).replaceAll(".", ""))}() {
-  const res = [];
+  let res = [];
 ${pipes.join("")}
+  res = res.filter(Boolean);
   if (!res.length)
     throw "-dash-rule returned empty: ${fullname}";
   const res2 = res.length === 1 ? res[0] :

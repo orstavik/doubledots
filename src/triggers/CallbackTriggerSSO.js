@@ -109,7 +109,8 @@
         return { sso , key };
       const res = getTriggersForPath(key);
       res.ssoIn = ssoIn, res.ssoOut = ssoOut;
-      eventLoop.dispatch({ sso, key, keys, attrs }, ...res.attrs);
+      // eventLoop.dispatch({ sso, key, keys, attrs }, ...res.attrs);
+      eventLoop.dispatchBatch({ sso, key, keys, attrs }, res.attrs);
       return res;
     };
   }

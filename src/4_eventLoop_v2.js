@@ -1,10 +1,4 @@
 (function () {
-  //.attachShadow(/*always open*/); is necessary to capture the full composedPath of customEvents.
-  const attachShadowOG = HTMLElement.prototype.attachShadow;
-  HTMLElement.prototype.attachShadow = function attachShadowforceModeOpen(...args) {
-    (args[0] ??= {}).mode = "open";
-    return attachShadowOG.apply(this, args);
-  };
 
   Event.data = Symbol("Event data");
   class EventLoopError extends DoubleDots.DoubleDotsError { }
@@ -39,7 +33,6 @@
     }
 
     nextReaction() {
-      // this.#i++;
       return this.getReaction();
     }
 
@@ -130,17 +123,10 @@
         this.#i = this.#names.length;
       } else if (res instanceof EventLoop.ReactionJump) { //this also looks frail
         const next = this.#i + res.value;
-        // this.#selves[next] = this.#selves[this.#i];
         this.#inputs[next] = this.#inputs[this.#i];
         this.#i = next;
-      // } else if (res instanceof EventLoop.ReactionOrigin) {
-      //   const next = this.#i + 1;
-      //   // this.#selves[next] = res.value;
-      //   this.#inputs[next] = this.#inputs[this.#i];
-      //   this.#i = next;
       } else {
         const next = this.#i + 1;
-        // this.#selves[next] = this.#selves[this.#i];
         this.#inputs[next] = res;
         this.#i = next;
       }
@@ -205,14 +191,12 @@
       }
     };
 
+    //todo this should be removed
     static SpreadReaction = function (fun) {
       return function SpreadReaction(oi) {
         return oi instanceof Iterable ?
           fun.call(this, ...oi) :
           fun.call(this, oi);
-        // if (oi instanceof Iterable)
-        //   return fun.call(this, ...oi);
-        // throw new DoubleDotsSpreadReactionError("SpreadReactions must be passed a spreadable oi argument");
       };
     };
 

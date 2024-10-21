@@ -1,0 +1,16 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "ddbb",
+      "type": "shell",
+      "command": ".vscode/ddbb.sh",
+      "group": "build",
+    }, {
+      "label": "release",
+      "type": "shell",
+      "command": ".vscode/ddbb.sh && .vscode/pushRelease.sh",
+      "group": "build",
+    }
+  ]
+}
