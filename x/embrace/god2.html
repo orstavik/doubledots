@@ -113,13 +113,13 @@
       this.now = now;
       const { exact, unused } = compareSmall(old, now);
       const nowEmbraces = new Array(now.length);
-      const changed = new Array(now.length);
+      const changed = [];
       for (let n = 0; n < exact.length; n++) {
         const o = exact[n];
         if (o != null) {
           nowEmbraces[n] = oldEmbraces[o];
         } else {
-          changed[n] = true;
+          changed.push(n);
           nowEmbraces[n] = unused.length ? oldEmbraces[unused.pop()] : this.embrace.clone();
         }
       }
@@ -149,20 +149,17 @@
 
     run(argsDictionary, dataObject, node, ancestor) {
       const now = argsDictionary[this.listName];
+      //todo rename
       const { nowEmbraces, removeEmbraces, changed } = this.cube.step(now);
       for (let n of removeEmbraces)
         for (let c of n.listOfNodes)
           if (!(c instanceof Attr))
             c.remove();
-      node.after(...nowEmbraces.map(e=>e.template)); 
-        
-      for (let i = 0; i < changed.length; i++) {
-        if (!changed[i])
-          continue;
-        const e = nowEmbraces[i];
-        argsDictionary[this.d] = now[i];
-        argsDictionary[this.dd] = i;
-        e.run(argsDictionary, dataObject, undefined, ancestor);
+      node.after(...nowEmbraces.map(e => e.template));
+      for (let i of changed) {
+        dataObject[this.d] = now[i];
+        dataObject[this.dd] = i;
+        nowEmbraces[i].run(Object.assign({}, argsDictionary), dataObject, undefined, ancestor);
       }
     }
 
@@ -285,7 +282,6 @@
   const templ = document.querySelector('template');
   const e = EmbraceRoot.make(templ.content);
   document.body.append(e.template);
-  debugger;
   e.run(
     {},
     { name: "acme", employees: [{ fullname: "lae" }, { fullname: "ivar" }] },
