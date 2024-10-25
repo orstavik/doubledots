@@ -1,0 +1,239 @@
+<template>
+  <div _t: _::fetch:oi.company1:_t:embrace="companies.json" name="{{name}}">
+    <h1>{{name}}</h1>
+    <ol>
+      <h3>List of employees</h3>
+      <!-- {{for(employee of employees)}} -->
+      -x-x-
+      <li>{{$employee.fullname}} is employee number {{$i}} for company {{$.name}}</li>
+      <!--{{end}} -->
+      -x-x-
+      <h4>no more Employees</h4>
+    </ol>
+  </div>
+  <!-- comments with braces, stops the brace for that level until the end comment. -->
+</template>
+
+<script type="module">
+  import { LoopCube } from "./LoopCube.js";
+
+  function embrace(templ, dataObject) {
+    //startUpTime
+    if (!this.__embraceRoot) {
+      this.__embraceRoot = new EmbraceRoot(this.ownerElement, templ);
+      this.ownerElement.appendChild(...templ.childNodes);
+    }
+    //embraceTime
+    this.__embraceRoot.run(dataObject);
+  }
+
+  class EmbraceGet {
+    constructor(param) {
+      this.param = param;
+    }
+    get params() {
+      return { [this.param]: this.param };
+    }
+    run(argsDict, dataIn, node, ancestor) {
+      return argsDict[this.param];
+    }
+
+    static make(str) {
+      return str.indexOf(" ") === -1 && new EmbraceGet([str]);
+    }
+  }
+
+  class EmbraceTextNode {
+    constructor(segs) {
+      !segs[0] && segs.shift();
+      !segs[segs.length - 1] && segs.pop();
+      this.segs = segs;
+    }
+
+    get params() {
+      const res = {};
+      for (let E of this.segs)
+        if (E instanceof EmbraceGet)
+          for (let param of E.params)
+            res[param] = param;
+      return res;
+    }
+
+    run(argsDict, dataIn, node, ancestor) {
+      let txt = "";
+      for (let s of this.segs)
+        txt += typeof s == "string" ? s : s.run(argsDict, dataIn, node, ancestor);
+      node.textContent = txt;
+    }
+
+    static make(txt) {
+      //split the segment
+      const segs = txt.split(/{{([^}]+)}}/);
+      if (segs.length === 1)
+        return;
+      //convert splits to bigEs
+      for (let i = 1; i < segs.length; i += 2) {
+        segs[i] = EmbraceGet.make(segs[i].trim()) ?? `{{${segs[i]}}}`;
+        if (!(segs[i] instanceof EmbraceGet)) {
+          //todo throw this error in the EmbraceExp
+          console.error(`invalid embrace expression: ${segs[i]}`);
+        }
+      }
+      return new EmbraceTextNode(segs);
+    }
+  }
+
+  //todo when we have a template, we can make an engine against that template 1 time.
+  //todo and then reuse that engine afterwards. Via cloning and then simply changing the node that
+  //todo are connected to the different rules.
+  class EmbraceCommentFor {
+    constructor(templ, dollarName, listName) {
+      this.listName = listName;
+      this.dollarName = dollarName;
+      this.d = `$${dollarName}`;
+      this.dd = `$$${dollarName}`;
+      this.templ = templ;
+    }
+
+    get params() {
+      return { [listName]: listName };
+    }
+
+    run(argsDictionary, dataObject, node, ancestor) {
+      //todo should the LoopCube have a EmbraceRoot2 instead of a templ?
+      if (!this.cube) {
+        const embraceRoot = new EmbraceRoot(this.templ);
+        this.cube = new LoopCube(embraceRoot, node, node.nextSibling);
+      }
+      const now = argsDictionary[this.listName];
+      //todo we need to keep the docFrag of the templates made in the cube.step
+      //when we step, we reuse the all the roots already added, but then we
+      //make some new ones, and when the new ones are added, then we will run the function on the new ones.
+
+      //the changedEmbraces are the embraces that are added or reused with different data
+
+      const { nowNodes, removeNodes, allEmbraces, exactEmbraces } = this.cube.step(now);
+      for (let n of removeNodes)
+        n.remove();
+      for (let i = 0; i < allEmbraces.length; i++) {
+        const subEmbrace = allEmbraces[i];
+        argsDictionary[this.d] = subEmbrace;
+        argsDictionary[this.dd] = i;
+        if (!exactEmbraces.has(subEmbrace))
+          subEmbrace.run(argsDictionary, dataObject, node, ancestor);
+      }
+    }
+
+    //naive, no nested control structures yet. no if. no switch. etc. , untested against errors.
+    //startUpTime
+    static make(txt, tmpl) {
+      const ctrlFor = txt.match(/{{\s*for\s*\(\s*([^\s]+)\s+of\s+([^\s)]+)\)\s*}}/);
+      if (ctrlFor) {
+        const [_, dollarName, listName] = ctrlFor;
+        return new EmbraceCommentFor(tmpl, dollarName, listName);
+      }
+    }
+  }
+
+  // const root = document.querySelector('div');
+  // const e = new EmbraceRoot(root, root.attributes, root.childNodes);
+
+  class DomBranch {
+
+    static COMMENT_START = /{{\s*(for|if).*}}/;
+    static COMMENT_END = /{{\s*end\s*}}/;
+
+    static make(docFrag) {
+      DomBranch.subsume(docFrag);
+      return new DomBranch(docFrag);
+    }
+
+    static flatDomNodesAll(docFrag) {
+      const res = [];
+      const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
+      for (let n; n = it.nextNode();) {
+        res.push(n);
+        if (n instanceof Element)
+          for (let a of n.attributes)
+            res.push(a);
+      }
+      return res;
+    }
+
+    static gobble(commentStart) {
+      commentStart.content = document.createDocumentFragment();
+      let n = commentStart.nextSibling;
+      while (n) {
+        if (n instanceof Comment) {
+          if (n.textContent.match(DomBranch.COMMENT_END))
+            return;
+          if (n.textContent.match(DomBranch.COMMENT_START))
+            DomBranch.gobble(n);
+        }
+        const m = n;
+        n = n.nextSibling;
+        commentStart.content.append(m);
+      }
+    }
+
+    static subsume(n) {
+      function nextUp(n) {
+        while (n = n.parentNode)
+          if (n.nextSibling)
+            return n.nextSibling;
+      }
+      for (; n; n = n.firstChild ?? n.nextSibling ?? nextUp(n))
+        if (n instanceof Comment)
+          if (n.textContent.match(DomBranch.COMMENT_START))
+            DomBranch.gobble(n);
+    }
+  }
+
+
+  class EmbraceRoot {
+
+    static paramDict(listOfExpressions) {
+      const params = {};
+      for (let e of listOfExpressions.flat(1).filter(Boolean))
+        for (let p in e.params)
+          params[p] ??= p.split(".");
+      return params;
+    }
+
+    static listOfExpressions(listOfNodes) {
+      return listOfNodes.map(n => {
+        if (n instanceof Text || n instanceof Attr)
+          return EmbraceTextNode.make(n.textContent);
+        if (n instanceof Comment)
+          return EmbraceCommentFor.make(n.textContent, n.content);
+      });
+    }
+
+    constructor(docFrag) {
+      DomBranch.subsume(docFrag);
+      this.template = docFrag;
+      this.nodes = DomBranch.flatDomNodesAll(docFrag);
+      this.expressions = EmbraceRoot.listOfExpressions(allNodes);
+      this.paramDict = EmbraceRoot.paramDict(this.expressions);
+    }
+
+    run(argsDictionary, dataObject, node, ancestor) {
+      //1. make the argumentsDictionary
+      for (let param in this.paramsDict)
+        argsDictionary[param] ??= this.params[param].reduce((o, p) => o?.[p], dataObject);
+      //2. prep and run rules
+      for (let ex, n, i = 0; i < this.expressions.length; i++)
+        if (ex = this.expressions[i])
+          if (n = this.nodes[i])
+            if (n instanceof Attr ? ancestor.contains(n.ownerElement) : ancestor.contains(n))
+              ex.run(argsDictionary, dataObject, n, ancestor);
+    }
+  }
+
+  debugger;
+  const templ = document.querySelector('template');
+  const e = new EmbraceRoot(templ.content);
+  e.run(templ, { name: "acme", employees: [{ fullname: "lae" }, { fullname: "ivar" }] });
+
+
+</script>
