@@ -1,29 +1,18 @@
-<!-- <script src="/dd.js"></script> -->
+<script src="/dd.js"></script>
+<script type="module" src="/ddx.js?fetch_json&oi." _:define></script>
+<script type="module" src="./v1.js?embrace" _:define></script>
 
-<template>
-  <div _t: _::fetch:oi.company1:_t:embrace="companies.json" name="{{name}}">
-    <h1>{{name}}</h1>
-    <ol>
-      <h3>List of employees</h3>
-      <!-- {{for(employee of employees)}} -->
-      -x-x-
-      <li>{{$employee.fullname}} is employee number {{$$employee}} for company {{name}}</li>
-      <!--{{end}} -->
-      -x-x-
-      <h4>no more Employees</h4>
-    </ol>
-  </div>
-  <!-- comments with braces, stops the brace for that level until the end comment. -->
-</template>
-
-<script type="module" >
-
-
-  import { embrace } from "./v1.js";
-  const templ = document.querySelector('template').content;
-  embrace.call(
-    { ownerElement: document.body },
-    templ,
-    { name: "acme", employees: [{ fullname: "lae" }, { fullname: "ivar" }] }
-  );
-</script>
+<div _t: _::fetch_json:oi.company1:_t:embrace="/x/pp/companies.json" name="{{name}}">
+  
+  <h1>{{name}}</h1>
+  <ol>
+    <h3>List of employees</h3>
+    <!-- {{for(employee of employees)}} -->
+    -x-x-
+    <li>{{$employee.fullname}} is employee number {{$$employee}} for company {{name}}</li>
+    <!--{{end}} -->
+    -x-x-
+    <h4>no more Employees</h4>
+  </ol>
+</div>
+<!-- comments with braces, stops the brace for that level until the end comment. -->
