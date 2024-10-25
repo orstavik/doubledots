@@ -5,7 +5,7 @@
       <h3>List of employees</h3>
       <!-- {{for(employee of employees)}} -->
       -x-x-
-      <li>{{$employee.fullname}} is employee number {{$i}} for company {{$.name}}</li>
+      <li>{{$employee.fullname}} is employee number {{$$employee}} for company {{name}}</li>
       <!--{{end}} -->
       -x-x-
       <h4>no more Employees</h4>
@@ -15,13 +15,12 @@
 </template>
 
 <script type="module">
-  import { LoopCube } from "./LoopCube.js";
 
   function embrace(templ, dataObject) {
     //startUpTime
     if (!this.__embraceRoot) {
-      this.__embraceRoot = new EmbraceRoot(this.ownerElement, templ);
-      this.ownerElement.appendChild(...templ.childNodes);
+      this.__embraceRoot = EmbraceRoot.make(this.ownerElement, templ);
+      this.ownerElement.append(templ);
     }
     //embraceTime
     this.__embraceRoot.run(dataObject);
@@ -39,7 +38,7 @@
     }
 
     static make(str) {
-      return str.indexOf(" ") === -1 && new EmbraceGet([str]);
+      return str.indexOf(" ") === -1 && new EmbraceGet(str);
     }
   }
 
@@ -54,7 +53,7 @@
       const res = {};
       for (let E of this.segs)
         if (E instanceof EmbraceGet)
-          for (let param of E.params)
+          for (let param in E.params)
             res[param] = param;
       return res;
     }
@@ -83,6 +82,54 @@
     }
   }
 
+  function compareSmall(old, now) {
+    const exact = new Array(now.length);
+    const unused = [];
+    if (!old?.length)
+      return { exact, unused };
+    main: for (let o = 0; o < old.length; o++) {
+      for (let n = 0; n < now.length; n++) {
+        if (!exact[n] && old[o] === now[n]) {
+          exact[n] = o;
+          continue main;
+        }
+      }
+      unused.push(o);
+    }
+    return { exact, unused };
+  }
+
+  export class LoopCube {
+    constructor(embrace) {
+      this.embrace = embrace;
+      this.now = [];
+      this.nowEmbraces = [];
+    }
+
+    step(now = []) {
+      const old = this.now;
+      const oldEmbraces = this.nowEmbraces;
+
+      this.now = now;
+      const { exact, unused } = compareSmall(old, now);
+      const nowEmbraces = new Array(now.length);
+      const changed = new Array(now.length);
+      for (let n = 0; n < exact.length; n++) {
+        const o = exact[n];
+        if (o != null) {
+          nowEmbraces[n] = oldEmbraces[o];
+        } else {
+          changed[n] = true;
+          nowEmbraces[n] = unused.length ? oldEmbraces[unused.pop()] : this.embrace.clone();
+        }
+      }
+      this.nowEmbraces = nowEmbraces;
+      const removeEmbraces = unused.map(o => oldEmbraces[o]);
+      return { nowEmbraces, removeEmbraces, changed };
+    }
+  }
+
+
   //todo when we have a template, we can make an engine against that template 1 time.
   //todo and then reuse that engine afterwards. Via cloning and then simply changing the node that
   //todo are connected to the different rules.
@@ -93,34 +140,29 @@
       this.d = `$${dollarName}`;
       this.dd = `$$${dollarName}`;
       this.templ = templ;
+      this.cube = new LoopCube(EmbraceRoot.make(this.templ));
     }
 
     get params() {
-      return { [listName]: listName };
+      return { [this.listName]: this.listName };
     }
 
     run(argsDictionary, dataObject, node, ancestor) {
-      //todo should the LoopCube have a EmbraceRoot2 instead of a templ?
-      if (!this.cube) {
-        const embraceRoot = new EmbraceRoot(this.templ);
-        this.cube = new LoopCube(embraceRoot, node, node.nextSibling);
-      }
       const now = argsDictionary[this.listName];
-      //todo we need to keep the docFrag of the templates made in the cube.step
-      //when we step, we reuse the all the roots already added, but then we
-      //make some new ones, and when the new ones are added, then we will run the function on the new ones.
-
-      //the changedEmbraces are the embraces that are added or reused with different data
-
-      const { nowNodes, removeNodes, allEmbraces, exactEmbraces } = this.cube.step(now);
-      for (let n of removeNodes)
-        n.remove();
-      for (let i = 0; i < allEmbraces.length; i++) {
-        const subEmbrace = allEmbraces[i];
-        argsDictionary[this.d] = subEmbrace;
+      const { nowEmbraces, removeEmbraces, changed } = this.cube.step(now);
+      for (let n of removeEmbraces)
+        for (let c of n.listOfNodes)
+          if (!(c instanceof Attr))
+            c.remove();
+      node.after(...nowEmbraces.map(e=>e.template)); 
+        
+      for (let i = 0; i < changed.length; i++) {
+        if (!changed[i])
+          continue;
+        const e = nowEmbraces[i];
+        argsDictionary[this.d] = now[i];
         argsDictionary[this.dd] = i;
-        if (!exactEmbraces.has(subEmbrace))
-          subEmbrace.run(argsDictionary, dataObject, node, ancestor);
+        e.run(argsDictionary, dataObject, undefined, ancestor);
       }
     }
 
@@ -135,8 +177,6 @@
     }
   }
 
-  // const root = document.querySelector('div');
-  // const e = new EmbraceRoot(root, root.attributes, root.childNodes);
 
   class DomBranch {
 
@@ -194,7 +234,7 @@
 
     static paramDict(listOfExpressions) {
       const params = {};
-      for (let e of listOfExpressions.flat(1).filter(Boolean))
+      for (let e of listOfExpressions.filter(Boolean))
         for (let p in e.params)
           params[p] ??= p.split(".");
       return params;
@@ -210,17 +250,21 @@
     }
 
     constructor(docFrag) {
-      DomBranch.subsume(docFrag);
       this.template = docFrag;
       this.nodes = DomBranch.flatDomNodesAll(docFrag);
-      this.expressions = EmbraceRoot.listOfExpressions(allNodes);
-      this.paramDict = EmbraceRoot.paramDict(this.expressions);
+    }
+
+    clone() {
+      const e = new EmbraceRoot(this.template.cloneNode(true));
+      e.expressions = this.expressions;
+      e.paramsDict = this.paramsDict;
+      return e;
     }
 
     run(argsDictionary, dataObject, node, ancestor) {
       //1. make the argumentsDictionary
       for (let param in this.paramsDict)
-        argsDictionary[param] ??= this.params[param].reduce((o, p) => o?.[p], dataObject);
+        argsDictionary[param] ??= this.paramsDict[param].reduce((o, p) => o?.[p], dataObject);
       //2. prep and run rules
       for (let ex, n, i = 0; i < this.expressions.length; i++)
         if (ex = this.expressions[i])
@@ -228,12 +272,26 @@
             if (n instanceof Attr ? ancestor.contains(n.ownerElement) : ancestor.contains(n))
               ex.run(argsDictionary, dataObject, n, ancestor);
     }
+
+    static make(docFrag) {
+      DomBranch.subsume(docFrag);
+      const e = new EmbraceRoot(docFrag);
+      e.expressions = EmbraceRoot.listOfExpressions(e.nodes);
+      e.paramsDict = EmbraceRoot.paramDict(e.expressions);
+      return e;
+    }
   }
 
-  debugger;
   const templ = document.querySelector('template');
-  const e = new EmbraceRoot(templ.content);
-  e.run(templ, { name: "acme", employees: [{ fullname: "lae" }, { fullname: "ivar" }] });
+  const e = EmbraceRoot.make(templ.content);
+  document.body.append(e.template);
+  debugger;
+  e.run(
+    {},
+    { name: "acme", employees: [{ fullname: "lae" }, { fullname: "ivar" }] },
+    undefined,
+    document.body
+  );
 
 
 </script>
