@@ -112,20 +112,20 @@
 
       this.now = now;
       const { exact, unused } = compareSmall(old, now);
-      const nowEmbraces = new Array(now.length);
+      const embraces = new Array(now.length);
       const changed = [];
       for (let n = 0; n < exact.length; n++) {
         const o = exact[n];
         if (o != null) {
-          nowEmbraces[n] = oldEmbraces[o];
+          embraces[n] = oldEmbraces[o];
         } else {
           changed.push(n);
-          nowEmbraces[n] = unused.length ? oldEmbraces[unused.pop()] : this.embrace.clone();
+          embraces[n] = unused.length ? oldEmbraces[unused.pop()] : this.embrace.clone();
         }
       }
-      this.nowEmbraces = nowEmbraces;
-      const removeEmbraces = unused.map(o => oldEmbraces[o]);
-      return { nowEmbraces, removeEmbraces, changed };
+      this.nowEmbraces = embraces;
+      const removes = unused.map(o => oldEmbraces[o]);
+      return { embraces, removes, changed };
     }
   }
 
@@ -149,17 +149,16 @@
 
     run(argsDictionary, dataObject, node, ancestor) {
       const now = argsDictionary[this.listName];
-      //todo rename
-      const { nowEmbraces, removeEmbraces, changed } = this.cube.step(now);
-      for (let n of removeEmbraces)
-        for (let c of n.listOfNodes)
+      const { embraces, removes, changed } = this.cube.step(now);
+      for (let n of removes) 
+        for (let c of n.nodes) //todo make a prop list on the EmbraceRoot to get all the childNodes only.
           if (!(c instanceof Attr))
             c.remove();
-      node.after(...nowEmbraces.map(e => e.template));
+      node.after(...embraces.map(e => e.template));
       for (let i of changed) {
         dataObject[this.d] = now[i];
         dataObject[this.dd] = i;
-        nowEmbraces[i].run(Object.assign({}, argsDictionary), dataObject, undefined, ancestor);
+        embraces[i].run(Object.assign({}, argsDictionary), dataObject, undefined, ancestor);
       }
     }
 
