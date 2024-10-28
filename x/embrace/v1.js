@@ -99,11 +99,11 @@ class EmbraceTextNode {
 }
 
 class EmbraceCommentFor {
-  constructor(templ, dollarName, listName) {
+  constructor(templ, varName, listName) {
     this.listName = listName;
-    this.dollarName = dollarName;
-    this.d = `$${dollarName}`;
-    this.dd = `$$${dollarName}`;
+    this.varName = varName;
+    this.iName = `#${varName}`;
+    // this.dd = `$$${dollarName}`;
     this.template = templ; 
     templ.remove(); 
   }
@@ -122,8 +122,8 @@ class EmbraceCommentFor {
           c.remove();
     node.after(...embraces.map(e => e.template));
     for (let i of changed) {
-      dataObject[this.d] = now[i];
-      dataObject[this.dd] = i;
+      dataObject[this.varName] = now[i];
+      dataObject[this.iName] = i;
       embraces[i].run(Object.assign({}, argsDictionary), dataObject, undefined, ancestor);
     }
   }
@@ -131,10 +131,10 @@ class EmbraceCommentFor {
   //naive, no nested control structures yet. no if. no switch. etc. , untested against errors.
   //startUpTime
   static make(txt, tmpl) {
-    const ctrlFor = txt.match(/{{\s*for\s*\(\s*([^\s]+)\s+of\s+([^\s)]+)\)\s*}}/);
+    const ctrlFor = txt.match(/{{\s*for\s*\(\s*(let|const|var)\s+([^\s]+)\s+of\s+([^\s)]+)\)\s*}}/);
     if (ctrlFor) {
-      const [_, dollarName, listName] = ctrlFor;
-      return new EmbraceCommentFor(tmpl, dollarName, listName);
+      const [_, constLetVar, varName, listName] = ctrlFor;
+      return new EmbraceCommentFor(tmpl, varName, listName);
     }
   }
 }
