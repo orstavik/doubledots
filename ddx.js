@@ -1,2 +1,411 @@
-var U=Object.defineProperty;var q=(s,t,e)=>t in s?U(s,t,{enumerable:!0,configurable:!0,writable:!0,value:e}):s[t]=e;var N=(s,t,e)=>(q(s,typeof t!="symbol"?t+"":t,e),e);function z(s,t){if(s===".")return t;for(let e of s.split("."))if(!(t=t?.[e]))return t===0?t:"";return t}function W(s,t){return s.replace(/\{\{([^}{]+)\}\}/g,(e,n)=>z(n,t))}function*B(s,t,e=[]){if(s instanceof Element){if(e.length){for(let n of s.attributes)if(n.name.startsWith(t))return}for(let{name:n,value:r}of s.attributes)r.indexOf("{{")>=0&&(yield(o,i)=>e.reduce((l,c)=>l.childNodes[c],o).setAttribute(n,W(r,i)));for(let n=0;n<s.childNodes.length;n++)yield*B(s.childNodes[n],t,[...e,n])}else if(s instanceof Text){let n=s.textContent;n.indexOf("{{")>=0&&(yield(r,o)=>e.reduce((i,l)=>i.childNodes[l],r).textContent=W(n,o))}}function et(s){this.__tasks??=[...B(this.ownerElement,this.trigger+":")];for(let t of this.__tasks)t(this.ownerElement,s);return s}var x=class{static compareSmall(t,e){let n=new Array(e.length),r=[];if(!t?.length)return{exact:n,unused:r};t:for(let o=0;o<t.length;o++){for(let i=0;i<e.length;i++)if(!n[i]&&t[o]===e[i]){n[i]=o;continue t}r.push(o)}return{exact:n,unused:r}}constructor(t){this.embrace=t,this.now=[],this.nowEmbraces=[]}step(t=[]){let e=this.now,n=this.nowEmbraces;this.now=t;let{exact:r,unused:o}=x.compareSmall(e,t),i=new Array(t.length),l=[];for(let a=0;a<r.length;a++){let d=r[a];d!=null?i[a]=n[d]:(l.push(a),i[a]=o.length?n[o.pop()]:this.embrace.clone())}this.nowEmbraces=i;let c=o.map(a=>n[a]);return{embraces:i,removes:c,changed:l}}},p=class{constructor(t){this.param=t}get params(){return{[this.param]:this.param}}run(t,e,n,r){return t[this.param]}static make(t){return t.indexOf(" ")===-1&&new p(t)}},g=class{constructor(t){!t[0]&&t.shift(),!t[t.length-1]&&t.pop(),this.segs=t}get params(){let t={};for(let e of this.segs)if(e instanceof p)for(let n in e.params)t[n]=n;return t}run(t,e,n,r){let o="";for(let i of this.segs)o+=typeof i=="string"?i:i.run(t,e,n,r);n.textContent=o}static make(t){let e=t.split(/{{([^}]+)}}/);if(e.length!==1){for(let n=1;n<e.length;n+=2)e[n]=p.make(e[n].trim())??`{{${e[n]}}}`,e[n]instanceof p||console.error(`invalid embrace expression: ${e[n]}`);return new g(e)}}},w=class{constructor(t,e,n){this.listName=n,this.dollarName=e,this.d=`$${e}`,this.dd=`$$${e}`,this.templ=t.content,t.remove(),this.cube=new x(u.make(this.templ))}get params(){return{[this.listName]:this.listName}}run(t,e,n,r){let o=t[this.listName],{embraces:i,removes:l,changed:c}=this.cube.step(o);for(let a of l)for(let d of a.nodes)d instanceof Attr||d.remove();n.after(...i.map(a=>a.template));for(let a of c){debugger;e[this.d]=o[a],e[this.dd]=a,i[a].run(Object.assign({},t),e,void 0,r)}}static make(t,e){let n=t.match(/{{\s*for\s*\(\s*([^\s]+)\s+of\s+([^\s)]+)\)\s*}}/);if(n){let[r,o,i]=n;return new w(e,o,i)}}},f=class{static flatDomNodesAll(t){let e=[],n=document.createNodeIterator(t,NodeFilter.SHOW_ALL);for(let r;r=n.nextNode();)if(e.push(r),r instanceof Element)for(let o of r.attributes)e.push(o);return e}static gobble(t){let e=document.createElement("template"),n=t.nextSibling;for(;n;){if(n instanceof Comment){if(n.textContent.match(f.COMMENT_END))return;n.textContent.match(f.COMMENT_START)&&f.gobble(n)}let r=n;n=n.nextSibling,e.content.append(r)}t.after(e);debugger;f.subsume(e.content)}static subsume(t){function e(n){for(;n=n.parentNode;)if(n.nextSibling)return n.nextSibling}for(;t;t=t.firstChild??t.nextSibling??e(t))t instanceof Comment&&t.textContent.match(f.COMMENT_START)&&f.gobble(t)}},m=f;N(m,"COMMENT_START",/{{\s*(for|if).*}}/),N(m,"COMMENT_END",/{{\s*end\s*}}/);var u=class{static paramDict(t){let e={};for(let n of t.filter(Boolean))for(let r in n.params)e[r]??=r.split(".");return e}static listOfExpressions(t){return t.map(e=>{if(e instanceof Text||e instanceof Attr)return g.make(e.textContent);if(e instanceof Comment)return w.make(e.textContent,e.nextSibling)})}constructor(t){this.template=t,this.nodes=m.flatDomNodesAll(t)}clone(){let t=new u(this.template.cloneNode(!0));return t.expressions=this.expressions,t.paramsDict=this.paramsDict,t}run(t,e,n,r){for(let o in this.paramsDict)t[o]??=this.paramsDict[o].reduce((i,l)=>i?.[l],e);for(let o,i,l=0;l<this.expressions.length;l++)(o=this.expressions[l])&&(i=this.nodes[l])&&(i instanceof Attr?r.contains(i.ownerElement):r.contains(i))&&o.run(t,e,i,r)}static make(t){let e=new u(t);return e.expressions=u.listOfExpressions(e.nodes),e.paramsDict=u.paramDict(e.expressions),e}};function st(s,t){this.__embraceRoot||(m.subsume(s),this.__embraceRoot=u.make(s),this.ownerElement.append(this.__embraceRoot.template)),this.__embraceRoot.run({},t,0,this.ownerElement)}var D={".":"this.","e.":"window.eventLoop.event.","t.":"window.eventLoop.event.target.","w.":"window.","d.":"window.document.","oi.":"oi.","at.":"window.eventLoop.attribute.","el.":"window.eventLoop.attribute.ownerElement.","this.":"this.","window.":"window.","document.":"document."};function F(s){for(let t in D)if(s.startsWith(t))return DoubleDots.kebabToPascal(D[t]+s.slice(t.length))}var K=/^((-?\d+(\.\d+)?([eE][-+]?\d+)?)|this|window|document|i|e|true|false|undefined|null)$/;function A(s){let[t,...e]=s.split("_"),n=F(t);e=e.map(i=>F(i)||K.test(i)?i:`"${i}"`);let r=e.join(", "),o=e.length?e.length===1?`=${r}`:`=[${r}]`:"";return`(${n} instanceof Function ? ${n}(${r}) : (${n}${o}))`}function Q(s){let e=`function dotReaction(oi) { return ${A(s)}; }`;return DoubleDots.importBasedEval(e)}function V(s){let e=`function dotReaction(oi) { return ${A(s.slice(2))} || EventLoop.break; }`;return DoubleDots.importBasedEval(e)}function X(s){let e=`function dotReaction(oi) { return ${A(s.slice(2))} && EventLoop.break; }`;return DoubleDots.importBasedEval(e)}function Y(s){let t=parseInt(s.slice(2));if(!t||isNaN(t))throw new DoubleDots.SyntaxError("ReactionJump only accept positive and negative integers: "+s.slice(2));return DoubleDots.importBasedEval(`_ => new EventLoop.ReactionJump(${t})`)}var E={};for(let s in D)E[s]=Q;E["x."]=V,E["y."]=X,E["j."]=Y;var T=class{constructor(t){this.posts=t}*parents(t,e,n){for(let[r,o]of Object.entries(this.posts))(!e||r.startsWith(e))&&n&&Array.isArray(o[n])&&o[n].includes(t)&&(yield r)}parent(t,e,n){return this.parents(t,e,n).next().value}resolve(t,e){let n=Object.assign({},e,this.posts[t]);for(let r in n)n[r]instanceof Array&&(n[r]=n[r].map(o=>this.resolve(o,e)));return n}},I=new DoubleDots.AttrWeakSet,j=class extends AttrCustom{upgrade(){I.add(this)}},C=class extends Event{constructor(t,e){super(t),this.er=new T(e)}};function at(s){eventLoop.dispatchBatch(new C("er",s),I)}async function ct(){return(await fetch(this.value)).json()}async function ut(){return(await fetch(this.value)).text()}var _=class{constructor(t,e=Attr){this.elIt=document.createNodeIterator(t,NodeFilter.SHOW_ELEMENT),this.Type=e,this.attr=void 0,this.nextElement()}nextElement(){this.el=this.elIt.nextNode(),this.i=0,this.attributes=this.el?Array.from(this.el.attributes):[]}next(){for(;this.el?.isConnected;){for(;this.i<this.attributes.length;)if(this.attr=this.attributes[this.i++],this.attr.ownerElement&&this.attr instanceof this.Type)return{value:this.attr,done:!1};this.nextElement()}return this.attr=void 0,{done:!0}}[Symbol.iterator](){return this}},O=class extends _{constructor(t,e=Attr){super(t,e),this.stack=[]}next(){let t=super.next();if(t.done)return t;for(;this.stack.length&&!this.stack[0].el.contains(this.el);)this.stack.shift();let e=this.makePath(t.value,this.stack[0]?.path);return this.stack.unshift(e),t}makePath({ownerElement:t,value:e},n=[]){return e=e.split("."),e=e[0]?e:[...n,...e.slice(1)],{el:t,path:e}}get currentPath(){return this.stack[0].path}};function Z(s){for(;s;s=s.parentElement)if(s.pp)return s.pp}var $=class extends Event{constructor(t,e,n){super(t),this.IT=n,this.root=e}get[Event.data](){let t=this.root,e;for(e of h.currentPath)t=t?.[e];return t instanceof Object?Object.assign({"#key":e},t):{"#key":e,"#value":t}}};function H(s,t){h=new O(s,v),eventLoop.dispatchBatch(new $("pp",t,h),h)}var h;function ft(s){if(h?.attr)throw new Error(":pp reaction cannot be triggered while the pp: is propagating");this.ownerElement.pp=s,s&&H(this.ownerElement,s)}var v=class extends AttrCustom{upgrade(){for(let t of this.ownerElement.attributes)if(t!==this&&t instanceof v)throw new Error("An element can only hold one "+this.trigger+":")}set value(t){if(super.value=t,h?.attr){if(h.attr===this)throw new Error("reactions on pp: trigger cannot change their own value!");if(!h.attr.ownerElement.contains(this.ownerElement))throw new Error("pp: mutation outside scope: "+h.attr.ownerElement+" >! "+this.ownerElement);return}let e=Z(this.ownerElement);e&&H(this.ownerElement,e)}get value(){return super.value}};function G(s,t,e){let n=s.cloneNode(!0);for(let r of n.children)for(let o of r.attributes)if(o.name.startsWith(e))return o.value="."+t,n;return n}function pt(s,t){if(!(s instanceof DocumentFragment)||!s.children.length)throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");if(typeof t!="object")throw new Error("loop #2 argument is not an object.");let e=this.trigger+":";this.ownerElement.textContent="";let n=t instanceof Array?t.map((r,o)=>o):Object.keys(t).filter(r=>!r.startsWith("#"));for(let r of n)this.ownerElement.append(...G(s,r,e).childNodes);return t}var b=class{static compareSmall(t,e){let n=new Array(e.length),r=[];if(!t?.length)return{exact:n,unused:r};t:for(let o=0;o<t.length;o++){for(let i=0;i<e.length;i++)if(!n[i]&&t[o]===e[i]){n[i]=o;continue t}r.push(o)}return{exact:n,unused:r}}constructor(t,e){this.root=t,this.template=e,this.tl=e.childNodes.length,this.now=[],this.root.textContent=""}getTemplClone(){return this.template.cloneNode(!0).childNodes}moveToRes(t,e,n,r,o){t*=o,e*=o;for(let i=0;i<o;i++)n[t+i]=r[e+i]}step(t=[]){let e=this.now;this.now=t;let{exact:n,unused:r}=b.compareSmall(e,t),o=this.root.childNodes,i=new Array(t.length*this.tl);for(let c=0;c<n.length;c++){let a=n[c];a!=null?this.moveToRes(c,a,i,o,this.tl):(r.length?this.moveToRes(c,r.pop(),i,o,this.tl):this.moveToRes(c,0,i,this.getTemplClone(),this.tl),this.task(i,c))}let l=[];for(let c=r.pop(),a=0;c!=null;a++,c=r.pop())this.moveToRes(a,c,l,o,this.tl);return i}task(t){}},R=class extends b{constructor(t,e){super(t.ownerElement,e),this.attr=t,this.triggerName=t.trigger+":"}task(t,e){for(let n=0,r=e*this.tl;n<this.tl;n++)if(t[r+n].attributes){for(let o of t[r+n].attributes)if(o.name.startsWith(this.triggerName))return o.value="."+e}}};function mt(s,t){let e="pp";if(!Array.isArray(t))throw new Error("loop #2 argument is not an array.");if(!(s instanceof DocumentFragment)||!s.children.length)throw new Error("loop #1 argument must be a DocumentFragment with at least one child element.");let n=(this.__loop??=new R(this,s)).step(t);return n.length?this.ownerElement.append(...n):this.ownerElement.innerText="",t}var y=class extends AttrListener{get target(){return window}},k=class extends AttrListener{get target(){return document}},S=class extends k{get type(){return"DOMContentLoaded"}},M=class extends y{get type(){return this.trigger.slice(1)}get options(){return!0}},L=class extends y{get type(){return this.trigger.slice(-1)}};function P(){let s=e=>e[0].toUpperCase()+e.slice(1),t={};for(let e of DoubleDots.nativeEvents.element)e=s(e),t[e]=AttrListener,t["_"+e]=M,t[e+"_"]=L;for(let e of DoubleDots.nativeEvents.window)t[s(e)]=y;for(let e of DoubleDots.nativeEvents.document)t[s(e)]=k;return delete t.DOMContentLoaded,t.Domcontentloaded=S,t}var xt=P();function J(s,t){t||=s.tagName.toLowerCase();let e=document.head.querySelector(`template[name="${t}"]`);if(e)return e.content;if(s=s.firstElementChild,s instanceof HTMLTemplateElement)return s.setAttribute("name",t),document.head.append(s),s.content}function wt(s){let[t,e]=s.split("_");return function(){return this.__template??=J(this.ownerElement,e)}}function Et(){return this.__template??=J(this.ownerElement,this.ownerElement.getAttribute("template"))}export{S as DCLTrigger,k as DocumentTrigger,j as Er,L as PostPropTrigger,v as Pp,M as PrePropTrigger,y as WindowTrigger,et as brace,xt as dynamicSimpleProp,E as dynamicsDots,st as embrace,at as er,ct as fetch_json,ut as fetch_text,pt as loop,ft as pp,Et as template,wt as template_};
+// x/embrace/v1.js
+var LoopCube = class {
+  static compareSmall(old, now) {
+    const exact = new Array(now.length);
+    const unused = [];
+    if (!old?.length)
+      return { exact, unused };
+    main:
+      for (let o = 0; o < old.length; o++) {
+        for (let n = 0; n < now.length; n++) {
+          if (!exact[n] && old[o] === now[n]) {
+            exact[n] = o;
+            continue main;
+          }
+        }
+        unused.push(o);
+      }
+    return { exact, unused };
+  }
+  constructor(embrace2) {
+    this.embrace = embrace2;
+    this.now = [];
+    this.nowEmbraces = [];
+  }
+  step(now = []) {
+    const old = this.now;
+    const oldEmbraces = this.nowEmbraces;
+    this.now = now;
+    const { exact, unused } = LoopCube.compareSmall(old, now);
+    const embraces = new Array(now.length);
+    const changed = [];
+    for (let n = 0; n < exact.length; n++) {
+      const o = exact[n];
+      if (o != null) {
+        embraces[n] = oldEmbraces[o];
+      } else {
+        changed.push(n);
+        embraces[n] = unused.length ? oldEmbraces[unused.pop()] : this.embrace.clone();
+      }
+    }
+    this.nowEmbraces = embraces;
+    const removes = unused.map((o) => oldEmbraces[o]);
+    return { embraces, removes, changed };
+  }
+};
+var EmbraceGet = class {
+  constructor(param) {
+    this.param = param;
+  }
+  get params() {
+    return { [this.param]: this.param };
+  }
+  run(argsDict, dataIn, node, ancestor) {
+    return argsDict[this.param];
+  }
+  static make(str) {
+    return str.indexOf(" ") === -1 && new EmbraceGet(str);
+  }
+};
+var EmbraceTextNode = class {
+  constructor(segs) {
+    !segs[0] && segs.shift();
+    !segs[segs.length - 1] && segs.pop();
+    this.segs = segs;
+  }
+  get params() {
+    const res = {};
+    for (let E of this.segs)
+      if (E instanceof EmbraceGet)
+        for (let param in E.params)
+          res[param] = param;
+    return res;
+  }
+  run(argsDict, dataIn, node, ancestor) {
+    let txt = "";
+    for (let s of this.segs)
+      txt += typeof s == "string" ? s : s.run(argsDict, dataIn, node, ancestor);
+    node.textContent = txt;
+  }
+  static make(txt) {
+    const segs = txt.split(/{{([^}]+)}}/);
+    if (segs.length === 1)
+      return;
+    for (let i = 1; i < segs.length; i += 2) {
+      segs[i] = EmbraceGet.make(segs[i].trim()) ?? `{{${segs[i]}}}`;
+      if (!(segs[i] instanceof EmbraceGet))
+        console.error(`invalid embrace expression: ${segs[i]}`);
+    }
+    return new EmbraceTextNode(segs);
+  }
+};
+var EmbraceCommentFor = class {
+  constructor(templ, dollarName, listName) {
+    this.listName = listName;
+    this.dollarName = dollarName;
+    this.d = `$${dollarName}`;
+    this.dd = `$$${dollarName}`;
+    this.templ = templ.content;
+    templ.remove();
+    this.cube = new LoopCube(EmbraceRoot.make(this.templ));
+  }
+  get params() {
+    return { [this.listName]: this.listName };
+  }
+  run(argsDictionary, dataObject, node, ancestor) {
+    const now = argsDictionary[this.listName];
+    const { embraces, removes, changed } = this.cube.step(now);
+    for (let n of removes)
+      for (let c of n.nodes)
+        if (!(c instanceof Attr))
+          c.remove();
+    node.after(...embraces.map((e) => e.template));
+    for (let i of changed) {
+      dataObject[this.d] = now[i];
+      dataObject[this.dd] = i;
+      embraces[i].run(Object.assign({}, argsDictionary), dataObject, void 0, ancestor);
+    }
+  }
+  //naive, no nested control structures yet. no if. no switch. etc. , untested against errors.
+  //startUpTime
+  static make(txt, tmpl) {
+    const ctrlFor = txt.match(/{{\s*for\s*\(\s*([^\s]+)\s+of\s+([^\s)]+)\)\s*}}/);
+    if (ctrlFor) {
+      const [_, dollarName, listName] = ctrlFor;
+      return new EmbraceCommentFor(tmpl, dollarName, listName);
+    }
+  }
+};
+var DomBranch = class {
+  static gobble(n) {
+    let txt = n.textContent.trim();
+    if (!txt.endsWith("{"))
+      return;
+    const res = document.createElement("template");
+    res.setAttribute("start", txt);
+    n.parentNode.replaceChild(n, res);
+    for (let n2 = res.nextSibling; n2; ) {
+      if (n2 instanceof Comment) {
+        txt = n2.textContent.trim();
+        if (txt[0] === "}") {
+          res.setAttribute("end", txt);
+          n2.remove();
+          break;
+        }
+        DomBranch.gobble(n2);
+      }
+      const m = n2.nextSibling;
+      res.content.append(n2);
+      n2 = m;
+    }
+    DomBranch.subsume(res.content);
+  }
+  static nextUp(n) {
+    while (n = n.parentNode)
+      if (n.nextSibling)
+        return n.nextSibling;
+  }
+  static subsume(n) {
+    for (; n; n = n.firstChild ?? n.nextSibling ?? DomBranch.nextUp(n))
+      if (n instanceof Comment)
+        DomBranch.gobble(n);
+  }
+};
+var EmbraceRoot = class {
+  static flatDomNodesAll(docFrag) {
+    const res = [];
+    const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
+    for (let n; n = it.nextNode(); ) {
+      res.push(n);
+      if (n instanceof Element)
+        for (let a of n.attributes)
+          res.push(a);
+    }
+    return res;
+  }
+  static paramDict(listOfExpressions) {
+    const params = {};
+    for (let e of listOfExpressions.filter(Boolean))
+      for (let p in e.params)
+        params[p] ??= p.split(".");
+    return params;
+  }
+  static listOfExpressions(listOfNodes) {
+    return listOfNodes.map((n) => {
+      if (n instanceof Text || n instanceof Attr)
+        return EmbraceTextNode.make(n.textContent);
+      if (n instanceof Comment)
+        return EmbraceCommentFor.make(n.textContent, n.nextSibling);
+    });
+  }
+  constructor(docFrag) {
+    this.template = docFrag;
+    this.nodes = EmbraceRoot.flatDomNodesAll(docFrag);
+  }
+  clone() {
+    const e = new EmbraceRoot(this.template.cloneNode(true));
+    e.expressions = this.expressions;
+    e.paramsDict = this.paramsDict;
+    return e;
+  }
+  run(argsDictionary, dataObject, _, ancestor) {
+    for (let param in this.paramsDict)
+      argsDictionary[param] ??= this.paramsDict[param].reduce((o, p) => o?.[p], dataObject);
+    for (let ex, n, i = 0; i < this.expressions.length; i++)
+      if (ex = this.expressions[i]) {
+        if (n = this.nodes[i]) {
+          if (n instanceof Attr ? ancestor.contains(n.ownerElement) : ancestor.contains(n))
+            ex.run(argsDictionary, dataObject, n, ancestor);
+        }
+      }
+  }
+  static make(docFrag) {
+    const e = new EmbraceRoot(docFrag);
+    e.expressions = EmbraceRoot.listOfExpressions(e.nodes);
+    e.paramsDict = EmbraceRoot.paramDict(e.expressions);
+    return e;
+  }
+};
+function embrace(templ, dataObject) {
+  if (!this.__embraceRoot) {
+    DomBranch.subsume(templ);
+    this.__embraceRoot = EmbraceRoot.make(templ);
+    this.ownerElement.append(this.__embraceRoot.template);
+  }
+  this.__embraceRoot.run({}, dataObject, 0, this.ownerElement);
+}
+
+// x/dotRule/dot.js
+var scopes = {
+  ".": "this.",
+  "e.": "window.eventLoop.event.",
+  "t.": "window.eventLoop.event.target.",
+  "w.": "window.",
+  "d.": "window.document.",
+  // "i.": "args[0].",  //todo implement this instead of .oi
+  // "i(0-9)+": "args[$1].",//todo implement this instead of .oi
+  "oi.": "oi.",
+  "at.": "window.eventLoop.attribute.",
+  //useful when dash rules have moved the origin
+  "el.": "window.eventLoop.attribute.ownerElement.",
+  //todo same as this.ownerElement??
+  "this.": "this.",
+  "window.": "window.",
+  "document.": "document."
+};
+function processRef(prop) {
+  for (let prefix in scopes)
+    if (prop.startsWith(prefix))
+      return DoubleDots.kebabToPascal(scopes[prefix] + prop.slice(prefix.length));
+}
+var primitives = /^((-?\d+(\.\d+)?([eE][-+]?\d+)?)|this|window|document|i|e|true|false|undefined|null)$/;
+function textToExp(txt) {
+  let [prop, ...args] = txt.split("_");
+  const ref = processRef(prop);
+  args = args.map((arg) => processRef(arg) || primitives.test(arg) ? arg : `"${arg}"`);
+  const sargs = args.join(", ");
+  const setter = !args.length ? "" : args.length === 1 ? `=${sargs}` : `=[${sargs}]`;
+  return `(${ref} instanceof Function ? ${ref}(${sargs}) : (${ref}${setter}))`;
+}
+function DotReactionRule(fullname) {
+  const exp = textToExp(fullname);
+  const code = `function dotReaction(oi) { return ${exp}; }`;
+  return DoubleDots.importBasedEval(code);
+}
+function BreakOnFalseReactionRule(fullname) {
+  const exp = textToExp(fullname.slice(2));
+  const code = `function dotReaction(oi) { return ${exp} || EventLoop.break; }`;
+  return DoubleDots.importBasedEval(code);
+}
+function BreakOnTrueReactionRule(fullname) {
+  const exp = textToExp(fullname.slice(2));
+  const code = `function dotReaction(oi) { return ${exp} && EventLoop.break; }`;
+  return DoubleDots.importBasedEval(code);
+}
+function JumpReactionRule(fullname) {
+  const n = parseInt(fullname.slice(2));
+  if (!n || isNaN(n))
+    throw new DoubleDots.SyntaxError("ReactionJump only accept positive and negative integers: " + fullname.slice(2));
+  return DoubleDots.importBasedEval(`_ => new EventLoop.ReactionJump(${n})`);
+}
+var dynamicDots = {};
+for (let prefix in scopes)
+  dynamicDots[prefix] = DotReactionRule;
+dynamicDots["x."] = BreakOnFalseReactionRule;
+dynamicDots["y."] = BreakOnTrueReactionRule;
+dynamicDots["j."] = JumpReactionRule;
+
+// x/er/v1.js
+var ER = class {
+  constructor(posts) {
+    this.posts = posts;
+  }
+  *parents(ref, type, prop) {
+    for (let [k, v] of Object.entries(this.posts))
+      if (!type || k.startsWith(type)) {
+        if (prop && Array.isArray(v[prop]) && v[prop].includes(ref))
+          yield k;
+      }
+  }
+  parent(ref, type, prop) {
+    return this.parents(ref, type, prop).next().value;
+  }
+  //todo this can loop forever, when we have a person with a friend 
+  //     that has a friend that is the first person. This won't work.
+  //
+  //todo 1. we need to go width first.
+  //todo 2. we need to check the path. If we are going from:
+  //        person / [friends] / person / [friends]
+  //        then we need to stop at the 2nd [friends].
+  //        we should only resolve person[friends] relationship *once*.
+  //        when we meet person[friends] 2nd time, we should just skip it.
+  //        this means that when we meet "person" the second time, 
+  //        we should skip all the arrays.
+  resolve(key, vars) {
+    const res = Object.assign({}, vars, this.posts[key]);
+    for (let p in res)
+      if (res[p] instanceof Array)
+        res[p] = res[p].map((k) => this.resolve(k, vars));
+    return res;
+  }
+};
+var triggers = new DoubleDots.AttrWeakSet();
+var Er = class extends AttrCustom {
+  upgrade() {
+    triggers.add(this);
+  }
+};
+var ErEvent = class extends Event {
+  constructor(type, er2) {
+    super(type);
+    this.er = new ER(er2);
+  }
+};
+function er(posts) {
+  eventLoop.dispatchBatch(new ErEvent("er", posts), triggers);
+}
+
+// x/fetch/v1.js
+async function fetch_json() {
+  return (await fetch(this.value)).json();
+}
+async function fetch_text() {
+  return (await fetch(this.value)).text();
+}
+
+// x/PropagationSimple/prop.js
+var WindowTrigger = class extends AttrListener {
+  get target() {
+    return window;
+  }
+};
+var DocumentTrigger = class extends AttrListener {
+  get target() {
+    return document;
+  }
+};
+var DCLTrigger = class extends DocumentTrigger {
+  get type() {
+    return "DOMContentLoaded";
+  }
+};
+var PrePropTrigger = class extends WindowTrigger {
+  //global _click
+  get type() {
+    return this.trigger.slice(1);
+  }
+  //remove prefix so returns "click"
+  get options() {
+    return true;
+  }
+};
+var PostPropTrigger = class extends WindowTrigger {
+  //global click_
+  get type() {
+    return this.trigger.slice(-1);
+  }
+  //remove postfix so returns "click"
+};
+function makeAll() {
+  const upCase = (s) => s[0].toUpperCase() + s.slice(1);
+  const res = {};
+  for (let type of DoubleDots.nativeEvents.element) {
+    type = upCase(type);
+    res[type] = AttrListener;
+    res["_" + type] = PrePropTrigger;
+    res[type + "_"] = PostPropTrigger;
+  }
+  for (let type of DoubleDots.nativeEvents.window)
+    res[upCase(type)] = WindowTrigger;
+  for (let type of DoubleDots.nativeEvents.document)
+    res[upCase(type)] = DocumentTrigger;
+  delete res["DOMContentLoaded"];
+  res["Domcontentloaded"] = DCLTrigger;
+  return res;
+}
+var dynamicSimpleProp = makeAll();
+export {
+  DCLTrigger,
+  DocumentTrigger,
+  Er,
+  PostPropTrigger,
+  PrePropTrigger,
+  WindowTrigger,
+  dynamicSimpleProp,
+  dynamicDots as dynamicsDots,
+  embrace,
+  er,
+  fetch_json,
+  fetch_text
+};
 //# sourceMappingURL=ddx.js.map

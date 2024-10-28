@@ -1,2 +1,101 @@
-(()=>{function a(r,n=r.name){Object.defineProperty(window,n,{value:function(...i){if(new.target)throw new Error(`Replace "new ${n}(..." with "${n}(...".`);return r(...i)},enumerable:!0,writable:!0,configurable:!0})}function d(){let r=HTMLElement.prototype.attachShadow;HTMLElement.prototype.attachShadow=function(o={},...i){return o.mode="open",r.call(this,o,...i)}}var s={"Element.prototype":["after","before","hasAttributeNS","getAttributeNS","setAttributeNS","removeAttributeNS","setAttributeNode","removeAttributeNode","getAttributeNodeNS","setAttributeNodeNS"],"Event.prototype":["stopPropagation","stopImmediatePropagation"],"EventTarget.prototype":["addEventListener","removeEventListener"],window:["setTimeout","clearTimeout","setInterval","clearInterval","event"],"Document.prototype":["createAttribute","createComment","createDocumentFragment","createElement","createTextNode","importNode","currentScript","write"],"Node.prototype":["cloneNode"]};function p(){throw new Error("Deprecated in DoubleDots strict.")}function l(r,n={}){for(let[o,i]of Object.entries(r)){o=o.split(".");let c=o.reduce((t,e)=>t[e],window),m=o.reduce((t,e)=>{var u;return(u=t[e])!=null?u:t[e]={}},n);for(let t of i){let e=Object.getOwnPropertyDescriptor(c,t);e.value?e.value=p:e.get=e.get=p,Object.defineProperty(c,t,e),Object.defineProperty(m,t,e)}}}a(String);a(Number);a(Boolean);d();var w;l(s,(w=window.DoubleDots)!=null?w:window.DoubleDots={});})();
+// src/dd/strict_deprecation.js
+function noPrimitiveConstructor(OG, name = OG.name) {
+  Object.defineProperty(window, name, {
+    value: function PrimitiveConstructor(...args) {
+      if (new.target)
+        throw new Error(`Replace "new ${name}(..." with "${name}(...".`);
+      return OG(...args);
+    },
+    enumerable: true,
+    writable: true,
+    configurable: true
+  });
+}
+function ShadowRootAlwaysOpen() {
+  const OG = HTMLElement.prototype.attachShadow;
+  HTMLElement.prototype.attachShadow = function attachShadowAlwaysOpen(opt = {}, ...args) {
+    opt.mode = "open";
+    return OG.call(this, opt, ...args);
+  };
+}
+var DoubleDotStrictMask = {
+  "Element.prototype": [
+    "hasAttributeNS",
+    "getAttributeNS",
+    "setAttributeNS",
+    "removeAttributeNS",
+    "setAttributeNode",
+    "removeAttributeNode",
+    "getAttributeNodeNS",
+    "setAttributeNodeNS"
+    //     "outerHTML"
+    //.setAttribute(name, value)
+    //.hasAttribute(name)
+    //.getAttribute(name)
+    //.getAttributeNode(name)
+    //.attributes
+  ],
+  "Event.prototype": [
+    "stopPropagation",
+    "stopImmediatePropagation"
+  ],
+  "EventTarget.prototype": [
+    "addEventListener",
+    "removeEventListener"
+    //.dispatchEvent
+  ],
+  "window": [
+    "setTimeout",
+    "clearTimeout",
+    "setInterval",
+    "clearInterval",
+    "event"
+    //must add "async sleep(ms)" first
+    //MutationObserver
+    //ResizeObserver
+    //IntersectionObserver
+  ],
+  "Document.prototype": [
+    "createAttribute",
+    "createComment",
+    "createDocumentFragment",
+    "createElement",
+    "createTextNode",
+    "importNode",
+    "currentScript",
+    "write"
+    // "createRange" //todo research
+  ],
+  "Node.prototype": [
+    "cloneNode"
+  ]
+  /*
+  "HTMLElement.prototype": {
+    adoptionCallback: problematicDeprecationMethod, needs to highJack the HTMLElement constructor actually.
+  }
+  */
+};
+function deprecated() {
+  throw new Error("Deprecated in DoubleDots strict.");
+}
+function deprecate(mask, OGs = {}) {
+  for (let [path, methods] of Object.entries(mask)) {
+    path = path.split(".");
+    const obj = path.reduce((o, p) => o[p], window);
+    const OG = path.reduce((o, p) => o[p] ??= {}, OGs);
+    for (let prop of methods) {
+      const desc = Object.getOwnPropertyDescriptor(obj, prop);
+      desc.value ? desc.value = deprecated : desc.get = desc.get = deprecated;
+      Object.defineProperty(obj, prop, desc);
+      Object.defineProperty(OG, prop, desc);
+    }
+  }
+}
+
+// src/dd/ddStrict.js
+noPrimitiveConstructor(String);
+noPrimitiveConstructor(Number);
+noPrimitiveConstructor(Boolean);
+ShadowRootAlwaysOpen();
+deprecate(DoubleDotStrictMask, window.DoubleDots ??= {});
 //# sourceMappingURL=ddStrict.js.map

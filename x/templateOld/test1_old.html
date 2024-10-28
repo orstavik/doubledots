@@ -1,0 +1,37 @@
+<head>
+  <script src="../../src/1_1_DoubleDots.js"></script>
+  <script src="../../src/1_2_AttrCustom.js"></script>
+  <script src="../../src/3_definition_registers_v4.js"></script>
+  <script src="../../src/4_eventLoop_v2.js"></script>
+  <script src="../../src/6_load_DoubleDots.js"></script>
+  <script src="../../src/7_nativeMethods.js"></script>
+
+  <script type="module" src="v1.js" _:define="?template_"></script>
+  <script>
+    function log() {
+      console.log(this.ownerElement.outerHTML);
+      console.log(this.ownerElement.outerHTML == tst);
+      console.log(...args);
+    }
+    document.Reactions.define("log", log);
+  </script>
+
+  <template name="one">
+    <h2>hello miss world!</h2>
+  </template>
+</head>
+
+<body>
+  <main _:template_one:log></main>
+  <section _:template_two:log>
+    <template>
+      <h1>hello sunshine</h1>
+    </template>
+  </section>
+  <div _:template_:log>
+    <template>
+      <h3>hello darkness my old friend!</h3>
+    </template>
+  </div>
+</body>
+

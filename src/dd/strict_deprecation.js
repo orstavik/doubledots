@@ -19,8 +19,6 @@ export function ShadowRootAlwaysOpen() {
 
 export const DoubleDotStrictMask = {
   "Element.prototype": [
-    "after",
-    "before",
     "hasAttributeNS",
     "getAttributeNS",
     "setAttributeNS",

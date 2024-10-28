@@ -1,43 +1,105 @@
-//todo trim the template to remove ws text nodes before and after the template??
-function getHoistTemplate(el, name) {
-  name ||= el.tagName.toLowerCase();
-  let res = document.head.querySelector(`template[name="${name}"]`);
-  if (res)
-    return res.content;
-  el = el.firstElementChild;
-  if (!(el instanceof HTMLTemplateElement))
-    return;
-  el.setAttribute("name", name);
-  document.head.append(el);
-  return el.content;
-}
+(function () {
+  const ElAppendOG = DoubleDots.nativeMethods.Element.prototype.append;
+  const DocfragAppendOG = DoubleDots.nativeMethods.DocumentFragment.prototype.append;
+  const CommentAfterOG = DoubleDots.nativeMethods.Comment.prototype.after;
 
-export function template_(rule) {
-  let [_, name] = rule.split("_");
-  return function template() {
-    return this.__template ??= getHoistTemplate(this.ownerElement, name);
-  };
-}
+  function subsumeNodes(el) {
+    const t = document.createElement("template");
+    DocfragAppendOG.call(t.content, ...el.childNodes);
+    ElAppendOG.call(el, t);
+    return t;
+  }
 
-//todo untested
-export function template() {
-  return this.__template ??= getHoistTemplate(this.ownerElement, this.ownerElement.getAttribute("template"));
-};
+  function subsumeHtml(el) {
+    el.innerHTML = `<template>${el.innerHTML}</template>`;
+    return el.children[0];
+  }
 
-//todo the template_attr_val_attr2_val2... rule. The .val are interpreted as dotGetters.
-//todo tag-name is always ownerElement.tagName
-//todo other empty values are attempted replaced with the value of 
-//todo a prop of the incoming data element. Again, this will work if 
-//todo the incoming element is not an Event, but just the data object. 
-//todo This means that we need to filter the value.
-//todo if no value, then the attribute is just checked for presence.
-//todo the "if/else" of works by selecting a template based on the value from first argument.
+  function absorbNodes(before, nodes) {
+    const t = document.createElement("template");
+    DocfragAppendOG.call(t.content, ...nodes);
+    CommentAfterOG.call(before, t);
+  }
 
-//:template_type_.post.type       => <template type="${post.type}">
-//:template_name_hellosunshine    => <template name="hellosunshine">
-//:template_tag-name              => <template tag-name="my-component">
-//:template                       => ownerElement.firstChild template.
+  function absorbHtml(before, nodes) {
+    const txt = nodes.map(n =>
+      n.outerHTML ?? n instanceof Comment ? `<!--${n.textContent}-->` : n.textContent);
+    nodes.forEach(n => n.remove());
+    before.insertAdjacentHTML("afterend", `<template>${txt.join("")}</template>`);
+  }
 
-//the rules inside the brace don't allow us to 
-//remove any nodes from the branch dynamically.
-//if we do, then the rules will run against the wrong node.
+  const usedEnds = new WeakSet();
+
+  function gobble(n) {
+    let txt = n.textContent.trim();
+    if (!txt.match(/^template(\s|)/))
+      return;
+    const res = [];
+    while (n = n.nextSibling) {
+      if (n instanceof Comment && !usedEnds.has(n)) {
+        if ((txt = n.textContent.trim()).match(/^\/template(\s|)/)) {
+          usedEnds.add(n);
+          break;
+        }
+      }
+      res.push(n);
+    }
+    return res;
+  }
+
+  function descendantsReverse(root, trigger) {
+    const it = document.createNodeIterator(root, NodeFilter.SHOW_ELEMENT);
+    const elements = [], attributes = [];
+    for (let n; n = it.nextNode();) {
+      for (let a of n.attributes)
+        if (a.name.startsWith(trigger)) {
+          attributes.push(a);
+          elements.unshift(n);
+          break;
+        }
+    }
+    return { elements, attributes };
+    // return [...root.querySelectorAll(`[${trigger}\\:]`)].reverse();
+  }
+
+  function commentsRightToLeft(docFrag) {
+    const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_COMMENT);
+    let res = [];
+    for (let n; n = it.nextNode();)
+      res.unshift(n);
+    return res;
+  }
+
+  class Template extends AttrCustom {
+    upgrade(dynamic) {
+      const el = this.ownerElement;
+      if (el.childNodes.length === 0 || el.children.length === 1 && el.children[0] instanceof HTMLTemplateElement)
+        return;
+      if (el instanceof HTMLTemplateElement)
+        throw new Error("template trigger cannot be applied to template elements.");
+      const subsume = dynamic ? subsumeHtml : subsumeNodes;
+      const absorb = dynamic ? absorbHtml : absorbNodes;
+
+      const { elements, attributes } = descendantsReverse(el, this.trigger + ":");
+      const templates = elements.map(subsume);
+      let gobbledNodes;
+      for (let t of templates)
+        for (let comment of commentsRightToLeft(t.content))
+          if (gobbledNodes = gobble(comment))
+            absorb(comment, gobbledNodes);
+      //todo now we don't have any events coming from the template: trigger.
+      //todo below is what it looks like if we upgrade and dispatch an event using downward propagation.
+      // for (let a of attributes)
+      //   AttrCustom.upgrade(a);
+      // eventLoop.dispatchBatch(new Event("template"), [attributes]);
+    }
+  }
+
+  document.Triggers.define("template", Template);
+
+  // todo this is no longer needed. We can now just use el.children.0
+  function template() {
+    return this.ownerElement.children[0];
+  }
+  document.Reactions.define("template", template);
+})();

@@ -1,34 +1,41 @@
-<head>
-  <script src="../../src/1_1_DoubleDots.js"></script>
-  <script src="../../src/1_2_AttrCustom.js"></script>
-  <script src="../../src/3_definition_registers_v4.js"></script>
-  <script src="../../src/4_eventLoop_v2.js"></script>
-  <script src="../../src/6_load_DoubleDots.js"></script>
-  <script src="../../src/7_nativeMethods.js"></script>
-
-  <script type="module" src="v1.js" _:define="?template_"></script>
-  <script>
-    function log(...args) {
-      console.log(...args);
-    }
-    document.Reactions.define("log", log);
-  </script>
-
-  <template name="one">
-    <h2>hello miss world!</h2>
-  </template>
-</head>
+<script src="/dd.js"></script>
+<script>
+  function testLog() {
+    console.log(this.ownerElement.outerHTML);
+    const tst = document.querySelector("body > template").content.children[0].outerHTML.replaceAll(/\s/g, "");
+    const res = this.ownerElement.outerHTML.replaceAll(/\s/g, "");
+    console.log(tst === res);
+  }
+  document.Reactions.define("test-log", testLog);
+</script>
 
 <body>
-  <main _:template_one:log></main>
-  <section _:template_two:log>
-    <template>
+  <main template: _:test-log>
+    <section>
       <h1>hello sunshine</h1>
-    </template>
-  </section>
-  <div _:template_:log>
-    <template>
+      <!--template -->
+      <div>items being added here</div>
+      <!--/template -->
+      <h4>footer</h4>
+    </section>
+    <div template:>
       <h3>hello darkness my old friend!</h3>
-    </template>
-  </div>
+    </div>
+  </main>
+  <template>
+    <main template:="" _:test-log="">
+      <template>
+        <section>
+          <h1>hello sunshine</h1>
+          <!--template --><template>
+            <div>items being added here</div>
+          </template><!--/template -->
+          <h4>footer</h4>
+        </section>
+        <div template:=""><template>
+            <h3>hello darkness my old friend!</h3>
+          </template></div>
+      </template>
+    </main>
+  </template>
 </body>

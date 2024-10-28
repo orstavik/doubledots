@@ -1,3 +1,1171 @@
-(()=>{var Ae=Object.defineProperty;var $e=(s,e,t)=>e in s?Ae(s,e,{enumerable:!0,configurable:!0,writable:!0,value:t}):s[e]=t;var R=(s,e,t)=>($e(s,typeof e!="symbol"?e+"":e,t),t),fe=(s,e,t)=>{if(!e.has(s))throw TypeError("Cannot "+t)};var r=(s,e,t)=>(fe(s,e,"read from private field"),t?t.call(s):e.get(s)),h=(s,e,t)=>{if(e.has(s))throw TypeError("Cannot add the same private member more than once");e instanceof WeakSet?e.add(s):e.set(s,t)},g=(s,e,t,n)=>(fe(s,e,"write to private field"),n?n.call(s,t):e.set(s,t),t),ge=(s,e,t,n)=>({set _(o){g(s,e,o,t)},get _(){return r(s,e,n)}}),b=(s,e,t)=>(fe(s,e,"access private method"),t);var Ne=document.createElement,Be=EventTarget.prototype.addEventListener,Ge=setInterval,Ie=setTimeout;async function Ue(s){return await new Promise(e=>Ie(e,s))}function ze(s){let e=Ne.call(document,"audio");Be.call(e,"ratechange",s),e.playbackRate=2}var $,N,y=class extends Set{static gc(){let e,t;for(let n of r(y,$))if(t=n.deref())for(let o of t)o.isConnected?e=!0:(t.delete(o),o.remove());else r(y,$).delete(n);!e&&g(y,N,clearInterval(r(y,N)))}constructor(...e){super(...e),r(y,$).add(new WeakRef(this))}add(e){var t;(t=r(y,N))!=null||g(y,N,Ge(y.gc,y.GC)),super.add(e)}},A=y;$=new WeakMap,N=new WeakMap,h(A,$,new Set),h(A,N,void 0),R(A,"GC",1e4);var We=function(){function s(c){return Object.keys(c).filter(f=>f.startsWith("on")).map(f=>f.substring(2).toLowerCase())}let e=s(Element.prototype),t=s(HTMLElement.prototype),n=s(window),o=s(Document.prototype),i=[...e,...t].filter((c,f,u)=>u.indexOf(c)===f),m=n.filter(c=>!i.includes(c)),x=o.filter(c=>!i.includes(c)&&!m.includes(c)),a={element:i,window:m,document:x};return a.element.push("touchstart","touchmove","touchend","touchcancel"),a.document.push("DOMContentLoaded"),Object.values(a).forEach(Object.freeze),Object.freeze(a),a}();function Je(s){return s.replace(/-[a-z]/g,e=>e[1].toUpperCase())}function Ze(s){return s.replace(/[A-Z]/g,e=>"-"+e.toLowerCase())}function Ke(s){return s.replace(/^(_*)([A-Z])/,(e,t,n)=>t+n.toLowerCase())}async function Ve(s){s="export default "+s.trim();let e=new Blob([s],{type:"application/javascript"}),t=URL.createObjectURL(e),n=await import(t);return URL.revokeObjectURL(t),n.default}function Ye(s){let[e,...t]=s.split("_");for(let n=0;n<=t.length-1;n+=2){let o=t[n].replaceAll("..","\\:"),i=n<=t.length?`$="${t[n+1]}"`:"";e+=`[${o}${i}]`}return e}function*Qe(s,e="*"){for(let t=s.parentElement;t;t=t.parentElement)(e==="*"||t.matches(e))&&(yield t)}function*Xe(s,e="*"){for(let t=s.previousElementSibling;t;t=t.previousElementSibling)(e==="*"||t.matches(e))&&(yield t)}function*qe(s,e="*"){for(let t=s.nextElementSibling;t;t=t.nextElementSibling)(e==="*"||t.matches(e))&&(yield t)}function*Fe(s){var e;for(let t=s.getRootNode();t;t=(e=t.host)==null?void 0:e.getRootNode())yield t}function*et(s,e="*"){for(let t=s.getRootNode().host;t;t=t.getRootNode().host)(e==="*"||t.matches(e))&&(yield t)}function*tt(s,e="*"){for(let t,n=[...s.children];t=n.shift();n.push(...s.children))(e==="*"||t.matches(e))&&(yield t)}var D=class extends Error{constructor(e,t){super(e)}},K=class extends D{constructor(e){super("arrow function with `this`.")}static check(e){let t=e.toString();if(/^(async\s+|)(\(|[^([]+=)/.test(t)&&(t=t.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm,""),t=t.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g,""),t=t.replace(/(`)(?:(?=(\\?))\2.)*?\1/g,""),/\bthis\b/.test(t)))throw new K(e)}};window.DoubleDots={nativeMethods:{},DoubleDotsError:D,ThisArrowFunctionError:K,DeprecationError:class extends D{},MissingReaction:class extends D{},DisconnectedError:class extends D{},TriggerUpgradeError:class extends D{constructor(e,t){super(e)}},AttrWeakSet:A,nextTick:ze,sleep:Ue,nativeEvents:We,kebabToPascal:Je,pascalToKebab:Ze,pascalToCamel:Ke,up:Qe,left:Xe,right:qe,roots:Fe,hosts:et,downwide:tt,importBasedEval:Ve,miniQuerySelector:Ye};var V,me,B=class extends Attr{get trigger(){var e;return b(e=B,V,me).call(e,this),this.trigger}get reactions(){var e;return b(e=B,V,me).call(e,this),this.reactions}isConnected(){return this.ownerElement.isConnected()}getRootNode(...e){var t;return(t=this.ownerElement)==null?void 0:t.getRootNode(...e)}remove(){return this.ownerElement.removeAttribute(this.name)}dispatchEvent(e){if(!this.isConnected)throw new DoubleDots.ReactionError("dispatch on disconnected attribute.");eventLoop.dispatch(e,this)}static upgradeBranch(...e){for(let t of e)if(t instanceof Element)this.upgradeElementRoot(t);else if(t instanceof DocumentFragment)for(let n of t.children)this.upgradeElementRoot(n)}static upgradeElementRoot(e){for(let t of e.attributes)t.name.includes(":")&&B.upgrade(t);for(let t of e.children)this.upgradeElementRoot(t)}static upgrade(e,t){var n;if(t!=null||(t=e.ownerElement.getRootNode().Triggers.get(e.name.split(":")[0],e)),t instanceof Error)throw t;if(t instanceof Promise){Object.setPrototypeOf(e,ne.prototype),t.then(o=>B.upgrade(e,o));return}try{Object.setPrototypeOf(e,t.prototype),(n=e.upgrade)==null||n.call(e),e.value&&(e.value=e.value)}catch(o){throw new DoubleDots.TriggerUpgradeError(t.name+".upgrade() caused an error. Triggers shouldn't cause errors.")}}},L=B;V=new WeakSet,me=function(e){let[t,...n]=e.name.split(":");n.length===1&&!n[0]&&n.pop(),Object.defineProperties(e,{trigger:{value:t,enumerable:!0},reactions:{value:n,enumerable:!0}})},h(L,V);var be=class extends L{remove(){}},ne=class extends L{},nt=Event.prototype.stopImmediatePropagation,st=EventTarget.prototype.addEventListener,rt=EventTarget.prototype.removeEventListener,te={};Object.defineProperty(Event,"activeListeners",{enumerable:!0,value:function(e){return te[e]}});var se=class extends L{upgrade(){Object.defineProperty(this,"__l",{value:this.run.bind(this)}),st.call(this.target,this.type,this.__l,this.options),te[this.type]=(te[this.type]||0)+1}remove(){te[this.type]-=1,rt(this.target,this.type,this.__l,this.options),super.remove()}get target(){return this.ownerElement}get type(){return this.trigger}run(e){eventLoop.dispatch(e,this)}},we=class extends se{get register(){var t,n;let e=this.target.triggers;return e||Object.defineProperty(this.target,"triggers",{value:e={}}),(n=e[t=this.trigger])!=null?n:e[t]=DoubleDots.AttrWeakSet()}get target(){return window}upgrade(){super.upgrade(),this.register.add(this)}remove(){this.register.delete(this),super.remove()}run(e){nt.call(e),eventLoop.dispatchBatch(e,this.register)}},ve=class extends L{upgrade(){let e=new MutationObserver(this.run.bind(this));Object.defineProperty(this,"observer",{value:e}),this.observer.observe(this.target,this.settings)}remove(){this.observer.disconnect(),super.remove()}get target(){return this.ownerElement}get settings(){return{attributes:!0,attributesOldValue:!0}}run(e){for(let t of e)eventLoop.dispatch(t,this)}},ye=class extends L{upgrade(){let e=new ResizeObserver(this.run.bind(this));Object.defineProperty(this,"observer",{value:e}),this.observer.observe(this.ownerElement,this.settings)}remove(){this.observer.disconnect(),super.remove()}get settings(){return{box:this.trigger}}run(e){eventLoop.dispatch(e,this)}},Ee=class extends L{upgrade(){let e=new IntersectionObserver(this.run.bind(this));Object.defineProperty(this,"observer",{value:e}),this.observer.observe(this.ownerElement,this.settings)}stop(){this.observer.disconnect()}remove(){this.stop(),super.remove()}run([e]){document.readyState==="complete"&&eventLoop.dispatch(e,this)}};Object.assign(window,{AttrListener:se,AttrListenerGlobal:we,AttrCustom:L,AttrImmutable:be,AttrUnknown:ne,AttrMutation:ve,AttrIntersection:Ee,AttrResize:ye});var v=class extends DoubleDots.DoubleDotsError{constructor(e,t,n,o){super(e),this.fullname=t,this.rule=n,this.RuleFun=o}},C=class extends v{constructor(e){super(`Trigger name/prefix must begin with english letter or '_'.
-${e} begins with '${e[0]}'.`)}static check(e){if(!e.match(/[a-z_].*/))throw new C(e)}},P=class extends v{constructor(e){super(`DoubleDots definition names and rule prefixes can only contain /^[a-z0-9_.-]*$/: ${e}`)}static check(e){if(!e.match(/^[a-z0-9_\.-]*$/))throw new P(e)}},k=class extends v{constructor(e,t,n,o){super(e,t,n,o),document.documentElement.dispatchEvent(new ErrorEvent(this))}};Object.assign(DoubleDots,{DefinitionError:v,TriggerNameError:C,DefinitionNameError:P,AsyncDefinitionError:k});var w,T,ce,ke,ae,xe,re=class{constructor(){h(this,ce);h(this,ae);h(this,w,{});h(this,T,{})}defineRule(e,t){P.check(e);for(let n of Object.keys(r(this,T)))if(n.startsWith(e)||e.startsWith(n))throw new v(`rule/rule conflict: trying to add '${e}' when '${n}' exists.`);for(let n of Object.keys(r(this,w)))if(n.startsWith(e))throw new v(`rule/name conflict: trying to add '${e}' when '${n}' exists.`);r(this,T)[e]=t,t instanceof Promise&&t.then(n=>r(this,T)[e]=n).catch(n=>r(this,T)[e]=new k(n,null,e))}define(e,t){if(P.check(e),e in r(this,w))throw new v(`name/name conflict: '${e}' already exists.`);for(let n of Object.keys(r(this,T)))if(e.startsWith(n))throw new v(`name/rule conflict: trying to add '${e}' when rule '${n}' exists.`);r(this,w)[e]=t,t instanceof Promise&&t.then(n=>r(this,w)[e]=n).catch(n=>r(this,w)[e]=new k(n,e))}get(e){return r(this,w)[e]||b(this,ae,xe).call(this,e)}};w=new WeakMap,T=new WeakMap,ce=new WeakSet,ke=function(e,t,n){if(n instanceof Promise)return r(this,w)[e]=n.then(o=>(n=o)(e)).catch(o=>new k(o,null,t,null)).then(o=>r(this,w)[e]=o).catch(o=>r(this,w)[e]=new k(o,e,t,n));try{if(n instanceof Error)throw n;let o=r(this,w)[e]=n(e);return o instanceof Promise&&o.then(i=>r(this,w)[e]=i).catch(i=>r(this,w)[e]=new k(i,e,t,n)),o}catch(o){return r(this,w)[e]=new v(o,e,t,n)}},ae=new WeakSet,xe=function(e){for(let[t,n]of Object.entries(r(this,T)))if(e.startsWith(t))return b(this,ce,ke).call(this,e,t,n)};var z=class extends Promise{static make(e){let t,n,o=new z((i,m)=>{t=i,n=m});return Object.assign(o,{resolve:t,reject:n,attr:e})}},G,he,Ce,Oe=class{constructor(){h(this,he);R(this,"unknowns",{});h(this,G,void 0)}make(e,t){var o,i;let n=z.make(t);return((i=(o=this.unknowns)[e])!=null?i:o[e]=[]).push(n),n.catch(m=>this.remove(e,n)),r(this,G)||b(this,he,Ce).call(this),n}remove(e,t){let n=this.unknowns[e];if(!n)return;let o=n.indexOf(t);o<0||(n.splice(o,1),!n.length&&delete this.unknowns[e])}complete(e){let t=this.unknowns[e];delete this.unknowns[e];for(let n of t||[])try{n.resolve()}catch(o){}}completeRule(e){for(let t in this.unknowns)t.startsWith(e)&&this.complete(t)}};G=new WeakMap,he=new WeakSet,Ce=async function(){for(g(this,G,!0);;){await new Promise(t=>setTimeout(t,1e4));let e=Object.entries(this.unknowns);if(!e.length)return g(this,G,!1);for(let[t,n]of e)for(let o of n.filter(i=>!i.attr.isConnected))this.remove(t,o)}};var I,W=class extends re{constructor(){super(...arguments);h(this,I,new Oe)}define(t,n){super.define(t,n),r(this,I).complete(t)}defineRule(t,n){super.defineRule(t,n),r(this,I).completeRule(t)}get(t,n){var o;return(o=super.get(t))!=null?o:r(this,I).make(t,n)}};I=new WeakMap;var U,oe=class extends W{constructor(){super(...arguments);h(this,U,void 0)}defineRule(t,n){if(r(this,U))throw new v("ShadowRoot too-late definition error for rule: "+t);return super.defineRule(t,n)}define(t,n){if(r(this,U))throw new v("ShadowRoot too-late definition error for definition: "+t);return super.define(t,n)}get(t){return g(this,U,!0),super.get(t)}};U=new WeakMap;var Q,X,ie=class extends oe{constructor(t,n){super();h(this,Q,void 0);h(this,X,void 0);g(this,Q,t),g(this,X,n)}get root(){return r(this,Q)}get type(){return r(this,X)}get parentMap(){var t,n;return(n=(t=this.root.host)==null?void 0:t.getRootNode())==null?void 0:n[this.type]}get(t){return super.get(t)||this.parentMap.get(t)}};Q=new WeakMap,X=new WeakMap;var ue,le,Y=class extends ie{constructor(){super(...arguments);h(this,ue,{});h(this,le,void 0)}get rule(){var t;return(t=r(this,le))!=null?t:g(this,le,`^(${this.root.host.getAttribute("override-"+this.type.toLowercase())})`)}overrides(t){var n,o,i,m;return(m=(i=r(this,ue))[t])!=null?m:i[t]=((o=(n=this.parentMap)==null?void 0:n.overrides)==null?void 0:o.call(n,t))||this.rule.matches(t)&&this.parentMap}get(t){let n=this.overrides(t);return n?n.get(t):super.get(t)}};ue=new WeakMap,le=new WeakMap;function Pe(s){return class extends s{defineRule(t,n){C.check(t),super.defineRule(t,n)}define(t,n){C.check(t),super.define(t,n)}}}Object.defineProperties(Document.prototype,{Reactions:{get:function(){let s=new W;return Object.defineProperty(this,"Reactions",{value:s,enumerable:!0}),s}},Triggers:{configurable:!0,get:function(){let s=Pe(W),e=new s;return Object.defineProperty(this,"Triggers",{value:e,enumerable:!0}),e}}});Object.defineProperties(ShadowRoot.prototype,{Reactions:{configurable:!0,get:function(){let s=new Y(this,"Reactions");return Object.defineProperty(this,"Reactions",{value:s,enumerable:!0}),s}},Triggers:{configurable:!0,get:function(){let s=Pe(Y),e=new s(this,"Triggers");return Object.defineProperty(this,"Triggers",{value:e,enumerable:!0}),e}}});var J=class{constructor(e,t,n){this.url=e,this.name=t,this.fullname=DoubleDots.pascalToKebab(DoubleDots.pascalToCamel(t)),this.value=n||"",this.type=/^_*[A-Z]/.test(t)?"Triggers":"Reactions",this.rule=/[\._-]$/.test(t)?"defineRule":"define"}async getDefinition(){let e=await import(this.url);if(!e||typeof e!="object"&&!(e instanceof Object))throw new TypeError(`URL is not an es6 module: ${this.url}`);let t=this.value||this.name,n=e[t];if(n)return n;for(let[o,i]of Object.entries(e))if(o.startsWith("dynamic")&&i[t])return i[t];throw new TypeError(`ES6 module doesn't contain resource: ${t}`)}static*parse(e){var o,i;let t=(e.hash||e.search).slice(1);if(!t)throw DoubleDots.SyntaxError("DoubleDots.Reference not in url: "+e);let n=(i=(o=t.entries)==null?void 0:o.call(t))!=null?i:t.split("&").map(m=>m.split("="));for(let[m,x]of n)yield new J(e,m,x)}};async function ot(s,e){for(let t of J.parse(s))e[t.type][t.rule](t.fullname,t.getDefinition())}Object.assign(DoubleDots,{DefinitionsMap:re,DefinitionsMapLock:oe,DefinitionsMapDOM:ie,DefinitionsMapDOMOverride:Y,UnknownDefinitionsMap:W,UnknownDefinition:z,Reference:J,define:ot});var it=HTMLElement.prototype.attachShadow;HTMLElement.prototype.attachShadow=function(...e){var t;return((t=e[0])!=null?t:e[0]={}).mode="open",it.apply(this,e)};Event.data=Symbol("Event data");var ee=class extends DoubleDots.DoubleDotsError{};DoubleDots.EventLoopError=ee;var p,O,j,_,M,q,S,F,Re=class{constructor(e,t){h(this,M);h(this,S);h(this,p,0);h(this,O,void 0);h(this,j,void 0);h(this,_,void 0);var n;this.at=t,this.event=e,g(this,O,this.at.reactions),g(this,j,[(n=e[Event.data])!=null?n:e]),g(this,_,[])}isConnected(){return this.at.isConnected()}getReaction(){return r(this,p)<r(this,O).length?r(this,O)[r(this,p)]:void 0}getReactionIndex(){return r(this,p)<r(this,O).length?r(this,p):-1}nextReaction(){return this.getReaction()}run(e=!1){for(let t=this.getReaction();t!==void 0;t=this.nextReaction()){if(t===""){e=!0,b(this,S,F).call(this,r(this,j)[r(this,p)]);continue}if(!t.startsWith("catch"))try{if(!this.at.isConnected)throw new ee("Disconnected: "+this.at);let n=this.at.getRootNode().Reactions.get(t,this.at);if(n instanceof Error)throw n;if(n instanceof Promise)if(e){n.then(i=>__eventLoop.asyncContinue(this));return}else return n instanceof DoubleDots.UnknownDefinition?b(this,M,q).call(this,new ee("Reaction not found: "+t)):(n.then(i=>__eventLoop.syncContinue()),this);let o=r(this,_)[r(this,p)]=n.apply(this.at,r(this,j).slice().reverse());if(o instanceof Promise)if(e){o.then(i=>b(this,S,F).call(this,i)).catch(i=>b(this,M,q).call(this,i)).finally(i=>__eventLoop.asyncContinue(this));return}else return o.then(i=>b(this,S,F).call(this,i)).catch(i=>b(this,M,q).call(this,i)).finally(i=>__eventLoop.syncContinue()),this;b(this,S,F).call(this,o)}catch(n){b(this,M,q).call(this,n)}}}};p=new WeakMap,O=new WeakMap,j=new WeakMap,_=new WeakMap,M=new WeakSet,q=function(e){console.error(e),r(this,_)[r(this,p)]=e;let t="catch_"+e.constructor.name.replace(/[A-Z]/g,"-$&").toLowerCase();for(ge(this,p)._++;r(this,p)<r(this,O).length;ge(this,p)._++)if(r(this,O)[r(this,p)]==="catch"||r(this,O)[r(this,p)]===t)return;(this.at.isConnected?this.at.ownerElement:document.documentElement).dispatchEvent(new ErrorEvent("error",{error:e}))},S=new WeakSet,F=function(e){if(r(this,_)[r(this,p)]=e,e===EventLoop.Break)g(this,p,r(this,O).length);else if(e instanceof EventLoop.ReactionJump){let t=r(this,p)+e.value;r(this,j)[t]=r(this,j)[r(this,p)],g(this,p,t)}else{let t=r(this,p)+1;r(this,j)[t]=e,g(this,p,t)}};var H,de,Le=class{constructor(){h(this,H,[]);h(this,de,[]);R(this,"task")}syncContinue(){(this.task=this.task.run())||this.loop()}asyncContinue(e){(this.task=e).run(!0)}loop(){for(;r(this,H)[0];){let{event:e,iterator:t}=r(this,H)[0];for(let n of t)if(this.task=new Re(e,n),r(this,de).push(this.task),this.task=this.task.run())return;r(this,H).shift()}}batch(e,t){let n=t[Symbol.iterator]();r(this,H).push({event:e,iterator:n})===1&&this.loop()}};H=new WeakMap,de=new WeakMap;__eventLoop=new Le;var Z;window.EventLoop=(Z=class{get event(){var e;return(e=__eventLoop.task)==null?void 0:e.event}get attribute(){var e;return(e=__eventLoop.task)==null?void 0:e.at}get reaction(){var e;return(e=__eventLoop.task)==null?void 0:e.getReaction()}get reactionIndex(){var e;return(e=__eventLoop.task)==null?void 0:e.getReactionIndex()}dispatch(e,t){__eventLoop.batch(e,[t])}dispatchBatch(e,t){__eventLoop.batch(e,t)}},R(Z,"ReactionJump",class{constructor(t){if(t=parseInt(t),!t||isNaN(t))throw new DoubleDotsErrorEvent("ReactionJump must be done using a positive or negative integer.");this.value=t}}),R(Z,"Break",{}),R(Z,"ReactionOrigin",class{constructor(t){if(!t||!(t instanceof Object))throw new DoubleDotsErrorEvent("ReactionOrigin must be an object not null.");this.value=t}}),R(Z,"SpreadReaction",function(e){return function(n){return n instanceof Iterable?e.call(this,...n):e.call(this,n)}}),Z);Object.defineProperty(window,"eventLoop",{value:new EventLoop});var ct={cloneNode:[Node.prototype,DocumentFragment.prototype],innerHTML:[Element.prototype,HTMLTemplateElement.prototype],insertAdjacentHTML:[Element.prototype,HTMLTemplateElement.prototype]};for(let[s,[e,t]]of Object.entries(ct))Object.defineProperty(t,s,Object.getOwnPropertyDescriptor(e,s));function _e(s,e,t){let n=Object.getOwnPropertyDescriptor(s,e);n.set=t,Object.defineProperty(s,e,n)}function Me(s,e,t){let n=Object.getOwnPropertyDescriptor(s,e);n.value=t,Object.defineProperty(s,e,n)}(function(s,e){let t=Object.getOwnPropertyDescriptor(s,"innerHTML").set,n=function(d){t.call(this,d),AttrCustom.upgradeBranch(...this.children)},o=Object.getOwnPropertyDescriptor(e,"innerHTML").set,i=function(d){o.call(this,d),AttrCustom.upgradeBranch(...this.children)},m=s.insertAdjacentHTML;function x(u,...d){let l,E;u==="afterbegin"?(l=this,E=0):u==="beforeend"?(l=this,E=this.children.length):u==="beforebegin"?(l=this.parentNode,E=Array.prototype.indexOf.call(l.children,this)):u==="afterend"&&(l=this.parentNode,E=Array.prototype.indexOf.call(l.children,this)+1);let pe=l.children.length;m.call(this,u,...d);let Se=l.children.length-pe,He=Array.from(l.children).slice(E,E+Se);AttrCustom.upgradeBranch(...He)}let a=s.setAttribute,c=s.getAttributeNode;function f(u,d){if(u.startsWith("override-"))throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: "+u);if(!u.includes(":"))return a.call(this,u,d);let l=c.call(this,u);if(l){l.value!==d&&(l.value=d);return}a.call(this,u,d),l=c.call(this,u),AttrCustom.upgrade(l)}_e(s,"innerHTML",n),_e(e,"innerHTML",i),Me(s,"insertAdjacentHTML",x),Me(s,"setAttribute",f)})(Element.prototype,ShadowRoot.prototype);(function(){function s(a,c,f=a.getRootNode(),u=c==null?void 0:c.getRootNode()){if(!(c instanceof Element)||u===f||u instanceof DocumentFragment&&f instanceof DocumentFragment)return!1;if(a.isConnected&&u instanceof DocumentFragment)return!0;throw new DoubleDots.InsertElementFromJSError(a,c)}let e=[];function t(a){return s(this,a)?[a]:e}function n(a,c){return s(this,c)?[c]:e}function o(...a){let c=this.getRootNode();return a.filter(f=>s(this,f,c))}let i={"Element.prototype":{appendChild:t,insertBefore:t,append:o,prepend:o,insertAdjacentElement:n},"Document.prototype":{appendChild:t,insertBefore:t,append:o,prepend:o},"DocumentFragment.prototype":{appendChild:t,insertBefore:t,append:o,prepend:o}};function m(a,c,f){Object.defineProperty(a,c,{...Object.getOwnPropertyDescriptor(a,c),value:f})}function x(a,c){return function(...f){let u=c.call(this,...f),d=a.apply(this,f);return u.length&&AttrCustom.upgradeBranch(...u),d}}for(let[a,c]of Object.entries(i)){a=a.split(".");let f=a.reduce((d,l)=>d[l],window),u=a.reduce((d,l)=>{var E;return(E=d[l])!=null?E:d[l]={}},DoubleDots.nativeMethods);for(let[d,l]of Object.entries(c)){let E=u[d]=f[d],pe=x(E,l);m(f,d,pe)}}})();(function(){function s(){let t=this.ownerElement.getAttribute("src"),n=t?new URL(t,location):location;DoubleDots.define(new URL(this.value,n),this.ownerDocument)}class e extends AttrCustom{upgrade(){eventLoop.dispatch(new Event(this.trigger),this)}}document.Reactions.define("define",s),document.Triggers.define("_",e)})();var De=new WeakMap,Te=class extends AttrCustom{upgrade(){let e=document.createElement("template");e.innerHTML=this.ownerElement.innerHTML,De.set(this.ownerElement,e.content),this.ownerElement.textContent=""}},je=class extends AttrCustom{upgrade(){let e=document.createDocumentFragment();e.append(...this.ownerElement.childNodes),De.set(this.ownerElement,e),this.ownerElement.textContent=""}};function at(){return De.get(this.ownerElement)}document.Triggers.define("_t",Te);document.Triggers.define("_tt",je);document.Reactions.define("_t",at);(function(s){if(document.readyState!=="loading")return AttrCustom.upgradeBranch(document.htmlElement);s.call(document,"DOMContentLoaded",e=>AttrCustom.upgradeBranch(document.documentElement))})(EventTarget.prototype.addEventListener);})();
+var __defProp = Object.defineProperty;
+var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
+var __publicField = (obj, key, value) => {
+  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
+  return value;
+};
+var __accessCheck = (obj, member, msg) => {
+  if (!member.has(obj))
+    throw TypeError("Cannot " + msg);
+};
+var __privateGet = (obj, member, getter) => {
+  __accessCheck(obj, member, "read from private field");
+  return getter ? getter.call(obj) : member.get(obj);
+};
+var __privateAdd = (obj, member, value) => {
+  if (member.has(obj))
+    throw TypeError("Cannot add the same private member more than once");
+  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+};
+var __privateSet = (obj, member, value, setter) => {
+  __accessCheck(obj, member, "write to private field");
+  setter ? setter.call(obj, value) : member.set(obj, value);
+  return value;
+};
+var __privateMethod = (obj, member, method) => {
+  __accessCheck(obj, member, "access private method");
+  return method;
+};
+
+// src/dd/1_DoubleDots.js
+var dce = document.createElement;
+var ael = EventTarget.prototype.addEventListener;
+var si = setInterval;
+var st = setTimeout;
+async function sleep(ms) {
+  return await new Promise((r) => st(r, ms));
+}
+function nextTick(cb) {
+  const a = dce.call(document, "audio");
+  ael.call(a, "ratechange", cb);
+  a.playbackRate = 2;
+}
+var _bigSet, _key;
+var _AttrWeakSet = class extends Set {
+  static gc() {
+    let active, l;
+    for (let wr of __privateGet(_AttrWeakSet, _bigSet)) {
+      if (l = wr.deref())
+        for (let a of l)
+          a.isConnected ? active = true : (l.delete(a), a.remove());
+      else
+        __privateGet(_AttrWeakSet, _bigSet).delete(wr);
+    }
+    !active && __privateSet(_AttrWeakSet, _key, clearInterval(__privateGet(_AttrWeakSet, _key)));
+  }
+  constructor(...args) {
+    super(...args);
+    __privateGet(_AttrWeakSet, _bigSet).add(new WeakRef(this));
+  }
+  add(at) {
+    __privateGet(_AttrWeakSet, _key) ?? __privateSet(_AttrWeakSet, _key, si(_AttrWeakSet.gc, _AttrWeakSet.GC));
+    super.add(at);
+  }
+};
+var AttrWeakSet = _AttrWeakSet;
+_bigSet = new WeakMap();
+_key = new WeakMap();
+__privateAdd(AttrWeakSet, _bigSet, /* @__PURE__ */ new Set());
+//wr => AttrWeakSet
+__privateAdd(AttrWeakSet, _key, void 0);
+__publicField(AttrWeakSet, "GC", 1e4);
+var nativeEvents = function() {
+  function extractHandlers(obj) {
+    return Object.keys(obj).filter((k) => k.startsWith("on")).map((k) => k.substring(2).toLowerCase());
+  }
+  const eOn = extractHandlers(Element.prototype);
+  const hOn = extractHandlers(HTMLElement.prototype);
+  const wOn = extractHandlers(window);
+  const dOn = extractHandlers(Document.prototype);
+  const e = [...eOn, ...hOn].filter((a, i, ar) => ar.indexOf(a) === i);
+  const w = wOn.filter((x) => !e.includes(x));
+  const d = dOn.filter((x) => !e.includes(x) && !w.includes(x));
+  const result = { element: e, window: w, document: d };
+  result.element.push("touchstart", "touchmove", "touchend", "touchcancel");
+  result.document.push("DOMContentLoaded");
+  Object.values(result).forEach(Object.freeze);
+  Object.freeze(result);
+  return result;
+}();
+function kebabToPascal(str) {
+  return str.replace(/-[a-z]/g, (c) => c[1].toUpperCase());
+}
+function pascalToKebab(str) {
+  return str.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase());
+}
+function pascalToCamel(str) {
+  return str.replace(/^(_*)([A-Z])/, (_, _s, c) => _s + c.toLowerCase());
+}
+async function importBasedEval(codeString) {
+  codeString = "export default " + codeString.trim();
+  const blob = new Blob([codeString], { type: "application/javascript" });
+  const url = URL.createObjectURL(blob);
+  const module = await import(url);
+  URL.revokeObjectURL(url);
+  return module.default;
+}
+function miniQuerySelector(doubledot) {
+  let [q, ...attrs] = doubledot.split("_");
+  for (let i = 0; i <= attrs.length - 1; i += 2) {
+    const name = attrs[i].replaceAll("..", "\\:");
+    const val = i <= attrs.length ? `$="${attrs[i + 1]}"` : "";
+    q += `[${name}${val}]`;
+  }
+  return q;
+}
+function* up(el, q = "*") {
+  for (let p = el.parentElement; p; p = p.parentElement)
+    if (q === "*" || p.matches(q))
+      yield p;
+}
+function* left(el, q = "*") {
+  for (let s = el.previousElementSibling; s; s = s.previousElementSibling)
+    if (q === "*" || s.matches(q))
+      yield s;
+}
+function* right(el, q = "*") {
+  for (let s = el.nextElementSibling; s; s = s.nextElementSibling)
+    if (q === "*" || s.matches(q))
+      yield s;
+}
+function* roots(el) {
+  for (let r = el.getRootNode(); r; r = r.host?.getRootNode())
+    yield r;
+}
+function* hosts(el, q = "*") {
+  for (let h = el.getRootNode().host; h; h = h.getRootNode().host)
+    if (q === "*" || h.matches(q))
+      yield h;
+}
+function* downwide(el, q = "*") {
+  for (let d, queue = [...el.children]; d = queue.shift(); queue.push(...el.children))
+    if (q === "*" || d.matches(q))
+      yield d;
+}
+var DoubleDotsError = class extends Error {
+  constructor(msg, at) {
+    super(msg);
+  }
+};
+var ThisArrowFunctionError = class extends DoubleDotsError {
+  constructor(Func) {
+    super("arrow function with `this`.");
+  }
+  static check(Definition) {
+    let txt = Definition.toString();
+    if (!/^(async\s+|)(\(|[^([]+=)/.test(txt))
+      return;
+    txt = txt.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, "");
+    txt = txt.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, "");
+    txt = txt.replace(/(`)(?:(?=(\\?))\2.)*?\1/g, "");
+    if (/\bthis\b/.test(txt))
+      throw new ThisArrowFunctionError(Definition);
+  }
+};
+window.DoubleDots = {
+  nativeMethods: {},
+  DoubleDotsError,
+  ThisArrowFunctionError,
+  DeprecationError: class DeprecationError extends DoubleDotsError {
+  },
+  MissingReaction: class MissingReaction extends DoubleDotsError {
+  },
+  DisconnectedError: class DisconnectedError extends DoubleDotsError {
+  },
+  TriggerUpgradeError: class TriggerUpgradeError extends DoubleDotsError {
+    constructor(at, error) {
+      super(at);
+    }
+  },
+  AttrWeakSet,
+  nextTick,
+  sleep,
+  nativeEvents,
+  kebabToPascal,
+  pascalToKebab,
+  pascalToCamel,
+  up,
+  left,
+  right,
+  roots,
+  hosts,
+  downwide,
+  importBasedEval,
+  miniQuerySelector
+};
+
+// src/dd/2_AttrCustom.js
+var _makeRT, makeRT_fn;
+var _AttrCustom = class extends Attr {
+  get trigger() {
+    var _a2;
+    return __privateMethod(_a2 = _AttrCustom, _makeRT, makeRT_fn).call(_a2, this), this.trigger;
+  }
+  get reactions() {
+    var _a2;
+    return __privateMethod(_a2 = _AttrCustom, _makeRT, makeRT_fn).call(_a2, this), this.reactions;
+  }
+  isConnected() {
+    return this.ownerElement.isConnected();
+  }
+  getRootNode(...args) {
+    return this.ownerElement?.getRootNode(...args);
+  }
+  remove() {
+    return this.ownerElement.removeAttribute(this.name);
+  }
+  //todo remove this and only use eventLoop.dispatchBatch(e, attrs);
+  dispatchEvent(e) {
+    if (!this.isConnected)
+      throw new DoubleDots.ReactionError("dispatch on disconnected attribute.");
+    eventLoop.dispatch(e, this);
+  }
+  static upgradeBranch(...els) {
+    for (let el of els) {
+      if (el instanceof Element)
+        this.upgradeElementRoot(el);
+      else if (el instanceof DocumentFragment)
+        for (let c of el.children)
+          this.upgradeElementRoot(c);
+    }
+  }
+  static upgradeElementRoot(el) {
+    for (let at of el.attributes)
+      if (at.name.includes(":"))
+        _AttrCustom.upgrade(at);
+    for (let c of el.children)
+      this.upgradeElementRoot(c);
+  }
+  static upgrade(at, Def) {
+    Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
+    if (Def instanceof Error)
+      throw Def;
+    if (Def instanceof Promise) {
+      Object.setPrototypeOf(at, AttrUnknown.prototype);
+      Def.then((Def2) => _AttrCustom.upgrade(at, Def2));
+      return;
+    }
+    try {
+      Object.setPrototypeOf(at, Def.prototype);
+      at.upgrade?.();
+      at.value && (at.value = at.value);
+    } catch (err) {
+      throw new DoubleDots.TriggerUpgradeError(Def.name + ".upgrade() caused an error. Triggers shouldn't cause errors.");
+    }
+  }
+};
+var AttrCustom2 = _AttrCustom;
+_makeRT = new WeakSet();
+makeRT_fn = function(at) {
+  let [trigger, ...reactions] = at.name.split(":");
+  reactions.length === 1 && !reactions[0] && reactions.pop();
+  Object.defineProperties(at, {
+    "trigger": { value: trigger, enumerable: true },
+    "reactions": { value: reactions, enumerable: true }
+  });
+};
+// Interface
+// set value(newValue) { const oldValue = super.value; super.value = newValue; ... }
+// upgrade(){ super.upgrade(); ... }
+// remove(){ ...; super.remove() }
+__privateAdd(AttrCustom2, _makeRT);
+var AttrImmutable = class extends AttrCustom2 {
+  remove() {
+  }
+  //set value() { /* cannot be changed */ }
+  //get value() { return super.value; }
+};
+var AttrUnknown = class extends AttrCustom2 {
+};
+var stopProp = Event.prototype.stopImmediatePropagation;
+var addEventListenerOG = EventTarget.prototype.addEventListener;
+var removeEventListenerOG = EventTarget.prototype.removeEventListener;
+var listenerReg = {};
+Object.defineProperty(Event, "activeListeners", {
+  enumerable: true,
+  value: function activeListeners(name) {
+    return listenerReg[name];
+  }
+});
+var AttrListener = class extends AttrCustom2 {
+  upgrade() {
+    Object.defineProperty(this, "__l", { value: this.run.bind(this) });
+    addEventListenerOG.call(this.target, this.type, this.__l, this.options);
+    listenerReg[this.type] = (listenerReg[this.type] || 0) + 1;
+  }
+  remove() {
+    listenerReg[this.type] -= 1;
+    removeEventListenerOG(this.target, this.type, this.__l, this.options);
+    super.remove();
+  }
+  get target() {
+    return this.ownerElement;
+  }
+  get type() {
+    return this.trigger;
+  }
+  // get options(){ 
+  //   return undefined; this is redundant to implement
+  // }
+  run(e) {
+    eventLoop.dispatch(e, this);
+  }
+};
+var AttrListenerGlobal = class extends AttrListener {
+  // We can hide the triggers in JS space. But this makes later steps much worse.
+  //
+  // static #triggers = new WeakMap();
+  // get register() {
+  //   let dict = AttrListenerGlobal.#triggers.get(this.target);
+  //   !dict && AttrListenerGlobal.#triggers.set(this.target, dict = {});
+  //   return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
+  // }
+  get register() {
+    let dict = this.target.triggers;
+    if (!dict)
+      Object.defineProperty(this.target, "triggers", { value: dict = {} });
+    return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
+  }
+  get target() {
+    return window;
+  }
+  upgrade() {
+    super.upgrade();
+    this.register.add(this);
+  }
+  remove() {
+    this.register.delete(this);
+    super.remove();
+  }
+  run(e) {
+    stopProp.call(e);
+    eventLoop.dispatchBatch(e, this.register);
+  }
+};
+var AttrMutation = class extends AttrCustom2 {
+  upgrade() {
+    const observer = new MutationObserver(this.run.bind(this));
+    Object.defineProperty(this, "observer", { value: observer });
+    this.observer.observe(this.target, this.settings);
+  }
+  remove() {
+    this.observer.disconnect();
+    super.remove();
+  }
+  get target() {
+    return this.ownerElement;
+  }
+  get settings() {
+    return { attributes: true, attributesOldValue: true };
+  }
+  run(mrs) {
+    for (let mr of mrs)
+      eventLoop.dispatch(mr, this);
+  }
+};
+var AttrResize = class extends AttrCustom2 {
+  upgrade() {
+    const observer = new ResizeObserver(this.run.bind(this));
+    Object.defineProperty(this, "observer", { value: observer });
+    this.observer.observe(this.ownerElement, this.settings);
+  }
+  remove() {
+    this.observer.disconnect();
+    super.remove();
+  }
+  get settings() {
+    return { box: this.trigger };
+  }
+  run(entries) {
+    eventLoop.dispatch(entries, this);
+  }
+};
+var AttrIntersection = class extends AttrCustom2 {
+  upgrade() {
+    const observer = new IntersectionObserver(this.run.bind(this));
+    Object.defineProperty(this, "observer", { value: observer });
+    this.observer.observe(this.ownerElement, this.settings);
+  }
+  stop() {
+    this.observer.disconnect();
+  }
+  remove() {
+    this.stop();
+    super.remove();
+  }
+  // get settings() {
+  //   return { threshold: 0.0, root: null, rootMargin: '0px 0px 0px 0px' };
+  // }
+  run([mr]) {
+    document.readyState === "complete" && eventLoop.dispatch(mr, this);
+  }
+};
+Object.assign(window, {
+  AttrListener,
+  AttrListenerGlobal,
+  AttrCustom: AttrCustom2,
+  AttrImmutable,
+  AttrUnknown,
+  AttrMutation,
+  AttrIntersection,
+  AttrResize
+});
+
+// src/dd/3_definition_registers_v4.js
+var DefinitionError = class extends DoubleDots.DoubleDotsError {
+  constructor(msg, fullname, rule, RuleFun) {
+    super(msg);
+    this.fullname = fullname;
+    this.rule = rule;
+    this.RuleFun = RuleFun;
+  }
+};
+var TriggerNameError = class extends DefinitionError {
+  constructor(fullname) {
+    super(`Trigger name/prefix must begin with english letter or '_'.
+${fullname} begins with '${fullname[0]}'.`);
+  }
+  static check(name) {
+    if (!name.match(/[a-z_].*/))
+      throw new TriggerNameError(name);
+  }
+};
+var DefinitionNameError = class extends DefinitionError {
+  constructor(name) {
+    super(`DoubleDots definition names and rule prefixes can only contain /^[a-z0-9_.-]*$/: ${name}`);
+  }
+  static check(name) {
+    if (!name.match(/^[a-z0-9_\.-]*$/))
+      throw new DefinitionNameError(name);
+  }
+};
+var AsyncDefinitionError = class extends DefinitionError {
+  constructor(msg, fullname, rule, RuleFun) {
+    super(msg, fullname, rule, RuleFun);
+    document.documentElement.dispatchEvent(new ErrorEvent(this));
+  }
+};
+Object.assign(DoubleDots, {
+  DefinitionError,
+  TriggerNameError,
+  DefinitionNameError,
+  AsyncDefinitionError
+});
+var DefinitionsMap = class {
+  #definitions = {};
+  #rules = {};
+  // #ruleRE = new RegExp(" ", "g");
+  defineRule(prefix, FunFun) {
+    DefinitionNameError.check(prefix);
+    for (let r of Object.keys(this.#rules))
+      if (r.startsWith(prefix) || prefix.startsWith(r))
+        throw new DefinitionError(`rule/rule conflict: trying to add '${prefix}' when '${r}' exists.`);
+    for (let fullname of Object.keys(this.#definitions))
+      if (fullname.startsWith(prefix))
+        throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname}' exists.`);
+    this.#rules[prefix] = FunFun;
+    FunFun instanceof Promise && FunFun.then((newFunFun) => this.#rules[prefix] = newFunFun).catch((err) => this.#rules[prefix] = new AsyncDefinitionError(err, null, prefix));
+  }
+  define(fullname, Def) {
+    DefinitionNameError.check(fullname);
+    if (fullname in this.#definitions)
+      throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
+    for (let r of Object.keys(this.#rules))
+      if (fullname.startsWith(r))
+        throw new DefinitionError(`name/rule conflict: trying to add '${fullname}' when rule '${r}' exists.`);
+    this.#definitions[fullname] = Def;
+    Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname] = newDef).catch((err) => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname));
+  }
+  #processRule(fullname, rule, FunFun) {
+    if (FunFun instanceof Promise)
+      return this.#definitions[fullname] = FunFun.then((newFunFun) => (FunFun = newFunFun)(fullname)).catch((err) => new AsyncDefinitionError(err, null, rule, null)).then((newDef) => this.#definitions[fullname] = newDef).catch((err) => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
+    try {
+      if (FunFun instanceof Error)
+        throw FunFun;
+      const Def = this.#definitions[fullname] = FunFun(fullname);
+      Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname] = newDef).catch((err) => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
+      return Def;
+    } catch (err) {
+      return this.#definitions[fullname] = new DefinitionError(err, fullname, rule, FunFun);
+    }
+  }
+  #checkViaRule(fullname) {
+    for (let [rule, FunFun] of Object.entries(this.#rules))
+      if (fullname.startsWith(rule))
+        return this.#processRule(fullname, rule, FunFun);
+  }
+  get(fullname) {
+    return this.#definitions[fullname] || this.#checkViaRule(fullname);
+  }
+};
+var UnknownDefinition = class extends Promise {
+  static make(attr) {
+    let resolve, reject;
+    const promise = new UnknownDefinition((a, b) => {
+      resolve = a;
+      reject = b;
+    });
+    return Object.assign(promise, { resolve, reject, attr });
+  }
+};
+var PromiseMap = class {
+  unknowns = {};
+  #interval;
+  make(fullname, attr) {
+    const p = UnknownDefinition.make(attr);
+    (this.unknowns[fullname] ??= []).push(p);
+    p.catch((_) => this.remove(fullname, p));
+    this.#interval || this.#cleanLoop();
+    return p;
+  }
+  async #cleanLoop() {
+    this.#interval = true;
+    while (true) {
+      await new Promise((r) => setTimeout(r, 1e4));
+      const all = Object.entries(this.unknowns);
+      if (!all.length)
+        return this.#interval = false;
+      for (let [fullname, promises] of all)
+        for (let p of promises.filter((p2) => !p2.attr.isConnected))
+          this.remove(fullname, p);
+    }
+  }
+  remove(fullname, p) {
+    const promises = this.unknowns[fullname];
+    if (!promises)
+      return;
+    const i = promises.indexOf(p);
+    if (i < 0)
+      return;
+    promises.splice(i, 1);
+    !promises.length && delete this.unknowns[fullname];
+  }
+  complete(fullname) {
+    const promises = this.unknowns[fullname];
+    delete this.unknowns[fullname];
+    for (let p of promises || [])
+      try {
+        p.resolve();
+      } catch (_) {
+      }
+  }
+  completeRule(rule) {
+    for (let fullname in this.unknowns)
+      if (fullname.startsWith(rule))
+        this.complete(fullname);
+  }
+};
+var UnknownDefinitionsMap = class extends DefinitionsMap {
+  #unknowns = new PromiseMap();
+  define(fullname, Def) {
+    super.define(fullname, Def);
+    this.#unknowns.complete(fullname);
+  }
+  defineRule(rule, FunClass) {
+    super.defineRule(rule, FunClass);
+    this.#unknowns.completeRule(rule);
+  }
+  //todo add attr
+  get(fullname, attr) {
+    return super.get(fullname) ?? this.#unknowns.make(fullname, attr);
+  }
+};
+var DefinitionsMapLock = class extends UnknownDefinitionsMap {
+  #lock;
+  defineRule(rule, FunFun) {
+    if (this.#lock)
+      throw new DefinitionError("ShadowRoot too-late definition error for rule: " + rule);
+    return super.defineRule(rule, FunFun);
+  }
+  define(name, Def) {
+    if (this.#lock)
+      throw new DefinitionError("ShadowRoot too-late definition error for definition: " + name);
+    return super.define(name, Def);
+  }
+  get(name) {
+    this.#lock = true;
+    return super.get(name);
+  }
+};
+var DefinitionsMapDOM = class extends DefinitionsMapLock {
+  #root;
+  #type;
+  constructor(root, type) {
+    super();
+    this.#root = root;
+    this.#type = type;
+  }
+  get root() {
+    return this.#root;
+  }
+  get type() {
+    return this.#type;
+  }
+  get parentMap() {
+    return this.root.host?.getRootNode()?.[this.type];
+  }
+  get(name) {
+    return super.get(name) || this.parentMap.get(name);
+  }
+};
+var DefinitionsMapDOMOverride = class extends DefinitionsMapDOM {
+  #cache = {};
+  #rule;
+  /**
+   * "name|prefix.*|another-name|prefix2_.*"
+   * and is simply wrapped in ^(...) to complete the regex query.
+   */
+  get rule() {
+    return this.#rule ??= `^(${this.root.host.getAttribute("override-" + this.type.toLowercase())})`;
+  }
+  /**
+   * @param {string} name 
+   * @returns {DefinitionsMap|false} if the name has been overridden above.
+   */
+  overrides(name) {
+    return this.#cache[name] ??= this.parentMap?.overrides?.(name) || this.rule.matches(name) && this.parentMap;
+  }
+  /**
+   * First, we check if there is an override root. If there is, we redirect the query directly to that root instead.
+   * Second, we try to use our own definitions, and then inherited definitions.
+   * @param {string} name 
+   * @returns DefinitionsMap from the document that overrides the definition name 
+   */
+  get(name) {
+    const overrider = this.overrides(name);
+    return overrider ? overrider.get(name) : super.get(name);
+  }
+};
+function TriggerSyntaxCheck(DefMap) {
+  return class TriggerMap extends DefMap {
+    defineRule(prefix, FunFun) {
+      TriggerNameError.check(prefix);
+      super.defineRule(prefix, FunFun);
+    }
+    define(fullname, Def) {
+      TriggerNameError.check(fullname);
+      super.define(fullname, Def);
+    }
+  };
+}
+Object.defineProperties(Document.prototype, {
+  Reactions: {
+    get: function() {
+      const map = new UnknownDefinitionsMap();
+      Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
+      return map;
+    }
+  },
+  Triggers: {
+    configurable: true,
+    get: function() {
+      const TriggerMap = TriggerSyntaxCheck(UnknownDefinitionsMap);
+      const map = new TriggerMap();
+      Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
+      return map;
+    }
+  }
+});
+Object.defineProperties(ShadowRoot.prototype, {
+  Reactions: {
+    configurable: true,
+    get: function() {
+      const map = new DefinitionsMapDOMOverride(this, "Reactions");
+      Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
+      return map;
+    }
+  },
+  Triggers: {
+    configurable: true,
+    get: function() {
+      const TriggerMap = TriggerSyntaxCheck(DefinitionsMapDOMOverride);
+      const map = new TriggerMap(this, "Triggers");
+      Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
+      return map;
+    }
+  }
+});
+var Reference = class {
+  constructor(url, name, value) {
+    this.url = url;
+    this.name = name;
+    this.fullname = DoubleDots.pascalToKebab(DoubleDots.pascalToCamel(name));
+    this.value = value || "";
+    this.type = /^_*[A-Z]/.test(name) ? "Triggers" : "Reactions";
+    this.rule = /[\._-]$/.test(name) ? "defineRule" : "define";
+  }
+  async getDefinition() {
+    const module = await import(this.url);
+    if (!module || typeof module !== "object" && !(module instanceof Object))
+      throw new TypeError(`URL is not an es6 module: ${this.url}`);
+    const lookup = this.value || this.name;
+    const def = module[lookup];
+    if (def)
+      return def;
+    for (let [k, v] of Object.entries(module))
+      if (k.startsWith("dynamic")) {
+        if (v[lookup])
+          return v[lookup];
+      }
+    throw new TypeError(`ES6 module doesn't contain resource: ${lookup}`);
+  }
+  static *parse(url) {
+    const hashSearch = (url.hash || url.search).slice(1);
+    if (!hashSearch)
+      throw DoubleDots.SyntaxError("DoubleDots.Reference not in url: " + url);
+    const refs = hashSearch.entries?.() ?? hashSearch.split("&").map((s) => s.split("="));
+    for (let [name, value] of refs)
+      yield new Reference(url, name, value);
+  }
+};
+async function define(url, root) {
+  for (let ref of Reference.parse(url))
+    root[ref.type][ref.rule](ref.fullname, ref.getDefinition());
+}
+Object.assign(DoubleDots, {
+  DefinitionsMap,
+  DefinitionsMapLock,
+  DefinitionsMapDOM,
+  DefinitionsMapDOMOverride,
+  UnknownDefinitionsMap,
+  UnknownDefinition,
+  Reference,
+  define
+});
+
+// src/dd/4_eventLoop_v2.js
+var attachShadowOG = HTMLElement.prototype.attachShadow;
+HTMLElement.prototype.attachShadow = function attachShadowforceModeOpen(...args) {
+  (args[0] ??= {}).mode = "open";
+  return attachShadowOG.apply(this, args);
+};
+Event.data = Symbol("Event data");
+var EventLoopError = class extends DoubleDots.DoubleDotsError {
+};
+DoubleDots.EventLoopError = EventLoopError;
+var MicroFrame = class {
+  #i = 0;
+  #names;
+  #inputs;
+  #outputs;
+  constructor(event, at) {
+    this.at = at;
+    this.event = event;
+    this.#names = this.at.reactions;
+    this.#inputs = [event[Event.data] ?? event];
+    this.#outputs = [];
+  }
+  isConnected() {
+    return this.at.isConnected();
+  }
+  getReaction() {
+    return this.#i < this.#names.length ? this.#names[this.#i] : void 0;
+  }
+  getReactionIndex() {
+    return this.#i < this.#names.length ? this.#i : -1;
+  }
+  nextReaction() {
+    return this.getReaction();
+  }
+  /**
+   * @returns <undefined> when the task is emptied, or is awaiting in async mode, 
+   * which both means that the event loop can continue.
+   * @returns <this> current task when the task is not emptied 
+   * and we must wait for it in sync mode.
+   */
+  run(threadMode = false) {
+    for (let re = this.getReaction(); re !== void 0; re = this.nextReaction()) {
+      if (re === "") {
+        threadMode = true;
+        this.#runSuccess(this.#inputs[this.#i]);
+        continue;
+      }
+      if (re.startsWith("catch"))
+        continue;
+      try {
+        if (!this.at.isConnected)
+          throw new EventLoopError("Disconnected: " + this.at);
+        const func = this.at.getRootNode().Reactions.get(re, this.at);
+        if (func instanceof Error)
+          throw func;
+        if (func instanceof Promise) {
+          if (threadMode) {
+            func.then((_) => __eventLoop.asyncContinue(this));
+            return;
+          } else if (func instanceof DoubleDots.UnknownDefinition) {
+            return this.#runError(new EventLoopError("Reaction not found: " + re));
+          } else {
+            func.then((_) => __eventLoop.syncContinue());
+            return this;
+          }
+        }
+        const res = this.#outputs[this.#i] = func.apply(this.at, this.#inputs.slice().reverse());
+        if (res instanceof Promise) {
+          if (threadMode) {
+            res.then((oi) => this.#runSuccess(oi)).catch((error) => this.#runError(error)).finally((_) => __eventLoop.asyncContinue(this));
+            return;
+          } else {
+            res.then((oi) => this.#runSuccess(oi)).catch((error) => this.#runError(error)).finally((_) => __eventLoop.syncContinue());
+            return this;
+          }
+        }
+        this.#runSuccess(res);
+      } catch (error) {
+        this.#runError(error);
+      }
+    }
+  }
+  #runError(error) {
+    console.error(error);
+    this.#outputs[this.#i] = error;
+    const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, "-$&").toLowerCase();
+    for (this.#i++; this.#i < this.#names.length; this.#i++)
+      if (this.#names[this.#i] === "catch" || this.#names[this.#i] === catchKebab)
+        return;
+    const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
+    target.dispatchEvent(new ErrorEvent("error", { error }));
+  }
+  #runSuccess(res) {
+    this.#outputs[this.#i] = res;
+    if (res === EventLoop.Break) {
+      this.#i = this.#names.length;
+    } else if (res instanceof EventLoop.ReactionJump) {
+      const next = this.#i + res.value;
+      this.#inputs[next] = this.#inputs[this.#i];
+      this.#i = next;
+    } else {
+      const next = this.#i + 1;
+      this.#inputs[next] = res;
+      this.#i = next;
+    }
+  }
+};
+var __EventLoop = class {
+  #stack = [];
+  #started = [];
+  task;
+  syncContinue() {
+    if (!(this.task = this.task.run()))
+      this.loop();
+  }
+  asyncContinue(task) {
+    (this.task = task).run(true);
+  }
+  loop() {
+    while (this.#stack[0]) {
+      const { event, iterator } = this.#stack[0];
+      for (let attr of iterator) {
+        this.task = new MicroFrame(event, attr);
+        this.#started.push(this.task);
+        if (this.task = this.task.run())
+          return;
+      }
+      this.#stack.shift();
+    }
+  }
+  batch(event, iterable) {
+    const iterator = iterable[Symbol.iterator]();
+    if (this.#stack.push({ event, iterator }) === 1)
+      this.loop();
+  }
+};
+__eventLoop = new __EventLoop();
+var _a;
+window.EventLoop = (_a = class {
+  //todo freeze the ReactionOrigin, SpreadReaction, ReactionJump, Break.
+  get event() {
+    return __eventLoop.task?.event;
+  }
+  get attribute() {
+    return __eventLoop.task?.at;
+  }
+  get reaction() {
+    return __eventLoop.task?.getReaction();
+  }
+  get reactionIndex() {
+    return __eventLoop.task?.getReactionIndex();
+  }
+  dispatch(event, attr) {
+    __eventLoop.batch(event, [attr]);
+  }
+  //todo rename to propagate
+  dispatchBatch(event, iterable) {
+    __eventLoop.batch(event, iterable);
+  }
+}, __publicField(_a, "ReactionJump", class ReactionJump {
+  constructor(n) {
+    n = parseInt(n);
+    if (!n || isNaN(n))
+      throw new DoubleDotsErrorEvent("ReactionJump must be done using a positive or negative integer.");
+    this.value = n;
+  }
+}), __publicField(_a, "Break", {}), __publicField(_a, "ReactionOrigin", class ReactionOrigin {
+  constructor(obj) {
+    if (!obj || !(obj instanceof Object))
+      throw new DoubleDotsErrorEvent("ReactionOrigin must be an object not null.");
+    this.value = obj;
+  }
+}), __publicField(_a, "SpreadReaction", function(fun) {
+  return function SpreadReaction(oi) {
+    return oi instanceof Iterable ? fun.call(this, ...oi) : fun.call(this, oi);
+  };
+}), _a);
+Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
+
+// src/dd/5_load_DoubleDots.js
+var Specializers = {
+  cloneNode: [Node.prototype, DocumentFragment.prototype],
+  innerHTML: [Element.prototype, HTMLTemplateElement.prototype],
+  insertAdjacentHTML: [Element.prototype, HTMLTemplateElement.prototype]
+};
+for (let [m, [TOP, DOWN]] of Object.entries(Specializers))
+  Object.defineProperty(DOWN, m, Object.getOwnPropertyDescriptor(TOP, m));
+function monkeyPatchSetter(proto, prop, fun) {
+  const desc = Object.getOwnPropertyDescriptor(proto, prop);
+  desc.set = fun;
+  Object.defineProperty(proto, prop, desc);
+}
+function monkeyPatch(proto, prop, fun) {
+  const desc = Object.getOwnPropertyDescriptor(proto, prop);
+  desc.value = fun;
+  Object.defineProperty(proto, prop, desc);
+}
+(function(Element_p, ShadowRoot_p) {
+  const Element_innerHTML_OG = Object.getOwnPropertyDescriptor(Element_p, "innerHTML").set;
+  const innerHTML_DD_el = function innerHTML_DD(val) {
+    Element_innerHTML_OG.call(this, val);
+    AttrCustom.upgradeBranch(...this.children);
+  };
+  const ShadowRoot_innerHTML_OG = Object.getOwnPropertyDescriptor(ShadowRoot_p, "innerHTML").set;
+  const innerHTML_DD_sr = function innerHTML_DD(val) {
+    ShadowRoot_innerHTML_OG.call(this, val);
+    AttrCustom.upgradeBranch(...this.children);
+  };
+  const insertAdjacentHTMLOG = Element_p.insertAdjacentHTML;
+  function insertAdjacentHTML_DD(position, ...args) {
+    let root, index;
+    if (position === "afterbegin")
+      root = this, index = 0;
+    else if (position === "beforeend")
+      root = this, index = this.children.length;
+    else if (position === "beforebegin")
+      root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this);
+    else if (position === "afterend")
+      root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this) + 1;
+    const childCount = root.children.length;
+    insertAdjacentHTMLOG.call(this, position, ...args);
+    const addCount = root.children.length - childCount;
+    const newRoots = Array.from(root.children).slice(index, index + addCount);
+    AttrCustom.upgradeBranch(...newRoots);
+  }
+  const setAttributeOG = Element_p.setAttribute;
+  const getAttributeNodeOG = Element_p.getAttributeNode;
+  function setAttribute_DD(name, value) {
+    if (name.startsWith("override-"))
+      throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
+    if (!name.includes(":"))
+      return setAttributeOG.call(this, name, value);
+    let at = getAttributeNodeOG.call(this, name);
+    if (at) {
+      at.value !== value && (at.value = value);
+      return;
+    }
+    setAttributeOG.call(this, name, value);
+    at = getAttributeNodeOG.call(this, name);
+    AttrCustom.upgrade(at);
+  }
+  monkeyPatchSetter(Element_p, "innerHTML", innerHTML_DD_el);
+  monkeyPatchSetter(ShadowRoot_p, "innerHTML", innerHTML_DD_sr);
+  monkeyPatch(Element_p, "insertAdjacentHTML", insertAdjacentHTML_DD);
+  monkeyPatch(Element_p, "setAttribute", setAttribute_DD);
+})(Element.prototype, ShadowRoot.prototype);
+(function() {
+  function checkRoot(root, child, r = root.getRootNode(), cr = child?.getRootNode()) {
+    if (!(child instanceof Element) || cr === r || cr instanceof DocumentFragment && r instanceof DocumentFragment)
+      return false;
+    if (root.isConnected && cr instanceof DocumentFragment)
+      return true;
+    throw new DoubleDots.InsertElementFromJSError(root, child);
+  }
+  const EMPTY = [];
+  function sameRootFirstArg(child) {
+    return checkRoot(this, child) ? [child] : EMPTY;
+  }
+  function sameRootSecond(_, child) {
+    return checkRoot(this, child) ? [child] : EMPTY;
+  }
+  function sameRootSpreadArg(...args) {
+    const r = this.getRootNode();
+    return args.filter((child) => checkRoot(this, child, r));
+  }
+  const Mask = {
+    "Comment.prototype": {
+      after: sameRootSpreadArg,
+      before: sameRootSpreadArg,
+      insertBefore: sameRootFirstArg
+    },
+    "Text.prototype": {
+      after: sameRootSpreadArg,
+      before: sameRootSpreadArg,
+      insertBefore: sameRootFirstArg
+    },
+    "Element.prototype": {
+      //replaceChild
+      after: sameRootSpreadArg,
+      before: sameRootSpreadArg,
+      appendChild: sameRootFirstArg,
+      insertBefore: sameRootFirstArg,
+      append: sameRootSpreadArg,
+      prepend: sameRootSpreadArg,
+      insertAdjacentElement: sameRootSecond
+    },
+    "Document.prototype": {
+      //replaceChild
+      appendChild: sameRootFirstArg,
+      insertBefore: sameRootFirstArg,
+      append: sameRootSpreadArg,
+      prepend: sameRootSpreadArg
+    },
+    "DocumentFragment.prototype": {
+      //replaceChild
+      appendChild: sameRootFirstArg,
+      insertBefore: sameRootFirstArg,
+      append: sameRootSpreadArg,
+      prepend: sameRootSpreadArg
+    }
+  };
+  function monkeyPatch2(proto, prop, value) {
+    Object.defineProperty(proto, prop, {
+      ...Object.getOwnPropertyDescriptor(proto, prop),
+      value
+    });
+  }
+  function verifyAndUpgrade(OG, verify) {
+    return function(...args) {
+      const upgrades = verify.call(this, ...args);
+      const res = OG.apply(this, args);
+      upgrades.length && AttrCustom.upgradeBranch(...upgrades);
+      return res;
+    };
+  }
+  for (let [path, objMask] of Object.entries(Mask)) {
+    path = path.split(".");
+    const obj = path.reduce((o, p) => o[p], window);
+    const nativeObj = path.reduce((o, p) => o[p] ??= {}, DoubleDots.nativeMethods);
+    for (let [prop, verifyMethod] of Object.entries(objMask)) {
+      const OG = nativeObj[prop] = obj[prop];
+      const newFunc = verifyAndUpgrade(OG, verifyMethod);
+      monkeyPatch2(obj, prop, newFunc);
+    }
+  }
+})();
+(function() {
+  function define2() {
+    const src = this.ownerElement.getAttribute("src");
+    const base = src ? new URL(src, location) : location;
+    DoubleDots.define(new URL(this.value, base), this.ownerDocument);
+  }
+  class AttrEmpty extends AttrCustom {
+    upgrade() {
+      eventLoop.dispatch(new Event(this.trigger), this);
+    }
+  }
+  ;
+  document.Reactions.define("define", define2);
+  document.Triggers.define("_", AttrEmpty);
+})();
+
+// x/template/v1.js
+(function() {
+  const ElAppendOG = DoubleDots.nativeMethods.Element.prototype.append;
+  const DocfragAppendOG = DoubleDots.nativeMethods.DocumentFragment.prototype.append;
+  const CommentAfterOG = DoubleDots.nativeMethods.Comment.prototype.after;
+  function subsumeNodes(el) {
+    const t = document.createElement("template");
+    DocfragAppendOG.call(t.content, ...el.childNodes);
+    ElAppendOG.call(el, t);
+    return t;
+  }
+  function subsumeHtml(el) {
+    el.innerHTML = `<template>${el.innerHTML}</template>`;
+    return el.children[0];
+  }
+  function absorbNodes(before, nodes) {
+    const t = document.createElement("template");
+    DocfragAppendOG.call(t.content, ...nodes);
+    CommentAfterOG.call(before, t);
+  }
+  function absorbHtml(before, nodes) {
+    const txt = nodes.map((n) => n.outerHTML ?? n instanceof Comment ? `<!--${n.textContent}-->` : n.textContent);
+    nodes.forEach((n) => n.remove());
+    before.insertAdjacentHTML("afterend", `<template>${txt.join("")}</template>`);
+  }
+  const usedEnds = /* @__PURE__ */ new WeakSet();
+  function gobble(n) {
+    let txt = n.textContent.trim();
+    if (!txt.match(/^template(\s|)/))
+      return;
+    const res = [];
+    while (n = n.nextSibling) {
+      if (n instanceof Comment && !usedEnds.has(n)) {
+        if ((txt = n.textContent.trim()).match(/^\/template(\s|)/)) {
+          usedEnds.add(n);
+          break;
+        }
+      }
+      res.push(n);
+    }
+    return res;
+  }
+  function descendantsReverse(root, trigger) {
+    const it = document.createNodeIterator(root, NodeFilter.SHOW_ELEMENT);
+    const elements = [], attributes = [];
+    for (let n; n = it.nextNode(); ) {
+      for (let a of n.attributes)
+        if (a.name.startsWith(trigger)) {
+          attributes.push(a);
+          elements.unshift(n);
+          break;
+        }
+    }
+    return { elements, attributes };
+  }
+  function commentsRightToLeft(docFrag) {
+    const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_COMMENT);
+    let res = [];
+    for (let n; n = it.nextNode(); )
+      res.unshift(n);
+    return res;
+  }
+  class Template extends AttrCustom {
+    upgrade(dynamic) {
+      const el = this.ownerElement;
+      if (el.childNodes.length === 0 || el.children.length === 1 && el.children[0] instanceof HTMLTemplateElement)
+        return;
+      if (el instanceof HTMLTemplateElement)
+        throw new Error("template trigger cannot be applied to template elements.");
+      const subsume = dynamic ? subsumeHtml : subsumeNodes;
+      const absorb = dynamic ? absorbHtml : absorbNodes;
+      const { elements, attributes } = descendantsReverse(el, this.trigger + ":");
+      const templates = elements.map(subsume);
+      let gobbledNodes;
+      for (let t of templates)
+        for (let comment of commentsRightToLeft(t.content))
+          if (gobbledNodes = gobble(comment))
+            absorb(comment, gobbledNodes);
+    }
+  }
+  document.Triggers.define("template", Template);
+  function template() {
+    return this.ownerElement.children[0];
+  }
+  document.Reactions.define("template", template);
+})();
+
+// src/dd/6_run_DoubleDots.js
+(function(aelOG) {
+  if (document.readyState !== "loading")
+    return AttrCustom.upgradeBranch(document.htmlElement);
+  aelOG.call(document, "DOMContentLoaded", (_) => AttrCustom.upgradeBranch(document.documentElement));
+})(EventTarget.prototype.addEventListener);
 //# sourceMappingURL=dd.js.map
