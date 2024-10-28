@@ -104,8 +104,9 @@ class EmbraceCommentFor {
     this.dollarName = dollarName;
     this.d = `$${dollarName}`;
     this.dd = `$$${dollarName}`;
-    this.template = templ; 
-    templ.remove(); 
+    this.templ = templ.content;
+    templ.remove(); //remove the template from the Dom.
+    this.cube = new LoopCube(EmbraceRoot.make(this.templ));
   }
 
   get params() {
@@ -113,9 +114,8 @@ class EmbraceCommentFor {
   }
 
   run(argsDictionary, dataObject, node, ancestor) {
-    const cube = node.__cube ??= new LoopCube(EmbraceRoot.make(this.template));
     const now = argsDictionary[this.listName];
-    const { embraces, removes, changed } = cube.step(now);
+    const { embraces, removes, changed } = this.cube.step(now);
     for (let n of removes)
       for (let c of n.nodes) //todo make a prop list on the EmbraceRoot to get all the childNodes only.
         if (!(c instanceof Attr))
@@ -139,12 +139,51 @@ class EmbraceCommentFor {
   }
 }
 
+class DomBranch {
+
+  static gobble(n) {
+    let txt = n.textContent.trim();
+    if (!txt.endsWith("{"))
+      return;
+    const res = document.createElement("template");
+    res.setAttribute("start", txt);
+    n.parentNode.replaceChild(n, res);
+    for (let n = res.nextSibling; n;) {
+      if (n instanceof Comment) {
+        txt = n.textContent.trim();
+        if (txt[0] === "}") {
+          res.setAttribute("end", txt);
+          n.remove();
+          break;
+        }
+        DomBranch.gobble(n);  //try to gobble recursively
+      }
+      const m = n.nextSibling;
+      res.content.append(n);
+      n = m;
+    }
+    DomBranch.subsume(res.content);
+  }
+
+  static nextUp(n) {
+    while (n = n.parentNode)
+      if (n.nextSibling)
+        return n.nextSibling;
+  }
+
+  static subsume(n) {
+    for (; n; n = n.firstChild ?? n.nextSibling ?? DomBranch.nextUp(n))
+      if (n instanceof Comment)
+        DomBranch.gobble(n);
+  }
+}
+
 class EmbraceRoot {
 
   static flatDomNodesAll(docFrag) {
     const res = [];
     const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
-    for (let n = it.nextNode(); n = it.nextNode();) {
+    for (let n; n = it.nextNode();) {
       res.push(n);
       if (n instanceof Element)
         for (let a of n.attributes)
@@ -194,8 +233,8 @@ class EmbraceRoot {
             ex.run(argsDictionary, dataObject, n, ancestor);
   }
 
-  static make(template) {
-    const e = new EmbraceRoot(template.content);
+  static make(docFrag) {
+    const e = new EmbraceRoot(docFrag);
     e.expressions = EmbraceRoot.listOfExpressions(e.nodes);
     e.paramsDict = EmbraceRoot.paramDict(e.expressions);
     return e;
@@ -204,6 +243,7 @@ class EmbraceRoot {
 
 export function embrace(templ, dataObject) {
   if (!this.__embraceRoot) {
+    DomBranch.subsume(templ); //recursive once. Move into _t:
     this.__embraceRoot = EmbraceRoot.make(templ);
     this.ownerElement.append(this.__embraceRoot.template);
   }
