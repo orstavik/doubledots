@@ -21,6 +21,19 @@
     <div template:>
       <h3>hello darkness my old friend!</h3>
     </div>
+    <div>
+      hello lightness my new friend!
+      <!--template -->
+      <i>items being added here</i>
+    </div>
+    <div>
+      hello rainbow!
+      <!--template {{if onel}}-->
+      <!--template {{for(item of two)}}-->
+      <i>two items being added here</i>
+      <!--/template-->
+      <i>and some end if here, with an invisible if end</i>
+    </div>
   </main>
   <template>
     <main template:="" _:test-log="">
@@ -35,6 +48,19 @@
         <div template:=""><template>
             <h3>hello darkness my old friend!</h3>
           </template></div>
+        <div>
+          hello lightness my new friend!
+          <!--template --><template>
+          <i>items being added here</i>
+        </template></div>
+        <div>
+          hello rainbow!
+          <!--template {{if onel}}--><template>
+          <!--template {{for(item of two)}}--><template>
+          <i>two items being added here</i>
+          </template><!--/template-->
+          <i>and some end if here, with an invisible if end</i>
+        </template></div>    
       </template>
     </main>
   </template>
