@@ -100,11 +100,10 @@ class EmbraceTextNode {
 
 class EmbraceCommentFor {
   constructor(templ, varName, listName) {
-    this.listName = listName;
-    this.varName = varName;
-    this.iName = `#${varName}`;
-    // this.dd = `$$${dollarName}`;
     this.template = templ; 
+    this.varName = varName;
+    this.listName = listName;
+    this.iName = `#${varName}`;
     templ.remove(); 
   }
 
