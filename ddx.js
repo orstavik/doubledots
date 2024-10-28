@@ -90,82 +90,46 @@ var EmbraceTextNode = class {
   }
 };
 var EmbraceCommentFor = class {
-  constructor(templ, dollarName, listName) {
+  constructor(templ, varName, listName) {
+    this.template = templ;
+    this.varName = varName;
     this.listName = listName;
-    this.dollarName = dollarName;
-    this.d = `$${dollarName}`;
-    this.dd = `$$${dollarName}`;
-    this.templ = templ.content;
+    this.iName = `#${varName}`;
     templ.remove();
-    this.cube = new LoopCube(EmbraceRoot.make(this.templ));
   }
   get params() {
     return { [this.listName]: this.listName };
   }
   run(argsDictionary, dataObject, node, ancestor) {
+    const cube = node.__cube ??= new LoopCube(EmbraceRoot.make(this.template));
     const now = argsDictionary[this.listName];
-    const { embraces, removes, changed } = this.cube.step(now);
+    const { embraces, removes, changed } = cube.step(now);
     for (let n of removes)
       for (let c of n.nodes)
         if (!(c instanceof Attr))
           c.remove();
     node.after(...embraces.map((e) => e.template));
     for (let i of changed) {
-      dataObject[this.d] = now[i];
-      dataObject[this.dd] = i;
+      dataObject[this.varName] = now[i];
+      dataObject[this.iName] = i;
       embraces[i].run(Object.assign({}, argsDictionary), dataObject, void 0, ancestor);
     }
   }
   //naive, no nested control structures yet. no if. no switch. etc. , untested against errors.
   //startUpTime
   static make(txt, tmpl) {
-    const ctrlFor = txt.match(/{{\s*for\s*\(\s*([^\s]+)\s+of\s+([^\s)]+)\)\s*}}/);
+    const ctrlFor = txt.match(/{{\s*for\s*\(\s*(let|const|var)\s+([^\s]+)\s+of\s+([^\s)]+)\)\s*}}/);
     if (ctrlFor) {
-      const [_, dollarName, listName] = ctrlFor;
-      return new EmbraceCommentFor(tmpl, dollarName, listName);
+      const [_, constLetVar, varName, listName] = ctrlFor;
+      return new EmbraceCommentFor(tmpl, varName, listName);
     }
-  }
-};
-var DomBranch = class {
-  static gobble(n) {
-    let txt = n.textContent.trim();
-    if (!txt.endsWith("{"))
-      return;
-    const res = document.createElement("template");
-    res.setAttribute("start", txt);
-    n.parentNode.replaceChild(n, res);
-    for (let n2 = res.nextSibling; n2; ) {
-      if (n2 instanceof Comment) {
-        txt = n2.textContent.trim();
-        if (txt[0] === "}") {
-          res.setAttribute("end", txt);
-          n2.remove();
-          break;
-        }
-        DomBranch.gobble(n2);
-      }
-      const m = n2.nextSibling;
-      res.content.append(n2);
-      n2 = m;
-    }
-    DomBranch.subsume(res.content);
-  }
-  static nextUp(n) {
-    while (n = n.parentNode)
-      if (n.nextSibling)
-        return n.nextSibling;
-  }
-  static subsume(n) {
-    for (; n; n = n.firstChild ?? n.nextSibling ?? DomBranch.nextUp(n))
-      if (n instanceof Comment)
-        DomBranch.gobble(n);
   }
 };
 var EmbraceRoot = class {
   static flatDomNodesAll(docFrag) {
     const res = [];
     const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
-    for (let n; n = it.nextNode(); ) {
+    for (let n = it.nextNode(); n = it.nextNode(); ) {
       res.push(n);
       if (n instanceof Element)
         for (let a of n.attributes)
@@ -209,8 +173,8 @@ var EmbraceRoot = class {
         }
       }
   }
-  static make(docFrag) {
-    const e = new EmbraceRoot(docFrag);
+  static make(template) {
+    const e = new EmbraceRoot(template.content);
     e.expressions = EmbraceRoot.listOfExpressions(e.nodes);
     e.paramsDict = EmbraceRoot.paramDict(e.expressions);
     return e;
@@ -218,7 +182,6 @@ var EmbraceRoot = class {
 };
 function embrace(templ, dataObject) {
   if (!this.__embraceRoot) {
-    DomBranch.subsume(templ);
     this.__embraceRoot = EmbraceRoot.make(templ);
     this.ownerElement.append(this.__embraceRoot.template);
   }
