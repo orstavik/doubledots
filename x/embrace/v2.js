@@ -160,10 +160,11 @@ class EmbraceCommentIf {
 }
 
 class EmbraceCommentFor {
-  constructor(templ, varName, listName) {
+  constructor(templ, varName, listName, ofIn) {
     this.template = templ;
     this.varName = varName;
     this.listName = listName;
+    this.ofIn = ofIn;
     this.iName = `#${varName}`;
     templ.remove();
   }
