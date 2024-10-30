@@ -1,0 +1,19 @@
+<script src="/dd.js"></script>
+<!-- todo fix the bug when empty script -->
+<script type="module" src="/ddx.js?oi.&fetch_json&Click&Popstate" _:define></script>
+<script type="module" src="../nav/v1.js?Nav&nav" _:define></script>
+<script type="module" src="v1.js?State&state_" _:define></script>
+
+<script>
+  document.Reactions.define("test", e => console.log(e.data));
+</script>
+
+<body popstate:nav click:nav>
+  <main nav:oi.data.pathname:state_1 _::fetch_json:state_0="/x/pp/companies.json">
+    <div state:test>
+      hello hello
+    </div>
+    <a href="hello.html"> click for sunshine</a>
+    remeber to press the back button also  
+  </main>
+</body>

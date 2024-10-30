@@ -1,0 +1,16 @@
+<script src="/dd.js"></script>
+<!-- todo fix the bug when empty script -->
+<script type="module" src="/ddx.js?Click&Popstate" _:define></script>
+<script type="module" src="./v1.js?Nav&nav" _:define></script>
+
+<script>
+  document.Reactions.define("test", locEvent => console.log(locEvent.data));
+</script>
+
+<body popstate:nav click:nav>
+  <a href="hello.html"> click for sunshine</a>
+  remeber to press the back button also
+  <div nav:test>
+    hello hello
+  </div>
+</body>
