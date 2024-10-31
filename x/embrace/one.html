@@ -5,7 +5,7 @@
 <div template: _::fetch_json:oi.company1:el.first-element-child:embrace="/x/pp/companies.json" name="{{name}}">
   <h1>{{name}}</h1>
   <ol>
-    <h3>List of employees</h3>
+    <h3>List of {{employees.length}} employees</h3>
     <!--template {{for(let employee of employees)}} -->
     -x-x-
     <li>{{employee.fullname}} is employee number {{#employee}} for company {{name}}</li>

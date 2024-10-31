@@ -203,10 +203,10 @@ class EmbraceRoot {
 
 export function embrace(templ, dataObject) {
   if (this.__embraceRoot)
-    return this.__embraceRoot.run({}, dataObject, 0, this.ownerElement);
-  return EmbraceRoot.make(templ).then(embrace => {
-    this.__embraceRoot = embrace;
-    this.ownerElement.append(embrace.template);
-    embrace.run({}, dataObject, 0, this.ownerElement);
+    return this.__embraceRoot.run({}, dataObject.$ = dataObject, 0, this.ownerElement);
+  return EmbraceRoot.make(templ).then(e => {
+    this.__embraceRoot = e;
+    this.ownerElement.append(e.template);
+    return this.__embraceRoot.run({}, dataObject.$ = dataObject, 0, this.ownerElement);
   });
 }
