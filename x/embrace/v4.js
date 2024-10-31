@@ -162,16 +162,15 @@ class EmbraceRoot {
     }));
   }
 
-  constructor(docFrag) {
+  constructor(docFrag, expressions, paramsDict) {
     this.template = docFrag;
     this.nodes = EmbraceRoot.flatDomNodesAll(docFrag);
+    this.expressions = expressions;
+    this.paramsDict = paramsDict;
   }
 
   clone() {
-    const e = new EmbraceRoot(this.template.cloneNode(true));
-    e.expressions = this.expressions;
-    e.paramsDict = this.paramsDict;
-    return e;
+    return new EmbraceRoot(this.template.cloneNode(true), this.expressions, this.paramsDict);
   }
 
   run(argsDictionary, dataObject, _, ancestor) {
