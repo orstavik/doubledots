@@ -17,10 +17,10 @@ function parseMultiple(txt) {
   const params = [];
   let body = "";
   for (let i = 0; i < segs.length; i++) {
-    if (!(i % 2))
-      body += segs[i].replaceAll("`", "\\`");
-    else
+    if (i % 2)
       body += `\${((v = (${extractArgs(segs[i], params)})) === false || v === undefined ? "": v)}`;
+    else
+      body += segs[i].replaceAll("`", "\\`");
   }
   const func = `(...args) => {let v; return \`${body}\`;}`;
   return { func, params };
@@ -66,7 +66,7 @@ class EmbraceCommentIf {
     node.__root ??= EmbraceRoot.make(this.template);
     const fi = this.condition.run(argsDictionary, dataObject, node, ancestor);
     if (!fi) {
-      //todo how to remove stuff?
+      //todo move the childNodes to the <head>.
       this.template.childNodes.remove();
       return;
     }
