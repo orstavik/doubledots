@@ -63,7 +63,7 @@ class EmbraceCommentIf {
   }
 
   run(argsDictionary, dataObject, node, ancestor) {
-    node.__root ??= EmbraceRoot.make(this.template);
+    node.__root ??= EmbraceRoot.make(this.template.content);
     const fi = this.condition.run(argsDictionary, dataObject, node, ancestor);
     if (!fi) {
       //todo move the childNodes to the <head>.
@@ -120,7 +120,7 @@ class EmbraceCommentFor {
     const ctrlFor = txt.match(/{{\s*for\s*\(\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+([^\s)]+)\)\s*}}/);
     if (ctrlFor) {
       const [_, constLetVar, varName, ofIn, listName] = ctrlFor;
-      const root = await EmbraceRoot.make(tmpl);
+      const root = await EmbraceRoot.make(tmpl.content);
       tmpl.remove();
       //here we need to parse the tmpl..
       return new EmbraceCommentFor(root, varName, listName, ofIn);
@@ -186,7 +186,7 @@ class EmbraceRoot {
   }
 
   static async make(template) {
-    const e = new EmbraceRoot(template.content);
+    const e = new EmbraceRoot(template);
     e.expressions = await EmbraceRoot.listOfExpressions(e.nodes);
     e.paramsDict = EmbraceRoot.paramDict(e.expressions);
     return e;
@@ -196,7 +196,7 @@ class EmbraceRoot {
 export function embrace(templ, dataObject) {
   if (this.__embraceRoot)
     return this.__embraceRoot.run({}, dataObject.$ = dataObject, 0, this.ownerElement);
-  return EmbraceRoot.make(templ).then(e => {
+  return EmbraceRoot.make(templ.content).then(e => {
     this.__embraceRoot = e;
     this.ownerElement.append(e.template);
     return this.__embraceRoot.run({}, dataObject.$ = dataObject, 0, this.ownerElement);
