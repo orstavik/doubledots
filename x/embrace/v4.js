@@ -40,12 +40,11 @@ async function makeTxtCb(txt) {
 class EmbraceTextNode {
   constructor({ params, cb }) {
     this.cb = cb;
-    this.params = Object.fromEntries(params.map(p => [p]));
-    this.paramsList = params;
+    this.params = params;
   }
 
   run(argsDict, dataIn, node, ancestor) {
-    const args = this.paramsList.map(p => argsDict[p]);
+    const args = this.params.map(p => argsDict[p]);
     node.textContent = this.cb(...args);
   }
 
@@ -60,10 +59,7 @@ class EmbraceCommentIf {
   constructor(templ, condition) {
     this.template = templ;
     this.condition = condition;
-  }
-
-  get params() {
-    return this.condition.params;
+    this.params = condition.params;
   }
 
   run(argsDictionary, dataObject, node, ancestor) {
@@ -98,10 +94,7 @@ class EmbraceCommentFor {
     this.listName = listName;
     this.ofIn = ofIn;
     this.iName = `#${varName}`;
-  }
-
-  get params() {
-    return { [this.listName]: this.listName };
+    this.params = [listName];
   }
 
   run(argsDictionary, dataObject, node, ancestor) {
@@ -152,7 +145,7 @@ class EmbraceRoot {
   static paramDict(listOfExpressions) {
     const params = {};
     for (let e of listOfExpressions.filter(Boolean))
-      for (let p in e.params)
+      for (let p of e.params)
         params[p] ??= p.split(".");
     return params;
   }
