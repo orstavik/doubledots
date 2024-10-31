@@ -1,16 +1,15 @@
 <script src="/dd.js"></script>
-<script type="module" src="/ddx.js?fetch_json&oi." _:define></script>
-<script type="module" src="./v1.js?embrace" _:define></script>
+<script type="module" src="/ddx.js?fetch_json&oi.&el." _:define></script>
+<script type="module" src="./v4.js?embrace" _:define></script>
 
-<div _t: _::fetch_json:oi.company1:_t:embrace="/x/pp/companies.json" name="{{name}}">
-  
+<div template: _::fetch_json:oi.company1:el.first-element-child:embrace="/x/pp/companies.json" name="{{name}}">
   <h1>{{name}}</h1>
   <ol>
     <h3>List of employees</h3>
-    <!-- {{for(employee of employees)}} -->
+    <!--template {{for(let employee of employees)}} -->
     -x-x-
-    <li>{{$employee.fullname}} is employee number {{$$employee}} for company {{name}}</li>
-    <!--{{end}} -->
+    <li>{{employee.fullname}} is employee number {{#employee}} for company {{name}}</li>
+    <!--/template -->
     -x-x-
     <h4>no more Employees</h4>
   </ol>
