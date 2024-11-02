@@ -174,6 +174,10 @@ class AttrListenerGlobal extends AttrListener {
   }
 }
 
+class AttrEmpty extends AttrCustom {
+  upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
+};
+
 /**
  * AttrMutation is the only needed main base for MutationObserver.
  * With AttrMutation we can deprecate MutationObserver.
@@ -272,6 +276,7 @@ Object.assign(window, {
   AttrCustom,
   AttrImmutable,
   AttrUnknown,
+  AttrEmpty,
   AttrMutation,
   AttrIntersection,
   AttrResize

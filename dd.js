@@ -342,6 +342,11 @@ var AttrListenerGlobal = class extends AttrListener {
     eventLoop.dispatchBatch(e, this.register);
   }
 };
+var AttrEmpty2 = class extends AttrCustom2 {
+  upgrade() {
+    eventLoop.dispatch(new Event(this.trigger), this);
+  }
+};
 var AttrMutation = class extends AttrCustom2 {
   upgrade() {
     const observer = new MutationObserver(this.run.bind(this));
@@ -406,6 +411,7 @@ Object.assign(window, {
   AttrCustom: AttrCustom2,
   AttrImmutable,
   AttrUnknown,
+  AttrEmpty: AttrEmpty2,
   AttrMutation,
   AttrIntersection,
   AttrResize
@@ -685,52 +691,14 @@ Object.defineProperties(ShadowRoot.prototype, {
     }
   }
 });
-var Reference = class {
-  constructor(url, name, value) {
-    this.url = url;
-    this.name = name;
-    this.fullname = DoubleDots.pascalToKebab(DoubleDots.pascalToCamel(name));
-    this.value = value || "";
-    this.type = /^_*[A-Z]/.test(name) ? "Triggers" : "Reactions";
-    this.rule = /[\._-]$/.test(name) ? "defineRule" : "define";
-  }
-  async getDefinition() {
-    const module = await import(this.url);
-    if (!module || typeof module !== "object" && !(module instanceof Object))
-      throw new TypeError(`URL is not an es6 module: ${this.url}`);
-    const lookup = this.value || this.name;
-    const def = module[lookup];
-    if (def)
-      return def;
-    for (let [k, v] of Object.entries(module))
-      if (k.startsWith("dynamic")) {
-        if (v[lookup])
-          return v[lookup];
-      }
-    throw new TypeError(`ES6 module doesn't contain resource: ${lookup}`);
-  }
-  static *parse(url) {
-    const hashSearch = (url.hash || url.search).slice(1);
-    if (!hashSearch)
-      throw DoubleDots.SyntaxError("DoubleDots.Reference not in url: " + url);
-    const refs = hashSearch.entries?.() ?? hashSearch.split("&").map((s) => s.split("="));
-    for (let [name, value] of refs)
-      yield new Reference(url, name, value);
-  }
-};
-async function define(url, root) {
-  for (let ref of Reference.parse(url))
-    root[ref.type][ref.rule](ref.fullname, ref.getDefinition());
-}
+document.Triggers.define("_", AttrEmpty);
 Object.assign(DoubleDots, {
   DefinitionsMap,
   DefinitionsMapLock,
   DefinitionsMapDOM,
   DefinitionsMapDOMOverride,
   UnknownDefinitionsMap,
-  UnknownDefinition,
-  Reference,
-  define
+  UnknownDefinition
 });
 
 // src/dd/4_eventLoop_v2.js
@@ -1059,21 +1027,49 @@ function monkeyPatch(proto, prop, fun) {
     }
   }
 })();
-(function() {
-  function define2() {
-    const src = this.ownerElement.getAttribute("src");
-    const base = src ? new URL(src, location) : location;
-    DoubleDots.define(new URL(this.value, base), this.ownerDocument);
-  }
-  class AttrEmpty extends AttrCustom {
-    upgrade() {
-      eventLoop.dispatch(new Event(this.trigger), this);
+
+// x/define/v1.js
+async function loadDef(url, lookup) {
+  const module = await import(url);
+  if (!module || typeof module !== "object" && !(module instanceof Object))
+    throw new TypeError(`URL is not an es6 module: ${this.url}`);
+  const def = module[lookup];
+  if (def)
+    return def;
+  for (let [k, v] of Object.entries(module))
+    if (k.startsWith("dynamic")) {
+      if (v[lookup])
+        return v[lookup];
     }
-  }
-  ;
-  document.Reactions.define("define", define2);
-  document.Triggers.define("_", AttrEmpty);
-})();
+  throw new TypeError(`ES6 module doesn't contain resource: ${lookup}`);
+}
+function* parse(url) {
+  const hashSearch = (url.hash || url.search).slice(1);
+  if (!hashSearch)
+    throw DoubleDots.SyntaxError("Missing DoubleDots.Reference in url: " + url);
+  const refs = hashSearch.entries?.() ?? hashSearch.split("&").map((s) => s.split("="));
+  for (let [name, value] of refs)
+    yield parseUnit(name, value);
+}
+function parseUnit(name, value) {
+  return {
+    value: value || name,
+    fullname: DoubleDots.pascalToKebab(DoubleDots.pascalToCamel(name)),
+    type: /^_*[A-Z]/.test(name) ? "Triggers" : "Reactions",
+    rule: /[\._-]$/.test(name) ? "defineRule" : "define"
+  };
+}
+async function defineImpl(url, root) {
+  const refs = parse(url);
+  for (let r of parse(url))
+    root[r.type][r.rule](r.fullname, loadDef(url, r.value));
+}
+function define() {
+  const src = this.ownerElement.getAttribute("src");
+  const base = src ? new URL(src, location) : location;
+  defineImpl(new URL(this.value, base), this.ownerDocument);
+}
+document.Reactions.define("define", define);
 
 // x/template/v1.js
 (function() {

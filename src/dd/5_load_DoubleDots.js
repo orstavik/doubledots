@@ -180,24 +180,24 @@ function monkeyPatch(proto, prop, fun) {
   }
 })();
 
-//_:define  => must be installed to enable the loading of doubledots triggers and reactions.
-(function () {
+// //_:define  => must be installed to enable the loading of doubledots triggers and reactions.
+// (function () {
 
-  //Att!! Only call the :define reaction once, either using _: or :once
-  //_:define="url?name=value" 
-  function define() {
-    const src = this.ownerElement.getAttribute("src");
-    const base = src ? new URL(src, location) : location;
-    DoubleDots.define(new URL(this.value, base), this.ownerDocument);
-  }
+//   //Att!! Only call the :define reaction once, either using _: or :once
+//   //_:define="url?name=value" 
+//   function define() {
+//     const src = this.ownerElement.getAttribute("src");
+//     const base = src ? new URL(src, location) : location;
+//     DoubleDots.define(new URL(this.value, base), this.ownerDocument);
+//   }
 
-  class AttrEmpty extends AttrCustom {
-    upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
-  };
+//   class AttrEmpty extends AttrCustom {
+//     upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
+//   };
 
-  document.Reactions.define("define", define);
-  document.Triggers.define("_", AttrEmpty);
-})();
+//   document.Reactions.define("define", define);
+//   document.Triggers.define("_", AttrEmpty);
+// })();
 
 //_t: and :_t => trigger-reaction pair for extracting and retrieving the childNodes as a template. _tt: is an alternative to _t: that will not re-interpret the html-nodes, but it *can only be added in html template text, not via setAttribute() from js*. To implement this, we could add a parameter to upgrade that says what context the current upgrade is called from. It is easy to add such an argument for the simple case when .setAttribute() is done via js.
 // const map = new WeakMap();

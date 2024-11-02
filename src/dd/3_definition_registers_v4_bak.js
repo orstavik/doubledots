@@ -349,7 +349,88 @@ Object.defineProperties(ShadowRoot.prototype, {
   }
 });
 
-document.Triggers.define("_", AttrEmpty);
+/**
+ * ## `DoubleDots.Reference` rules.
+ * 
+ * 1. the resource inside the module file is identified by the value||name.
+ * 2. Names starting with upCase imply Triggers `/[^a-zA-Z]*[A-Z]/`
+ *    Names starting with lowCase imply Reactions `/[^a-zA-Z]*[A-Z]/`
+ * 3. Names ending with `/[a-zA-Z]/` are regular definitions.
+ *    Names ending with non-letters such as `/_-\./` are rules.
+ * 4. The refName is a snake-case of the CamelCaseName.
+ *    The first letter (in trigger references) are not `-`prefixed.
+ */
+class Reference {
+  constructor(url, name, value) {
+    this.url = url;
+    this._name = name; //not needed
+    debugger;
+    let [word, thilde, set] = name.split(/(~)/);
+    this.set = new Set(set?.split(""));
+    this.fullname = DoubleDots.pascalToKebab(DoubleDots.pascalToCamel(word));
+    let type = /^_*[A-Z]/.test(name) ? "t" : "r";
+    if (thilde) type = type.toUpperCase();
+    this.set.add();
+    this.value = value || word;
+  }
+
+  async getDefinition() {
+    const module = await import(this.url);
+    if (!module || typeof module !== "object" && !(module instanceof Object))
+      throw new TypeError(`URL is not an es6 module: ${this.url}`);
+    const lookup = this.value;// || this.name;
+    const def = module[lookup];
+    if (def) return def;
+    for (let [k, v] of Object.entries(module))
+      if (k.startsWith("dynamic"))
+        if (v[lookup])
+          return v[lookup];
+    throw new TypeError(`ES6 module doesn't contain resource: ${lookup}`);
+  }
+
+  static *parse(url) {
+    const hashSearch = (url.hash || url.search).slice(1);
+    if (!hashSearch)
+      throw DoubleDots.SyntaxError("DoubleDots.Reference not in url: " + url);
+    const refs = hashSearch.entries?.() ?? hashSearch.split("&").map(s => s.split("="));
+    for (let [name, value] of refs)
+      yield new Reference(url, name, value);
+  }
+}
+
+async function getFrom(promise, prop) {
+  return (await promise)[prop];
+}
+
+async function define(url, root, defName, resourceName, register, rule) {
+  const Def = loadDef(url, resourceName);
+  root[register][rule](defName, Def);
+}
+
+async function define(url, root) {
+  for (let ref of Reference.parse(url)) {
+    const Def = ref.getDefinition();
+    if (ref.set.length === 1) {
+      if (ref.set.has("t"))
+        root.Triggers.define(ref.fullname, Def);
+      else if (ref.set.has("r"))
+        root.Reactions.define(ref.fullname, Def);
+      else if (ref.set.has("T"))
+        root.Triggers.defineRule(ref.fullname, Def);
+      else if (ref.set.has("R"))
+        root.Reactions.defineRule(ref.fullname, Def);
+    } else {
+      if (ref.set.has("t"))
+        root.Triggers.define(ref.fullname, getFrom(Def, "trigger"));
+      if (ref.set.has("r"))
+        root.Reactions.define(ref.fullname, getFrom(Def, "reaction"));
+      if (ref.set.has("T"))
+        root.Triggers.defineRule(ref.fullname + "_", getFrom(Def, "triggerRule"));
+      if (ref.set.has("R"))
+        root.Reactions.defineRule(ref.fullname + "_", getFrom(Def, "reactionRule"));
+    }
+  }
+};
 
 Object.assign(DoubleDots, {
   DefinitionsMap,
@@ -358,4 +439,6 @@ Object.assign(DoubleDots, {
   DefinitionsMapDOMOverride,
   UnknownDefinitionsMap,
   UnknownDefinition,
+  Reference,
+  define,
 });
