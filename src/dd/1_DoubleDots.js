@@ -73,10 +73,6 @@ function pascalToKebab(str) {
   return str.replace(/[A-Z]/g, c => '-' + c.toLowerCase());
 }
 
-function pascalToCamel(str) {
-  return str.replace(/^(_*)([A-Z])/, (_, _s, c) => _s + c.toLowerCase());
-}
-
 /**
 * This method is just as bad as eval. But, 
 * if you use this during development, and 
@@ -195,7 +191,6 @@ window.DoubleDots = {
   nativeEvents,
   kebabToPascal,
   pascalToKebab,
-  pascalToCamel,
   up, left, right, roots, hosts, downwide,
   importBasedEval,
   miniQuerySelector

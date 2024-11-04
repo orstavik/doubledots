@@ -93,9 +93,6 @@ function kebabToPascal(str) {
 function pascalToKebab(str) {
   return str.replace(/[A-Z]/g, (c) => "-" + c.toLowerCase());
 }
-function pascalToCamel(str) {
-  return str.replace(/^(_*)([A-Z])/, (_, _s, c) => _s + c.toLowerCase());
-}
 async function importBasedEval(codeString) {
   codeString = "export default " + codeString.trim();
   const blob = new Blob([codeString], { type: "application/javascript" });
@@ -183,7 +180,6 @@ window.DoubleDots = {
   nativeEvents,
   kebabToPascal,
   pascalToKebab,
-  pascalToCamel,
   up,
   left,
   right,
@@ -1051,25 +1047,26 @@ function* parse(url) {
   for (let [name, value] of refs)
     yield* parseEntities(name, value);
 }
-var charUp1 = (s) => s.replace(/[a-z]/, (c) => c.toUpperCase());
-var charLow1 = (s) => s.replace(/[A-Z]/, (c) => c.toLowerCase());
 function* parseEntities(name, value) {
   const rx = /^(~)?(?:([_.-]*[A-Z][a-zA-Z0-9_.-]*)|([_.-]*[a-z][a-zA-Z0-9_.-]*))(~)?([_.-])?$/;
   const m = name.match(rx);
   if (!m)
     throw new SyntaxError("bad name in doubleDots url definition: " + name + "=" + value);
-  let [_, rule, trigger, reaction, portal, divider = ""] = m;
+  let [_, firstThilde, trigger, reaction, portal, divider = ""] = m;
   value = value || trigger || reaction;
-  rule = rule ? "defineRule" : "define";
-  fullname = charLow1(trigger || reaction);
+  let rule = firstThilde ? "defineRule" : "define";
+  fullname = DoubleDots.pascalToKebab(reaction || trigger.replace(/[A-Z]/, (c) => c.toLowerCase()));
   type = trigger ? "Triggers" : "Reactions";
   yield { type, fullname, rule, value };
   if (portal) {
-    type = trigger ? "Reactions" : "Triggers";
+    if (!trigger)
+      throw new SyntaxError("Portal define syntax must use Trigger as its core.");
+    type = "Reactions";
+    if (firstThilde)
+      fullname = fullname.slice(0, -1);
     fullname += divider;
     rule = divider ? "defineRule" : "define";
-    value = trigger ? charLow1(value) : charUp1(value);
-    debugger;
+    value = value.replace(/[A-Z]/, (c) => c.toLowerCase());
     yield { type, fullname, rule, value };
   }
 }
