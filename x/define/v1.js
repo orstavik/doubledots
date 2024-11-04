@@ -1,14 +1,3 @@
-/**
- * ## `DoubleDots.Reference` rules.
- * 
- * 1. the resource inside the module file is identified by the value||name.
- * 2. Names starting with upCase imply Triggers `/[^a-zA-Z]*[A-Z]/`
- *    Names starting with lowCase imply Reactions `/[^a-zA-Z]*[A-Z]/`
- * 3. Names ending with `/[a-zA-Z]/` are regular definitions.
- *    Names ending with non-letters such as `/_-\./` are rules.
- * 4. The refName is a snake-case of the CamelCaseName.
- *    The first letter (in trigger references) are not `-`prefixed.
- */
 async function loadDef(url, lookup) {
   const module = await import(url);
   if (!module || typeof module !== "object" && !(module instanceof Object))
@@ -28,18 +17,29 @@ function* parse(url) {
     throw DoubleDots.SyntaxError("Missing DoubleDots.Reference in url: " + url);
   const refs = hashSearch.entries?.() ?? hashSearch.split("&").map(s => s.split("="));
   for (let [name, value] of refs)
-    yield parseUnit(name, value);
+    yield* parseEntities(name, value);
 }
 
-function parseUnit(name, value) {
-  return {
-    value: value || name,
-    fullname: DoubleDots.pascalToKebab(DoubleDots.pascalToCamel(name)),
-    type: /^_*[A-Z]/.test(name) ? "Triggers" : "Reactions",
-    rule: /[\._-]$/.test(name) ? "defineRule" : "define"
-  };
+function* parseEntities(name, value) {
+  const rx = /^(~)?([_.-]*[A-Z][a-zA-Z0-9_.-]*)(~)?([_.-])?$/;
+  const m = name.match(rx);
+  if (!m)
+    throw new SyntaxError("bad name in doubleDots url definition: " + name + "=" + value);
+  let [_, rule, trigger, portal, divider = ""] = m;
+  value = value || trigger;
+  rule = rule ? "defineRule" : "define";
+  fullname = trigger.replace(/[A-Z]/, c => c.toLowerCase());
+  type = "Triggers";
+  yield { type, fullname, rule, value };
+  if (portal) {
+    type = "Reactions";
+    fullname = fullname.slice(0,-1) + divider;
+    rule = divider ? "defineRule" : "define";
+    value = value.replace(/[a-z]/, c => c.toUpperCase());
+    debugger;
+    yield { type, fullname, rule, value };
+  }
 }
-// {Reactions: {define/defineRule: {fullname: r.url, r.value}, Triggers, }
 
 async function defineImpl(url, root) {
   for (let r of parse(url))
@@ -54,3 +54,17 @@ function define() {
 }
 
 document.Reactions.define("define", define);
+
+/**
+ *
+ * ## `DoubleDots.Reference` rules.
+ *
+ * 1. the resource inside the module file is identified by the value||name.
+ * 2. Names starting with upCase imply Triggers `/[^a-zA-Z]*[A-Z]/`
+ *    Names starting with lowCase imply Reactions `/[^a-zA-Z]*[A-Z]/`
+ * 3. Names ending with `/[a-zA-Z]/` are regular definitions.
+ *    Names ending with non-letters such as `/_-\./` are rules.
+ * 4. The refName is a snake-case of the CamelCaseName.
+ *    The first letter (in trigger references) are not `-`prefixed.
+ */
+// {Reactions: {define/defineRule: {fullname: r.url, r.value}, Triggers, }

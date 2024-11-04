@@ -419,17 +419,17 @@ Object.assign(window, {
 
 // src/dd/3_definition_registers_v4.js
 var DefinitionError = class extends DoubleDots.DoubleDotsError {
-  constructor(msg, fullname, rule, RuleFun) {
+  constructor(msg, fullname2, rule, RuleFun) {
     super(msg);
-    this.fullname = fullname;
+    this.fullname = fullname2;
     this.rule = rule;
     this.RuleFun = RuleFun;
   }
 };
 var TriggerNameError = class extends DefinitionError {
-  constructor(fullname) {
+  constructor(fullname2) {
     super(`Trigger name/prefix must begin with english letter or '_'.
-${fullname} begins with '${fullname[0]}'.`);
+${fullname2} begins with '${fullname2[0]}'.`);
   }
   static check(name) {
     if (!name.match(/[a-z_].*/))
@@ -446,8 +446,8 @@ var DefinitionNameError = class extends DefinitionError {
   }
 };
 var AsyncDefinitionError = class extends DefinitionError {
-  constructor(msg, fullname, rule, RuleFun) {
-    super(msg, fullname, rule, RuleFun);
+  constructor(msg, fullname2, rule, RuleFun) {
+    super(msg, fullname2, rule, RuleFun);
     document.documentElement.dispatchEvent(new ErrorEvent(this));
   }
 };
@@ -466,42 +466,42 @@ var DefinitionsMap = class {
     for (let r of Object.keys(this.#rules))
       if (r.startsWith(prefix) || prefix.startsWith(r))
         throw new DefinitionError(`rule/rule conflict: trying to add '${prefix}' when '${r}' exists.`);
-    for (let fullname of Object.keys(this.#definitions))
-      if (fullname.startsWith(prefix))
-        throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname}' exists.`);
+    for (let fullname2 of Object.keys(this.#definitions))
+      if (fullname2.startsWith(prefix))
+        throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname2}' exists.`);
     this.#rules[prefix] = FunFun;
     FunFun instanceof Promise && FunFun.then((newFunFun) => this.#rules[prefix] = newFunFun).catch((err) => this.#rules[prefix] = new AsyncDefinitionError(err, null, prefix));
   }
-  define(fullname, Def) {
-    DefinitionNameError.check(fullname);
-    if (fullname in this.#definitions)
-      throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
+  define(fullname2, Def) {
+    DefinitionNameError.check(fullname2);
+    if (fullname2 in this.#definitions)
+      throw new DefinitionError(`name/name conflict: '${fullname2}' already exists.`);
     for (let r of Object.keys(this.#rules))
-      if (fullname.startsWith(r))
-        throw new DefinitionError(`name/rule conflict: trying to add '${fullname}' when rule '${r}' exists.`);
-    this.#definitions[fullname] = Def;
-    Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname] = newDef).catch((err) => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname));
+      if (fullname2.startsWith(r))
+        throw new DefinitionError(`name/rule conflict: trying to add '${fullname2}' when rule '${r}' exists.`);
+    this.#definitions[fullname2] = Def;
+    Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname2] = newDef).catch((err) => this.#definitions[fullname2] = new AsyncDefinitionError(err, fullname2));
   }
-  #processRule(fullname, rule, FunFun) {
+  #processRule(fullname2, rule, FunFun) {
     if (FunFun instanceof Promise)
-      return this.#definitions[fullname] = FunFun.then((newFunFun) => (FunFun = newFunFun)(fullname)).catch((err) => new AsyncDefinitionError(err, null, rule, null)).then((newDef) => this.#definitions[fullname] = newDef).catch((err) => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
+      return this.#definitions[fullname2] = FunFun.then((newFunFun) => (FunFun = newFunFun)(fullname2)).catch((err) => new AsyncDefinitionError(err, null, rule, null)).then((newDef) => this.#definitions[fullname2] = newDef).catch((err) => this.#definitions[fullname2] = new AsyncDefinitionError(err, fullname2, rule, FunFun));
     try {
       if (FunFun instanceof Error)
         throw FunFun;
-      const Def = this.#definitions[fullname] = FunFun(fullname);
-      Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname] = newDef).catch((err) => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
+      const Def = this.#definitions[fullname2] = FunFun(fullname2);
+      Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname2] = newDef).catch((err) => this.#definitions[fullname2] = new AsyncDefinitionError(err, fullname2, rule, FunFun));
       return Def;
     } catch (err) {
-      return this.#definitions[fullname] = new DefinitionError(err, fullname, rule, FunFun);
+      return this.#definitions[fullname2] = new DefinitionError(err, fullname2, rule, FunFun);
     }
   }
-  #checkViaRule(fullname) {
+  #checkViaRule(fullname2) {
     for (let [rule, FunFun] of Object.entries(this.#rules))
-      if (fullname.startsWith(rule))
-        return this.#processRule(fullname, rule, FunFun);
+      if (fullname2.startsWith(rule))
+        return this.#processRule(fullname2, rule, FunFun);
   }
-  get(fullname) {
-    return this.#definitions[fullname] || this.#checkViaRule(fullname);
+  get(fullname2) {
+    return this.#definitions[fullname2] || this.#checkViaRule(fullname2);
   }
 };
 var UnknownDefinition = class extends Promise {
@@ -517,10 +517,10 @@ var UnknownDefinition = class extends Promise {
 var PromiseMap = class {
   unknowns = {};
   #interval;
-  make(fullname, attr) {
+  make(fullname2, attr) {
     const p = UnknownDefinition.make(attr);
-    (this.unknowns[fullname] ??= []).push(p);
-    p.catch((_) => this.remove(fullname, p));
+    (this.unknowns[fullname2] ??= []).push(p);
+    p.catch((_) => this.remove(fullname2, p));
     this.#interval || this.#cleanLoop();
     return p;
   }
@@ -531,24 +531,24 @@ var PromiseMap = class {
       const all = Object.entries(this.unknowns);
       if (!all.length)
         return this.#interval = false;
-      for (let [fullname, promises] of all)
+      for (let [fullname2, promises] of all)
         for (let p of promises.filter((p2) => !p2.attr.isConnected))
-          this.remove(fullname, p);
+          this.remove(fullname2, p);
     }
   }
-  remove(fullname, p) {
-    const promises = this.unknowns[fullname];
+  remove(fullname2, p) {
+    const promises = this.unknowns[fullname2];
     if (!promises)
       return;
     const i = promises.indexOf(p);
     if (i < 0)
       return;
     promises.splice(i, 1);
-    !promises.length && delete this.unknowns[fullname];
+    !promises.length && delete this.unknowns[fullname2];
   }
-  complete(fullname) {
-    const promises = this.unknowns[fullname];
-    delete this.unknowns[fullname];
+  complete(fullname2) {
+    const promises = this.unknowns[fullname2];
+    delete this.unknowns[fullname2];
     for (let p of promises || [])
       try {
         p.resolve();
@@ -556,24 +556,24 @@ var PromiseMap = class {
       }
   }
   completeRule(rule) {
-    for (let fullname in this.unknowns)
-      if (fullname.startsWith(rule))
-        this.complete(fullname);
+    for (let fullname2 in this.unknowns)
+      if (fullname2.startsWith(rule))
+        this.complete(fullname2);
   }
 };
 var UnknownDefinitionsMap = class extends DefinitionsMap {
   #unknowns = new PromiseMap();
-  define(fullname, Def) {
-    super.define(fullname, Def);
-    this.#unknowns.complete(fullname);
+  define(fullname2, Def) {
+    super.define(fullname2, Def);
+    this.#unknowns.complete(fullname2);
   }
   defineRule(rule, FunClass) {
     super.defineRule(rule, FunClass);
     this.#unknowns.completeRule(rule);
   }
   //todo add attr
-  get(fullname, attr) {
-    return super.get(fullname) ?? this.#unknowns.make(fullname, attr);
+  get(fullname2, attr) {
+    return super.get(fullname2) ?? this.#unknowns.make(fullname2, attr);
   }
 };
 var DefinitionsMapLock = class extends UnknownDefinitionsMap {
@@ -596,10 +596,10 @@ var DefinitionsMapLock = class extends UnknownDefinitionsMap {
 var DefinitionsMapDOM = class extends DefinitionsMapLock {
   #root;
   #type;
-  constructor(root, type) {
+  constructor(root, type2) {
     super();
     this.#root = root;
-    this.#type = type;
+    this.#type = type2;
   }
   get root() {
     return this.#root;
@@ -648,9 +648,9 @@ function TriggerSyntaxCheck(DefMap) {
       TriggerNameError.check(prefix);
       super.defineRule(prefix, FunFun);
     }
-    define(fullname, Def) {
-      TriggerNameError.check(fullname);
-      super.define(fullname, Def);
+    define(fullname2, Def) {
+      TriggerNameError.check(fullname2);
+      super.define(fullname2, Def);
     }
   };
 }
@@ -1049,18 +1049,31 @@ function* parse(url) {
     throw DoubleDots.SyntaxError("Missing DoubleDots.Reference in url: " + url);
   const refs = hashSearch.entries?.() ?? hashSearch.split("&").map((s) => s.split("="));
   for (let [name, value] of refs)
-    yield parseUnit(name, value);
+    yield* parseEntities(name, value);
 }
-function parseUnit(name, value) {
-  return {
-    value: value || name,
-    fullname: DoubleDots.pascalToKebab(DoubleDots.pascalToCamel(name)),
-    type: /^_*[A-Z]/.test(name) ? "Triggers" : "Reactions",
-    rule: /[\._-]$/.test(name) ? "defineRule" : "define"
-  };
+var charUp1 = (s) => s.replace(/[a-z]/, (c) => c.toUpperCase());
+var charLow1 = (s) => s.replace(/[A-Z]/, (c) => c.toLowerCase());
+function* parseEntities(name, value) {
+  const rx = /^(~)?(?:([_.-]*[A-Z][a-zA-Z0-9_.-]*)|([_.-]*[a-z][a-zA-Z0-9_.-]*))(~)?([_.-])?$/;
+  const m = name.match(rx);
+  if (!m)
+    throw new SyntaxError("bad name in doubleDots url definition: " + name + "=" + value);
+  let [_, rule, trigger, reaction, portal, divider = ""] = m;
+  value = value || trigger || reaction;
+  rule = rule ? "defineRule" : "define";
+  fullname = charLow1(trigger || reaction);
+  type = trigger ? "Triggers" : "Reactions";
+  yield { type, fullname, rule, value };
+  if (portal) {
+    type = trigger ? "Reactions" : "Triggers";
+    fullname += divider;
+    rule = divider ? "defineRule" : "define";
+    value = trigger ? charLow1(value) : charUp1(value);
+    debugger;
+    yield { type, fullname, rule, value };
+  }
 }
 async function defineImpl(url, root) {
-  const refs = parse(url);
   for (let r of parse(url))
     root[r.type][r.rule](r.fullname, loadDef(url, r.value));
 }
