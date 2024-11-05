@@ -1,36 +1,36 @@
-# `:define` url definition syntax
+# `:define`
 
-## Regular `:define` syntax
+## Syntax
 
-1. the resource inside the module file is identified by the value||name.
-2. Names starting with upCase imply Triggers `/[^a-zA-Z]*[A-Z]/`
-   Names starting with lowCase imply Reactions `/[^a-zA-Z]*[A-Z]/`
-3. ~ before the name makes it into a reactionRule or triggerRule.
-4. Names ending with `~` or `~_` (or some other char after `~`) is a portal shortcut.
-
-We have the `:define` syntax. Here, we need to be able to quickly write:
+The main, regular `:define` syntax is:
 1. reaction: `?reaction`
 2. trigger: `?Trigger`
-3. reactionRule: `~Reaction`. Usecases are `~ol.`, `~el.`, and `~-`(dash).
-4. triggerRule: `~Trigger`. Usecases are `timeout_123:`, `mutation_attr:`.
+3. reactionRule: `reaction~`. Examples: `ol.~`, `el.~`, and `--~`(dash rule).
+4. triggerRule: `Trigger~`. Examples: `timeout_~` => `timeout_123:` and `observeAttr_~` => `observe-attr_class:`.
 
-### Portal shortcut syntax
+The portal `:define` syntax is:
+1. `TRIGGER`: trigger and reaction with the same name. `&NAV` equals `&Nav&nav` in regular syntax.
+2. `TRIGGER_~`: triggerRule and reactionRule with the same name.
+3. `TRIGGER~~`: trigger, triggerRule, reaction, and reactionRule with the same name. Default divider for the rules are `_`. If you add a character after `~~`, then this is the divider; The divider in `TRIGGER~~.` is `.`. Example: `STATE~~` => `State&State_~&state&state_~`.
+
+* "camelCase" means reaction. converted into kebab-case for reaction name.
+* "PascalCase" means trigger. First letter is lowercased, then converted into kebab-case for trigger name.
+* Trailing `~` means rule.
+* "UPPER_SNAKE" means portal.
+* portal syntax is optional. You can define all portals using multiple regular syntax values.
+
+### implementation 
+
+1. split the name using `~`. If the result has length 1, it is not a rule; length is 2, then rule; length 3, quadrant rule. The 
+1. UPPER_SNAKE is recognized by first *two* letters being uppercase: `/[_.-]*[A-Z]{2}/`
+2. then, camelCase is recognized by first letter being lowercase: `/[_.-]*[a-z]/`
+3. then, PascalCase is recognized  by first letter being uppercase and the second letter being lowercase: `/[_.-]*[A-Z]/`.
+
+First, the UPPER_SNAKE is converted to PascalCase. Then reaction name is extracted by lowerCasing the first letter. `_` before name, before another `_` character, and after the name are ignored.
+
+If the TriggerName is a The TriggerName is first converted from UPPER_SNAKE to PascalCase. Then the reactionName is converted to camelCase.
 
 The reaction name is the same as the trigger name. The reaction definition (value) name is the same as the trigger definiton name (but with the first letter in lower case).
-
-1. `Trigger~` with same name reaction.
-2. `Trigger~_` with reactionRule.
-3. `~Trigger_~` TriggerRule with plain reaction. The reaction `name = triggerName.slice(0,-1)`.
-4. `~Trigger_~_` TriggerRule and ReactionRule. ReactionRule `name = triggerName.slice(0,-1) + divider`.
-
-Portal shortcut syntax is basically converted to regular `:define` syntax like this.
-
-1. `Portal~` => `Portal&portal`
-2. `Portal~_` => `Portal&~portal_`
-3. `~Portal_~` => `~Portal_&portal`
-4. `~Portal_~_` => `~Portal_&~portal_`
-
-* If you need other portals with other combinations, just define them manually in full regular `:define` format: `Portal&~Portal_&portal&~portal_`. Att! Remember to always define the Triggers first, and reactions last.
 
 ## Portal race condition
 
