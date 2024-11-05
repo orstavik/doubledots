@@ -592,10 +592,10 @@ var DefinitionsMapLock = class extends UnknownDefinitionsMap {
 var DefinitionsMapDOM = class extends DefinitionsMapLock {
   #root;
   #type;
-  constructor(root, type2) {
+  constructor(root, type) {
     super();
     this.#root = root;
-    this.#type = type2;
+    this.#type = type;
   }
   get root() {
     return this.#root;
@@ -1047,27 +1047,36 @@ function* parse(url) {
   for (let [name, value] of refs)
     yield* parseEntities(name, value);
 }
-function* parseEntities(name, value) {
-  const rx = /^(~)?(?:([_.-]*[A-Z][a-zA-Z0-9_.-]*)|([_.-]*[a-z][a-zA-Z0-9_.-]*))(~)?([_.-])?$/;
-  const m = name.match(rx);
+function* parseEntities(key, value) {
+  const m = key.match(
+    /^([_.-]*)(?:([A-Z]{2}[A-Z0-9_.-]*)|([a-z][a-zA-Z0-9_.-]*)|([A-Z][a-zA-Z0-9_.-]*))(~)?(~)?([_.-])?$/
+  );
   if (!m)
-    throw new SyntaxError("bad name in doubleDots url definition: " + name + "=" + value);
-  let [_, firstThilde, trigger, reaction, portal, divider = ""] = m;
-  value = value || trigger || reaction;
-  let rule = firstThilde ? "defineRule" : "define";
-  fullname = DoubleDots.pascalToKebab(reaction || trigger.replace(/[A-Z]/, (c) => c.toLowerCase()));
-  type = trigger ? "Triggers" : "Reactions";
-  yield { type, fullname, rule, value };
-  if (portal) {
-    if (!trigger)
-      throw new SyntaxError("Portal define syntax must use Trigger as its core.");
-    type = "Reactions";
-    if (firstThilde)
-      fullname = fullname.slice(0, -1);
-    fullname += divider;
-    rule = divider ? "defineRule" : "define";
-    value = value.replace(/[A-Z]/, (c) => c.toLowerCase());
+    throw new SyntaxError("bad name in doubleDots url definition: " + key + "=" + value);
+  let [, pFix, portal, reaction, trigger, rule, square, _] = m;
+  rule = rule ? "defineRule" : "define";
+  if (reaction || trigger) {
+    const type = trigger ? "Triggers" : "Reactions";
+    fullname = pFix + DoubleDots.pascalToKebab(reaction || trigger.replace(/[A-Z]/, (c) => c.toLowerCase()));
+    value ||= reaction || trigger;
     yield { type, fullname, rule, value };
+  } else if (portal) {
+    portal = portal.toLowerCase().replaceAll(/_[a-z]/g, (m2) => m2[1].toUpperCase());
+    reaction = pFix + portal;
+    let rValue = value ? value[0].toLowerCase() + value.slice(1) : reaction;
+    fullname = pFix + DoubleDots.pascalToKebab(reaction.replace(/[A-Z]/, (c) => c.toLowerCase()));
+    portal = portal.replace(/[a-z]/, (m2) => m2.toUpperCase());
+    trigger = pFix + portal;
+    let tValue = value || trigger;
+    _ = square ? _ || "_" : "";
+    if (square || rule === "define")
+      yield { type: "Triggers", rule: "define", fullname, value: tValue };
+    if (square || rule === "defineRule")
+      yield { type: "Triggers", rule: "defineRule", fullname: fullname + _, value: tValue + _ };
+    if (square || rule === "define")
+      yield { type: "Reactions", rule: "define", fullname, value: rValue };
+    if (square || rule === "defineRule")
+      yield { type: "Reactions", rule: "defineRule", fullname: fullname + _, value: rValue + _ };
   }
 }
 async function defineImpl(url, root) {

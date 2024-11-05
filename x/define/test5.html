@@ -1,0 +1,15 @@
+<head>
+  <script src="/dd.js"></script>
+  <script src="portals.js?PORTAL_~" type="module" _:define></script>
+  <script>
+    document.Reactions.define("hello", _ => "sunshine");
+    document.Reactions.define("log", function (a) {
+      console.log(a.value, a.data, this.constructor.value);
+    });
+  </script>
+</head>
+
+<body>
+  <h1 _::hello:portal_alice>hello </h1>
+  <h2 portal_bob:log></h2>
+</body>
