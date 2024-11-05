@@ -1,3 +1,124 @@
+// x/state/v1.js
+var StateAttrIterator = class {
+  constructor(event, attrs2, dotPath, state2) {
+    this.event = event;
+    this.it = attrs2[Symbol.iterator]();
+    this.branchChanged = dotPath;
+    this.state = state2;
+  }
+  next() {
+    for (let n = this.it.next(); !n.done; n = this.it.next()) {
+      const at = n.value;
+      const branches = at.constructor.branches;
+      for (let observedBranch of branches)
+        if (observedBranch.every((b, i) => b === this.branchChanged[i])) {
+          this.event.state = branches.length > 1 ? this.state : observedBranch.reduce((o, p) => o?.[p], this.state);
+          return { value: at, done: false };
+        }
+    }
+    return { done: true };
+  }
+  [Symbol.iterator]() {
+    return this;
+  }
+};
+var attrs = new DoubleDots.AttrWeakSet();
+var stateObj = {};
+function setInObjectCreatePaths(obj, path, key, value) {
+  for (let p of path)
+    obj = obj[p] ??= {};
+  obj[key] = value;
+}
+function setInObjectIfDifferent(obj, path, key, value) {
+  const parent = path.reduce((o, p) => o?.[p], obj);
+  if (JSON.stringify(parent?.[key]) === JSON.stringify(value))
+    return false;
+  setInObjectCreatePaths(obj, path, key, value);
+  return true;
+}
+var State = class extends AttrCustom {
+  upgrade() {
+    attrs.add(this);
+  }
+  static get branches() {
+    return [[]];
+  }
+};
+function state(value) {
+  if (JSON.stringify(state) === JSON.stringify(value))
+    return;
+  state = value;
+  const e = new Event("state");
+  const it = new StateAttrIterator(e, attrs, [], state);
+  eventLoop.dispatchBatch(e, it);
+}
+function State_(rule) {
+  let [name, ...branches] = rule.split("_");
+  branches = branches.map((b) => b.split("."));
+  return class State extends AttrCustom {
+    upgrade() {
+      attrs.add(this);
+    }
+    static get branches() {
+      return branches;
+    }
+  };
+}
+function state_(rule) {
+  let [name, branch] = rule.split("_");
+  branch = branch.split(".");
+  const key = branch[branch.length - 1];
+  const path = branch.slice(0, -1);
+  return function(value) {
+    const change = setInObjectIfDifferent(stateObj, path, key, value);
+    if (!change)
+      return;
+    const e = new Event(name);
+    const it = new StateAttrIterator(e, attrs, branch, stateObj);
+    eventLoop.dispatchBatch(e, it);
+  };
+}
+
+// x/nav/v1.js
+var triggers = new DoubleDots.AttrWeakSet();
+var active;
+var Nav = class extends AttrCustom {
+  upgrade() {
+    if (!active) {
+      for (let e2 of ["click", "popstate"])
+        document.documentElement.setAttribute(`${e2}:${this.trigger}`);
+      active = true;
+    }
+    triggers.add(this);
+    const e = Object.assign(new Event("nav"), { location });
+    this.dispatchEvent(e);
+  }
+  remove() {
+    triggers.delete(this);
+  }
+};
+function nav(e) {
+  if (!triggers.size) {
+    for (let e3 of ["click", "popstate"])
+      document.htmlElement.removeAttribute(`${e3}:${this.trigger}`);
+    active = false;
+    return;
+  }
+  if (e.defaultPrevented)
+    return;
+  if (e.type === "popstate") {
+    e.preventDefault();
+  } else if (e.type === "click") {
+    const a = e.target.closest("a[href]");
+    if (!a)
+      return;
+    history.pushState(null, null, a.href);
+    e.preventDefault();
+  }
+  const e2 = Object.assign(new Event("nav"), { location });
+  eventLoop.dispatchBatch(e2, [...triggers]);
+}
+
 // x/embrace/v1.js
 var LoopCube = class {
   static compareSmall(old, now) {
@@ -282,10 +403,10 @@ var ER = class {
     return res;
   }
 };
-var triggers = new DoubleDots.AttrWeakSet();
+var triggers2 = new DoubleDots.AttrWeakSet();
 var Er = class extends AttrCustom {
   upgrade() {
-    triggers.add(this);
+    triggers2.add(this);
   }
 };
 var ErEvent = class extends Event {
@@ -295,7 +416,7 @@ var ErEvent = class extends Event {
   }
 };
 function er(posts) {
-  eventLoop.dispatchBatch(new ErEvent("er", posts), triggers);
+  eventLoop.dispatchBatch(new ErEvent("er", posts), triggers2);
 }
 
 // x/fetch/v1.js
@@ -361,14 +482,20 @@ export {
   DCLTrigger,
   DocumentTrigger,
   Er,
+  Nav,
   PostPropTrigger,
   PrePropTrigger,
+  State,
+  State_,
   WindowTrigger,
   dynamicSimpleProp,
   dynamicDots as dynamicsDots,
   embrace,
   er,
   fetch_json,
-  fetch_text
+  fetch_text,
+  nav,
+  state,
+  state_
 };
 //# sourceMappingURL=ddx.js.map
