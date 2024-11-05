@@ -64,4 +64,5 @@ the race condition can occur if Portals are set up sync:
   <li portal:log>hello</li>
 </ol>
 ```
+
 This will cause the `some-data` reaction to fire immediately, *before* the subsequence `<li>` and its `portal:log` have been discovered by the browser's parser, and therefore the `{hello:"sunshine"}` is sent into a portal that has no end and is lost into nothingness.
