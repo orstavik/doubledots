@@ -91,29 +91,31 @@ function monkeyPatch(proto, prop, fun) {
 (function () {
   //todo we need the innerHTML and insertAdjacentHTML and setAttribute to be added to the nativeMethods.
 
+  const EMPTY = [];
   //JS injections is allowed when we
   //1) move elements within the same rootNode (no upgrade of AttrCustom)
   //2) move elements from one DocumentFragment to another (no upgrade of AttrCustom)
   //3) inject elements *from* DocumentFragments to an .isConnected element (DO upgrade of AttrCustom)
   //* otherwise just fail.
   function checkRoot(root, child, r = root.getRootNode(), cr = child?.getRootNode()) {
-    if (root.isConnected && (child instanceof DocumentFragment) || (cr instanceof DocumentFragment))
-      return true;
+    if (root.isConnected && child instanceof DocumentFragment)
+      return [...child.children];
+    if (root.isConnected && (child instanceof Element) && (cr instanceof DocumentFragment))
+      return [child];
     if (!(child instanceof Element) || cr === r || (cr instanceof DocumentFragment && r instanceof DocumentFragment))
-      return false;
+      return EMPTY;
     throw new DoubleDots.InsertElementFromJSError(root, child);
   }
-  
-  const EMPTY = [];
+
   function sameRootFirstArg(child) {
-    return checkRoot(this, child) ? [child] : EMPTY;
+    return checkRoot(this, child);
   }
   function sameRootSecond(_, child) {
-    return checkRoot(this, child) ? [child] : EMPTY;
+    return checkRoot(this, child);
   }
   function sameRootSpreadArg(...args) {
     const r = this.getRootNode();
-    return args.filter(child => checkRoot(this, child, r));
+    return args.map(child => checkRoot(this, child, r)).flat();
   }
 
   const Mask = {

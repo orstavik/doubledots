@@ -948,23 +948,25 @@ function monkeyPatch(proto, prop, fun) {
   monkeyPatch(Element_p, "setAttribute", setAttribute_DD);
 })(Element.prototype, ShadowRoot.prototype);
 (function() {
+  const EMPTY = [];
   function checkRoot(root, child, r = root.getRootNode(), cr = child?.getRootNode()) {
-    if (root.isConnected && child instanceof DocumentFragment || cr instanceof DocumentFragment)
-      return true;
+    if (root.isConnected && child instanceof DocumentFragment)
+      return [...child.children];
+    if (root.isConnected && child instanceof Element && cr instanceof DocumentFragment)
+      return [child];
     if (!(child instanceof Element) || cr === r || cr instanceof DocumentFragment && r instanceof DocumentFragment)
-      return false;
+      return EMPTY;
     throw new DoubleDots.InsertElementFromJSError(root, child);
   }
-  const EMPTY = [];
   function sameRootFirstArg(child) {
-    return checkRoot(this, child) ? [child] : EMPTY;
+    return checkRoot(this, child);
   }
   function sameRootSecond(_, child) {
-    return checkRoot(this, child) ? [child] : EMPTY;
+    return checkRoot(this, child);
   }
   function sameRootSpreadArg(...args) {
     const r = this.getRootNode();
-    return args.filter((child) => checkRoot(this, child, r));
+    return args.map((child) => checkRoot(this, child, r)).flat();
   }
   const Mask = {
     "Comment.prototype": {
