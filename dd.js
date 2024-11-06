@@ -949,10 +949,10 @@ function monkeyPatch(proto, prop, fun) {
 })(Element.prototype, ShadowRoot.prototype);
 (function() {
   function checkRoot(root, child, r = root.getRootNode(), cr = child?.getRootNode()) {
+    if (root.isConnected && child instanceof DocumentFragment || cr instanceof DocumentFragment)
+      return true;
     if (!(child instanceof Element) || cr === r || cr instanceof DocumentFragment && r instanceof DocumentFragment)
       return false;
-    if (root.isConnected && cr instanceof DocumentFragment)
-      return true;
     throw new DoubleDots.InsertElementFromJSError(root, child);
   }
   const EMPTY = [];
