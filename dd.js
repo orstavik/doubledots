@@ -807,21 +807,25 @@ var MicroFrame = class {
 var __EventLoop = class {
   #stack = [];
   #started = [];
+  #syncTask;
   task;
   syncContinue() {
-    if (!(this.task = this.task.run()))
+    this.task = this.#syncTask;
+    this.#syncTask = this.task.run();
+    if (!this.#syncTask)
       this.loop();
   }
+  //asyncContinue is allowed while we are waiting for the sync task
   asyncContinue(task) {
     (this.task = task).run(true);
   }
   loop() {
-    while (this.#stack[0]) {
+    while (!this.#syncTask && this.#stack[0]) {
       const { event, iterator } = this.#stack[0];
       for (let attr of iterator) {
         this.task = new MicroFrame(event, attr);
         this.#started.push(this.task);
-        if (this.task = this.task.run())
+        if (this.#syncTask = this.task.run())
           return;
       }
       this.#stack.shift();
