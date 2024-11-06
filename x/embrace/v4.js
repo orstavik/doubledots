@@ -73,7 +73,7 @@ class EmbraceCommentIf {
     //todo how to not remove the template, just hide it? just do something else?
     //todo I can't take things in and out all the time, cause we have restrictions for that.
     node.after(node.__root.template);
-    node.__root.run(argsDictionary, dataObject, node, ancestor);
+     node.__root.run(argsDictionary, dataObject, node, ancestor);
   }
 
   static make(txt, templ) {
@@ -128,20 +128,19 @@ class EmbraceCommentFor {
   }
 }
 
-class EmbraceRoot {
-
-  static flatDomNodesAll(docFrag) {
-    const res = [];
-    const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
-    for (let n = it.nextNode(); n = it.nextNode();) {
-      res.push(n);
-      if (n instanceof Element)
-        for (let a of n.attributes)
-          res.push(a);
-    }
-    return res;
+function flatDomNodesAll(docFrag) {
+  const res = [];
+  const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
+  for (let n = it.nextNode(); n = it.nextNode();) {
+    res.push(n);
+    if (n instanceof Element)
+      for (let a of n.attributes)
+        res.push(a);
   }
+  return res;
+}
 
+class EmbraceRoot {
   static paramDict(listOfExpressions) {
     const params = {};
     for (let e of listOfExpressions.filter(Boolean))
@@ -162,15 +161,17 @@ class EmbraceRoot {
     }));
   }
 
-  constructor(docFrag, expressions, paramsDict) {
+  constructor(docFrag, nodes, expressions, paramsDict) {
     this.template = docFrag;
-    this.nodes = EmbraceRoot.flatDomNodesAll(docFrag);
+    this.nodes = nodes;
     this.expressions = expressions;
     this.paramsDict = paramsDict;
   }
 
   clone() {
-    return new EmbraceRoot(this.template.cloneNode(true), this.expressions, this.paramsDict);
+    const docFrag = this.template.cloneNode(true);
+    const nodes = flatDomNodesAll(docFrag);
+    return new EmbraceRoot(docFrag, nodes, this.expressions, this.paramsDict);
   }
 
   run(argsDictionary, dataObject, _, ancestor) {
@@ -185,11 +186,11 @@ class EmbraceRoot {
             ex.run(argsDictionary, dataObject, n, ancestor);
   }
 
-  static async make(template) {
-    const e = new EmbraceRoot(template);
-    e.expressions = await EmbraceRoot.listOfExpressions(e.nodes);
-    e.paramsDict = EmbraceRoot.paramDict(e.expressions);
-    return e;
+  static async make(docFrag) {
+    const nodes = flatDomNodesAll(docFrag);
+    const expressions = await EmbraceRoot.listOfExpressions(nodes);
+    const paramsDict = EmbraceRoot.paramDict(expressions);
+    return new EmbraceRoot(docFrag, nodes, expressions, paramsDict);
   }
 }
 
