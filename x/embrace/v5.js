@@ -1,15 +1,6 @@
 import { LoopCube } from "./LoopCube.js";
 import { extractArgs } from "./Tokenizer.js";
 
-//todo implement
-function parseSingle(txt) {
-  const params = [];
-  const body = extractArgs(txt, params);
-  `((v = (${extractArgs(txt, params)})) === false || v === undefined ? "": v)`;
-  const func = `(...args) => {let v; return ${body};}`;
-  return { func, params };
-}
-
 function parseMultiple(txt) {
   const segs = txt.split(/{{([^}]+)}}/);
   if (segs.length === 1)
@@ -26,21 +17,12 @@ function parseMultiple(txt) {
   return { func, params };
 }
 
-async function makeTxtCb(txt) {
-  const res = parseMultiple(txt);
-  if (!res)
-    return;
-  const { func, params } = res;
-  const cb = await DoubleDots.importBasedEval(func);
-  return { cb, params };
-}
-
-
 
 class EmbraceTextNode {
-  constructor({ params, cb }) {
+  constructor({ params, cb, func }) {
     this.cb = cb;
     this.params = params;
+    this.func = func;
   }
 
   run(argsDict, dataIn, node, ancestor) {
@@ -48,8 +30,8 @@ class EmbraceTextNode {
     node.textContent = this.cb(...args);
   }
 
-  static async make(txt) {
-    const res = await makeTxtCb(txt);
+  static make(txt) {
+    const res = parseMultiple(txt);
     if (res)
       return new EmbraceTextNode(res);
   }
@@ -115,17 +97,32 @@ class EmbraceCommentFor {
 
   //naive, no nested control structures yet. no if. no switch. etc. , untested against errors.
   //startUpTime
-  static async make(txt, tmpl) {
+  static make(txt, tmpl) {
     // const ctrlIf = txt.match(/{{\s*if\s*\(\s*([^)]+)\s*\)\s*}}/);
     const ctrlFor = txt.match(/{{\s*for\s*\(\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+([^\s)]+)\)\s*}}/);
     if (ctrlFor) {
       const [_, constLetVar, varName, ofIn, listName] = ctrlFor;
-      const root = await EmbraceRoot.make(tmpl.content);
+      const root = EmbraceRoot.make(tmpl.content);
       tmpl.remove();
       //here we need to parse the tmpl..
       return new EmbraceCommentFor(root, varName, listName, ofIn);
     }
   }
+}
+
+//todo if the if(something) and for(something) are put in a 
+function ctrlIf(...args) {
+  const res = [];
+  if (something) //or whatever
+    res.push(true);
+  return res;
+}
+
+function ctrlFor(...args) {
+  const res = [];
+  for (let x of something)// for(let x in something)
+    res.push(x);
+  return res;
 }
 
 function flatDomNodesAll(docFrag) {
@@ -141,15 +138,15 @@ function flatDomNodesAll(docFrag) {
 }
 
 function listOfExpressions(listOfNodes) {
-  return Promise.all(listOfNodes.map(async n => {
+  return listOfNodes.map(n => {
     if (n instanceof Text || n instanceof Attr)
-      return await EmbraceTextNode.make(n.textContent);
+      return EmbraceTextNode.make(n.textContent);
     if (n instanceof Comment) {
-      const embrace = await EmbraceCommentFor.make(n.textContent, n.nextSibling) ??
+      const embrace = EmbraceCommentFor.make(n.textContent, n.nextSibling) ??
         EmbraceCommentIf.make(n.textContent, n.nextSibling);
       return embrace;
     }
-  }));
+  });
 }
 
 function paramDict(listOfExpressions) {
@@ -186,20 +183,34 @@ class EmbraceRoot {
             ex.run(argsDictionary, dataObject, n, ancestor);
   }
 
-  static async make(docFrag) {
+  static make(docFrag) {
     const nodes = flatDomNodesAll(docFrag);
-    const expressions = await listOfExpressions(nodes);
+    const expressions = listOfExpressions(nodes);
     const paramsDict = paramDict(expressions);
     return new EmbraceRoot(docFrag, nodes, expressions, paramsDict);
   }
 }
 
+async function convert(exp) {
+  return exp.cb = await DoubleDots.importBasedEval(exp.func);
+}
+
+function loadAllFuncs(root, promises = []) {
+  for (let exp of root.expressions) {
+    if (exp instanceof EmbraceTextNode)
+      promises.push(convert(exp));
+    if (exp instanceof EmbraceCommentFor)
+      loadAllFuncs(exp.innerRoot, promises);
+  }
+  return promises;
+}
+
 export function embrace(templ, dataObject) {
   if (this.__embraceRoot)
     return this.__embraceRoot.run(Object.create(null), dataObject.$ = dataObject, 0, this.ownerElement);
-  return EmbraceRoot.make(templ.content).then(e => {
-    this.__embraceRoot = e;
-    this.ownerElement.append(e.template);
+  this.__embraceRoot = EmbraceRoot.make(templ.content);
+  return Promise.all(loadAllFuncs(this.__embraceRoot)).then(_ => {
+    this.ownerElement.append(this.__embraceRoot.template);
     return this.__embraceRoot.run(Object.create(null), dataObject.$ = dataObject, 0, this.ownerElement);
   });
 }
