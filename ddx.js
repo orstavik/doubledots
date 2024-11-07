@@ -309,7 +309,7 @@ function parseNode(n) {
         return new EmbraceCommentFor(emTempl, varName, listName, ofIn);
       }
     }
-    if (v = n.getAttribute("if"))
+    if (txt = n.getAttribute("if"))
       throw new Error("todo implement it mrDoubleDots!!");
     return emTempl;
   }
@@ -442,9 +442,9 @@ var ER = class {
     this.posts = posts;
   }
   *parents(ref, type, prop) {
-    for (let [k, v2] of Object.entries(this.posts))
+    for (let [k, v] of Object.entries(this.posts))
       if (!type || k.startsWith(type)) {
-        if (prop && Array.isArray(v2[prop]) && v2[prop].includes(ref))
+        if (prop && Array.isArray(v[prop]) && v[prop].includes(ref))
           yield k;
       }
   }

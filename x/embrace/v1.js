@@ -88,7 +88,7 @@ function parseNode(n) {
         return new EmbraceCommentFor(emTempl, varName, listName, ofIn);
       }
     }
-    if (v = n.getAttribute("if"))
+    if (txt = n.getAttribute("if"))
       throw new Error("todo implement it mrDoubleDots!!");
     return emTempl;
   }
