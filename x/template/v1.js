@@ -3,90 +3,92 @@
   const DocfragAppendOG = DoubleDots.nativeMethods.DocumentFragment.prototype.append;
   const CommentAfterOG = DoubleDots.nativeMethods.Comment.prototype.after;
 
-  function subsumeNodes(el) {
+  function setAttributes(el, txt) {
+    const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
+    pieces.forEach((unit, i) => {
+      if (i % 2 === 1) {
+        const [_, name, value] = unit.match(/^([_a-zA-Z][a-zA-Z0-9.:_-]*)="([^"]*)"$/);
+        el.setAttribute(name, value);
+      } else if (unit.trim() !== "") {
+        throw new SyntaxError(`<!--template ${txt}-->` + ' has an incorrect name="value"');
+      }
+    });
+  }
+
+  function subsumeNodes(at) {
+    const el = at.ownerElement;
     const t = document.createElement("template");
+    setAttributes(t, at.value);
     DocfragAppendOG.call(t.content, ...el.childNodes);
     ElAppendOG.call(el, t);
     return t;
   }
 
-  function subsumeHtml(el) {
-    el.innerHTML = `<template>${el.innerHTML}</template>`;
+  function subsumeHtml(at) {
+    const el = at.ownerElement;
+    el.innerHTML = `<template ${at.value}>${el.innerHTML}</template>`;
     return el.children[0];
   }
 
-  function absorbNodes(before, nodes) {
+  function absorbNodes({ start, nodes, txt, end }) {
     const t = document.createElement("template");
+    setAttributes(t, txt);
     DocfragAppendOG.call(t.content, ...nodes);
-    CommentAfterOG.call(before, t);
+    CommentAfterOG.call(start, t);
+    start.remove(), end?.remove();
   }
 
-  function absorbHtml(before, nodes) {
-    const txt = nodes.map(n =>
-      n.outerHTML ?? n instanceof Comment ? `<!--${n.textContent}-->` : n.textContent);
-    nodes.forEach(n => n.remove());
-    before.insertAdjacentHTML("afterend", `<template>${txt.join("")}</template>`);
-  }
-
-  const usedEnds = new WeakSet();
-
-  function gobble(n) {
-    let txt = n.textContent.trim();
-    if (!txt.match(/^template(\s|)/))
-      return;
-    const res = [];
-    while (n = n.nextSibling) {
-      if (n instanceof Comment && !usedEnds.has(n)) {
-        if ((txt = n.textContent.trim()).match(/^\/template(\s|)/)) {
-          usedEnds.add(n);
-          break;
-        }
-      }
-      res.push(n);
+  function absorbHtml({ start, nodes, txt, end }) {
+    let content = "";
+    for (let n of nodes) {
+      content += n.outerHTML ?? n instanceof Comment ? `<!--${n.textContent}-->` : n.textContent;
+      n.remove();
     }
-    return res;
+    start.insertAdjacentHTML("afterend", `<template ${txt}>${content}</template>`);
+    start.remove(), end?.remove();
   }
 
-  function descendantsReverse(root, trigger) {
-    const it = document.createNodeIterator(root, NodeFilter.SHOW_ELEMENT);
-    const elements = [], attributes = [];
-    for (let n; n = it.nextNode();) {
+  function gobble(start) {
+    const txt = start.textContent.trim().slice(8);
+    const nodes = [];
+    for (let n = start; n = n.nextSibling;) {
+      if (n instanceof Comment && n.textContent.trim() === "/template")
+        return { start, nodes, txt, end: n };
+      nodes.push(n);
+    }
+    return { start, nodes, txt };
+  }
+
+  function* templateTriggers(el, trigger) {
+    for (let n, it = document.createNodeIterator(el, NodeFilter.SHOW_ELEMENT); n = it.nextNode();)
       for (let a of n.attributes)
         if (a.name.startsWith(trigger)) {
-          attributes.push(a);
-          elements.unshift(n);
+          yield a;
           break;
         }
-    }
-    return { elements, attributes };
-    // return [...root.querySelectorAll(`[${trigger}\\:]`)].reverse();
   }
 
-  function commentsRightToLeft(docFrag) {
-    const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_COMMENT);
-    let res = [];
-    for (let n; n = it.nextNode();)
-      res.unshift(n);
-    return res;
+  function* templateCommentStarts(root) {
+    for (let n, it = document.createNodeIterator(root, NodeFilter.SHOW_COMMENT); n = it.nextNode();)
+      if (n.textContent.match(/^\s*template(\s|$)/))
+        yield n;
   }
 
   class Template extends AttrCustom {
     upgrade(dynamic) {
       const el = this.ownerElement;
-      if (el.childNodes.length === 0 || el.children.length === 1 && el.children[0] instanceof HTMLTemplateElement)
-        return;
       if (el instanceof HTMLTemplateElement)
         throw new Error("template trigger cannot be applied to template elements.");
+      if (!el.childNodes.length === 0 || el.children.length === 1 && el.children[0] instanceof HTMLTemplateElement)
+        return;
       const subsume = dynamic ? subsumeHtml : subsumeNodes;
       const absorb = dynamic ? absorbHtml : absorbNodes;
 
-      const { elements, attributes } = descendantsReverse(el, this.trigger + ":");
-      const templates = elements.map(subsume);
-      let gobbledNodes;
+      const attributes = [...templateTriggers(el, this.trigger + ":")].reverse();
+      const templates = attributes.map(subsume);
       for (let t of templates)
-        for (let comment of commentsRightToLeft(t.content))
-          if (gobbledNodes = gobble(comment))
-            absorb(comment, gobbledNodes);
+        for (let comment of [...templateCommentStarts(t.content)].reverse())
+          absorb(gobble(comment));
       //todo now we don't have any events coming from the template: trigger.
       //todo below is what it looks like if we upgrade and dispatch an event using downward propagation.
       // for (let a of attributes)

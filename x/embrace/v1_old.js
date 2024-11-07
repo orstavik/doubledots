@@ -60,31 +60,6 @@ class EmbraceGet {
   }
 }
 
-
-
-
-
-
-
-
-
-class EmbraceCondition {
-  constructor(getter) {
-    this.getter = getter;
-  }
-  get params() {
-    return this.getter.params;
-  }
-  run(argsDict, dataIn, node, ancestor) {
-    return this.getter.run(argsDict, dataIn, node, ancestor);
-  }
-  static make(txt) {
-    const getter = EmbraceGet.make(txt);
-    if (getter)
-      return new EmbraceCondition(getter);
-  }
-}
-
 class EmbraceTextNode {
   constructor(segs) {
     !segs[0] && segs.shift();
@@ -123,50 +98,13 @@ class EmbraceTextNode {
   }
 }
 
-class EmbraceCommentIf {
-  constructor(templ, condition) {
-    this.template = templ;
-    this.condition = condition;
-    templ.remove();
-  }
-
-  get params() {
-    return this.condition.params;
-  }
-
-  run(argsDictionary, dataObject, node, ancestor) {
-    node.__root ??= EmbraceRoot.make(this.template);
-    const fi = this.condition.run(argsDictionary, dataObject, node, ancestor);
-    if (!fi){
-      //todo how to remove stuff?
-      this.template.childNodes.remove();
-      return;
-    }
-    //todo how to not remove the template, just hide it? just do something else?
-    //todo I can't take things in and out all the time, cause we have restrictions for that.
-    node.after(node.__root.template);
-    node.__root.run(argsDictionary, dataObject, node, ancestor);
-  }
-
-  static make(txt, templ) {
-    const ctrlIf = txt.match(/{{\s*if\s*\(\s*([^)]+)\s*\)\s*}}/);
-    if (!ctrlIf)
-      return;
-    const condition = EmbraceCondition.make(ctrlIf[1]);
-    if (!condition)
-      throw new SyntaxError("The condition is not parseable");
-    return new EmbraceCommentIf(templ, condition);
-  }
-}
-
 class EmbraceCommentFor {
-  constructor(templ, varName, listName, ofIn) {
-    this.template = templ;
+  constructor(templ, varName, listName) {
+    this.template = templ; 
     this.varName = varName;
     this.listName = listName;
-    this.ofIn = ofIn;
     this.iName = `#${varName}`;
-    templ.remove();
+    templ.remove(); 
   }
 
   get params() {
@@ -192,10 +130,10 @@ class EmbraceCommentFor {
   //naive, no nested control structures yet. no if. no switch. etc. , untested against errors.
   //startUpTime
   static make(txt, tmpl) {
-    const ctrlFor = txt.match(/{{\s*for\s*\(\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+([^\s)]+)\)\s*}}/);
+    const ctrlFor = txt.match(/{{\s*for\s*\(\s*(let|const|var)\s+([^\s]+)\s+of\s+([^\s)]+)\)\s*}}/);
     if (ctrlFor) {
-      const [_, constLetVar, varName, ofIn, listName] = ctrlFor;
-      return new EmbraceCommentFor(tmpl, varName, listName, ofIn);
+      const [_, constLetVar, varName, listName] = ctrlFor;
+      return new EmbraceCommentFor(tmpl, varName, listName);
     }
   }
 }
@@ -227,8 +165,7 @@ class EmbraceRoot {
       if (n instanceof Text || n instanceof Attr)
         return EmbraceTextNode.make(n.textContent);
       if (n instanceof Comment)
-        return EmbraceCommentFor.make(n.textContent, n.nextSibling) ??
-          EmbraceCommentIf.make(n.textContent, n.nextSibling);
+        return EmbraceCommentFor.make(n.textContent, n.nextSibling);
     });
   }
 

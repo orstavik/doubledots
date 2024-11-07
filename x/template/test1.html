@@ -13,7 +13,7 @@
   <main template: _:test-log>
     <section>
       <h1>hello sunshine</h1>
-      <!--template -->
+      <!--template-->
       <div>items being added here</div>
       <!--/template -->
       <h4>footer</h4>
@@ -28,8 +28,8 @@
     </div>
     <div>
       hello rainbow!
-      <!--template {{if onel}}-->
-      <!--template {{for(item of two)}}-->
+      <!--template if="{{one}}"-->
+      <!--template for="{{item of two}}"-->
       <i>two items being added here</i>
       <!--/template-->
       <i>and some end if here, with an invisible if end</i>
@@ -40,27 +40,31 @@
       <template>
         <section>
           <h1>hello sunshine</h1>
-          <!--template --><template>
+          <template>
             <div>items being added here</div>
-          </template><!--/template -->
+          </template>
           <h4>footer</h4>
         </section>
-        <div template:=""><template>
+        <div template:="">
+          <template>
             <h3>hello darkness my old friend!</h3>
-          </template></div>
+          </template>
+        </div>
         <div>
           hello lightness my new friend!
-          <!--template --><template>
-          <i>items being added here</i>
-        </template></div>
+          <template>
+            <i>items being added here</i>
+          </template>
+        </div>
         <div>
           hello rainbow!
-          <!--template {{if onel}}--><template>
-          <!--template {{for(item of two)}}--><template>
-          <i>two items being added here</i>
-          </template><!--/template-->
-          <i>and some end if here, with an invisible if end</i>
-        </template></div>    
+          <template if="{{one}}">
+            <template for="{{item of two}}">
+              <i>two items being added here</i>
+            </template>
+            <i>and some end if here, with an invisible if end</i>
+          </template>
+        </div>
       </template>
     </main>
   </template>

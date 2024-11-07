@@ -48,7 +48,11 @@ This matters for `template:`. When the attribute is added as part of HTML templa
 
 ## `<!--tempate-->` and `<!--/template>`
 
-The template can also be defined inside a `<!--template-->` and `<!--/template>` comment tags. This is a way to wrap only some `.childNodes` into a `<template>` element, while leaving some other `childNodes` unaffected. This is useful when you need to wrap for example two lists of `<li>` items inside the same `<ol>` element. Or when you need to add a `<th>` separated from the `<td>` inside a `<tr>`.
+Inside the `:template`.ownerElement descendants, we can have commented `<!--template-->` and `<!--/template>` tags. These tags are essentially start and end `<template></template>` tags that are converted into `<!--template--><!--/template-->` tags.
+
+The end tag is optional. If it is missing, the `<!--template-->` tag will be converted into a `<template>` tag that wraps all the following siblings until the end of the `.ownerElement`.
+
+~~The template can also be defined inside a `<!--template-->` and `<!--/template>` comment tags. This is a way to wrap only some `.childNodes` into a `<template>` element, while leaving some other `childNodes` unaffected. This is useful when you need to wrap for example two lists of `<li>` items inside the same `<ol>` element. Or when you need to add a `<th>` separated from the `<td>` inside a `<tr>`.~~
 
 ## still draft stage 
 
