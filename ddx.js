@@ -268,7 +268,7 @@ var EmbraceCommentFor = class {
       dataObject[this.varName] = now[i];
       dataObject[this.iName] = i;
       if (this.ofIn === "in")
-        dataObject[this.dName] = dataObject[now[i]];
+        dataObject[this.dName] = dataObject[this.listName][now[i]];
       embraces[i].run(Object.assign({}, argsDictionary), dataObject, void 0, ancestor);
     }
   }
