@@ -156,11 +156,12 @@ function loadAllFuncs(root, promises = []) {
 }
 
 export function embrace(templ, dataObject) {
+  dataObject = Object.assign({$: dataObject}, dataObject);
   if (this.__embrace)
-    return this.__embrace.run(Object.create(null), dataObject.$ = dataObject, 0, this.ownerElement);
+    return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);
   this.__embrace = EmbraceRoot.make(templ.content);
   return Promise.all(loadAllFuncs(this.__embrace)).then(_ => {
     this.ownerElement.prepend(this.__embrace.template);
-    return this.__embrace.run(Object.create(null), dataObject.$ = dataObject, 0, this.ownerElement);
+    return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);
   });
 }
