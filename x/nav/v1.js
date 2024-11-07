@@ -18,10 +18,21 @@ export class Nav extends AttrCustom {
   }
 }
 
+function triggerNavs() {
+  const e2 = Object.assign(new Event("nav"), { location });
+  eventLoop.dispatchBatch(e2, [...triggers]);
+}
+
 export function nav(e) {
+  if (typeof e === "string") {
+    const url = new URL(e, location.href);
+    history.pushState(null, null, url.href);
+    return triggerNavs();
+  }
   if (!triggers.size) {
     for (let e of ["click", "popstate"])
-      document.htmlElement.removeAttribute(`${e}:${this.trigger}`);
+      document.htmlElement.removeAttribute(`${e}:${eventLoop.reaction.name}`);
+    //todo check that this eventLoop.reaction.name is correct
     active = false;
     return;
   }
@@ -36,6 +47,5 @@ export function nav(e) {
     history.pushState(null, null, a.href);
     e.preventDefault();
   }
-  const e2 = Object.assign(new Event("nav"), { location });
-  eventLoop.dispatchBatch(e2, [...triggers]);
+  triggerNavs();
 }

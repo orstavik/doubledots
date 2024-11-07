@@ -5,6 +5,7 @@
 
 <script>
   document.Reactions.define("log", console.log);
+  document.Reactions.define("new-link", _ => "one/two/three");
 </script>
 
 <body>
@@ -13,4 +14,5 @@
   <div nav:log>
     hello hello
   </div>
+  <button click:new-link:nav>one two three!</button>
 </body>

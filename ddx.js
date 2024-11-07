@@ -97,10 +97,19 @@ var Nav = class extends AttrCustom {
     triggers.delete(this);
   }
 };
+function triggerNavs() {
+  const e2 = Object.assign(new Event("nav"), { location });
+  eventLoop.dispatchBatch(e2, [...triggers]);
+}
 function nav(e) {
+  if (typeof e === "string") {
+    const url = new URL(e, location.href);
+    history.pushState(null, null, url.href);
+    return triggerNavs();
+  }
   if (!triggers.size) {
-    for (let e3 of ["click", "popstate"])
-      document.htmlElement.removeAttribute(`${e3}:${this.trigger}`);
+    for (let e2 of ["click", "popstate"])
+      document.htmlElement.removeAttribute(`${e2}:${eventLoop.reaction.name}`);
     active = false;
     return;
   }
@@ -115,8 +124,7 @@ function nav(e) {
     history.pushState(null, null, a.href);
     e.preventDefault();
   }
-  const e2 = Object.assign(new Event("nav"), { location });
-  eventLoop.dispatchBatch(e2, [...triggers]);
+  triggerNavs();
 }
 
 // x/embrace/LoopCube.js
