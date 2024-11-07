@@ -22,11 +22,16 @@ class EmbraceCommentFor {
     this.ofIn = ofIn;
     this.iName = `#${varName}`;
     this.params = [listName];
+    this.dName = `$${varName}`;
   }
 
   run(argsDictionary, dataObject, node, ancestor) {
     const cube = node.__cube ??= new LoopCube(this.innerRoot);
-    const now = argsDictionary[this.listName];
+    let now = argsDictionary[this.listName];
+    if (this.ofIn === "in") {
+      now = Object.keys(now);
+      now.splice(now.indexOf("$"), 1);
+    }
     const { embraces, removes, changed } = cube.step(now);
     for (let em of removes)
       for (let n of em.topNodes)
@@ -35,6 +40,8 @@ class EmbraceCommentFor {
     for (let i of changed) {
       dataObject[this.varName] = now[i];
       dataObject[this.iName] = i;
+      if (this.ofIn === "in")
+        dataObject[this.dName] = dataObject[now[i]];
       embraces[i].run(Object.assign({}, argsDictionary), dataObject, undefined, ancestor);
     }
   }
@@ -50,17 +57,16 @@ function flatDomNodesAll(docFrag) {
   return res;
 }
 
-function parseTextNode({textContent: txt}) {
+function parseTextNode({ textContent: txt }) {
   const segs = txt.split(/{{([^}]+)}}/);
   if (segs.length === 1)
     return;
   const params = [];
   let body = "";
   for (let i = 0; i < segs.length; i++) {
-    if (i % 2)
-      body += `\${((v = (${extractArgs(segs[i], params)})) === false || v === undefined ? "": v)}`;
-    else
-      body += segs[i].replaceAll("`", "\\`");
+    body += i % 2 ?
+      `\${((v = (${extractArgs(segs[i], params)})) === false || v === undefined ? "": v)}` :
+      segs[i].replaceAll("`", "\\`");
   }
   const func = `(...args) => {let v; return \`${body}\`;}`;
   return { func, params };
@@ -78,11 +84,12 @@ function parseNode(n) {
       const ctrlFor = txt.match(/^\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
       if (ctrlFor) {
         const [_, constLetVar, varName, ofIn, listName] = ctrlFor;
+        //todo listName is an expression. I can turn that into an expression same as the textNodeJs
         return new EmbraceCommentFor(emTempl, varName, listName, ofIn);
       }
     }
-    // if(v = n.getAttribute("if"))
-    //   return EmbraceCommentIf.make(v, n);
+    if (v = n.getAttribute("if"))
+      throw new Error("todo implement it mrDoubleDots!!");
     return emTempl;
   }
 }
@@ -103,6 +110,7 @@ class EmbraceRoot {
     this.topNodes = [...docFrag.childNodes];
     this.expressions = expressions;
     this.paramsDict = paramsDict;
+    this.todos = expressions.reduce((res, e, i) => (e && res.push(i), res), []);
   }
 
   clone() {
@@ -115,13 +123,14 @@ class EmbraceRoot {
     //1. make the argumentsDictionary
     for (let param in this.paramsDict)
       argsDictionary[param] ??= this.paramsDict[param].reduce((o, p) => o?.[p], dataObject);
-    //2. prep and run rules
-    for (let ex, n, i = 0; i < this.expressions.length; i++)
-      if (ex = this.expressions[i])
-        if (n = this.nodes[i])
-          if (n instanceof Attr ? ancestor.contains(n.ownerElement) : ancestor.contains(n))
-          //todo prep the args here??
-            ex.run(argsDictionary, dataObject, n, ancestor);
+    //2. run rules
+    for (let i of this.todos) {
+      const ex = this.expressions[i];
+      const n = this.nodes[i];
+      if (!ancestor.contains(n.ownerElement ?? n))
+        return;
+      ex.run(argsDictionary, dataObject, n, ancestor);
+    }
   }
 
   static make(docFrag) {
@@ -133,7 +142,7 @@ class EmbraceRoot {
 }
 
 async function convert(exp) {
-  return exp.cb = await DoubleDots.importBasedEval(exp.func);
+  exp.cb = await DoubleDots.importBasedEval(exp.func);
 }
 
 function loadAllFuncs(root, promises = []) {
@@ -147,11 +156,11 @@ function loadAllFuncs(root, promises = []) {
 }
 
 export function embrace(templ, dataObject) {
-  if (this.__embraceRoot)
-    return this.__embraceRoot.run(Object.create(null), dataObject.$ = dataObject, 0, this.ownerElement);
-  this.__embraceRoot = EmbraceRoot.make(templ.content);
-  return Promise.all(loadAllFuncs(this.__embraceRoot)).then(_ => {
-    this.ownerElement.prepend(this.__embraceRoot.template);
-    return this.__embraceRoot.run(Object.create(null), dataObject.$ = dataObject, 0, this.ownerElement);
+  if (this.__embrace)
+    return this.__embrace.run(Object.create(null), dataObject.$ = dataObject, 0, this.ownerElement);
+  this.__embrace = EmbraceRoot.make(templ.content);
+  return Promise.all(loadAllFuncs(this.__embrace)).then(_ => {
+    this.ownerElement.prepend(this.__embrace.template);
+    return this.__embrace.run(Object.create(null), dataObject.$ = dataObject, 0, this.ownerElement);
   });
 }
