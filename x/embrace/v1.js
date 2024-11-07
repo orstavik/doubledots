@@ -30,7 +30,8 @@ class EmbraceCommentFor {
     let now = argsDictionary[this.listName];
     if (this.ofIn === "in") {
       now = Object.keys(now);
-      now.splice(now.indexOf("$"), 1);
+      let i = now.indexOf("$");
+      i >= 0 && now.splice(i, 1);
     }
     const { embraces, removes, changed } = cube.step(now);
     for (let em of removes)
@@ -156,7 +157,7 @@ function loadAllFuncs(root, promises = []) {
 }
 
 export function embrace(templ, dataObject) {
-  dataObject = Object.assign({$: dataObject}, dataObject);
+  dataObject = Object.assign({ $: dataObject }, dataObject);
   if (this.__embrace)
     return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);
   this.__embrace = EmbraceRoot.make(templ.content);
