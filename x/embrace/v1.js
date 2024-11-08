@@ -84,6 +84,28 @@ class EmbraceCommentFor {
   }
 }
 
+class EmbraceCommentIf {
+  constructor(templateEl, emRoot, func, params) {
+    this.innerRoot = emRoot;
+    this.templateEl = templateEl;
+    this.func = func;
+    this.cb;
+    this.params = params;
+    this.state = false;
+  }
+
+  run(argsDict, dataObject, node, ancestor) {
+    const args = this.params.map(p => argsDict[p]);
+    const test = !!this.cb(...args);
+    if (test && !this.state)
+      node.before(...this.innerRoot.topNodes);
+    else if (this.state)
+      this.templateEl.append(...this.innerRoot.topNodes);
+    if (test)
+      this.innerRoot.run(Object.assign({}, argsDict), dataObject, undefined, ancestor);
+    this.state = test;
+  }
+}
 //PARSER
 
 function flatDomNodesAll(docFrag) {
@@ -153,8 +175,11 @@ function parseNode(n) {
         return new EmbraceCommentFor(emTempl, varName, func, params, ofIn);
       }
     }
-    if (txt = n.getAttribute("if"))
-      throw new Error("todo implement it mrDoubleDots!!");
+    if (txt = n.getAttribute("if")) {
+      const params = [];
+      const func = `(...args) => (${extractArgs(txt, params)});`;
+      return new EmbraceCommentIf(n, emTempl, func, params);
+    }
     return emTempl;
   }
 }
@@ -167,7 +192,7 @@ function loadAllFuncs(root, promises = []) {
   for (let exp of root.expressions) {
     if (exp?.func)
       promises.push(convert(exp));
-    if (exp instanceof EmbraceCommentFor)
+    if (exp?.innerRoot)
       loadAllFuncs(exp.innerRoot, promises);
   }
   return promises;
