@@ -98,19 +98,20 @@ class EmbraceCommentIf {
     this.func = func;
     this.cb;
     this.params = params;
-    this.state = false;
   }
 
   run(argsDict, dataObject, node, ancestor) {
+    const em = node.__ifEmbrace ??= this.innerRoot.clone();
     const args = this.params.map(p => argsDict[p]);
     const test = !!this.cb(...args);
-    if (test && !this.state)
-      node.before(...this.innerRoot.topNodes);
-    else if (this.state)
-      this.templateEl.append(...this.innerRoot.topNodes);
+    //we are adding state to the em object. instead of the node.
+    if (test && !em.state)
+      node.before(...em.topNodes);
+    else if (!test && em.state)
+      this.templateEl.append(...em.topNodes);
     if (test)
-      this.innerRoot.run(Object.assign({}, argsDict), dataObject, undefined, ancestor);
-    this.state = test;
+      em.run(Object.assign({}, argsDict), dataObject, undefined, ancestor);
+    em.state = test;
   }
 }
 //PARSER
@@ -206,25 +207,13 @@ function extractFuncs(expressions, name = "embrace") {
   return funcs;
 }
 
-function setCbs(root, funcs) {
-  for (let exp of root.expressions) {
-    if (exp?.func)
-      exp.cb = funcs[exp.func];
-    if (exp?.innerRoot)
-      setCbs(exp.innerRoot, funcs);
-  }
-}
-
-async function loadEmbraces(funcs) {
-  const body = Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(',');
-  return await DoubleDots.importBasedEval("{" + body + "}");
-}
-
 export function embrace(templ, dataObject) {
-  //todo I think that embrace should work only with the child class... maybe..
   dataObject = Object.assign({ $: dataObject }, dataObject);
+  //1. we have already run the embrace before, we run it again.
   if (this.__embrace)
     return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);
+
+  //2. we parse the template. 
   this.__embrace = parseTemplate(templ);//todo we need to name the functions properly during parsing
   const funcs = extractFuncs(this.__embrace.expressions);
   //todo once we have he engine, then we can prepend it.
