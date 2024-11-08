@@ -25,12 +25,19 @@ class EmbraceRoot {
       argsDictionary[param] ??= this.paramsDict[param].reduce((o, p) => o?.[p], dataObject);
     //2. run rules
     for (let i of this.todos) {
-      const ex = this.expressions[i];
-      const n = this.nodes[i];
-      if (!ancestor.contains(n.ownerElement ?? n))
-        return;
-      ex.run(argsDictionary, dataObject, n, ancestor);
+      const ex = this.expressions[i], n = this.nodes[i];
+      if (ancestor.contains(n.ownerElement ?? n))
+        ex.run(argsDictionary, dataObject, n, ancestor);
     }
+  }
+
+  prep(funcs) {
+    for (let i of this.todos) {
+      const exp = this.expressions[i];
+      exp.cb = funcs[exp.func];
+      exp.innerRoot?.prep(funcs);
+    }
+    return this;
   }
 }
 
@@ -140,7 +147,7 @@ function parseFor(txt) {
   const [, , varName, ofIn, listName] = ctrlFor;
   const params = [];
   const body = extractArgs(listName, params);
-  const func = `(...args) => (${body});`;
+  const func = `(...args) => (${body})`;
   return { params, func, varName, ofIn };
 }
 
@@ -177,34 +184,69 @@ function parseNode(n) {
     }
     if (txt = n.getAttribute("if")) {
       const params = [];
-      const func = `(...args) => (${extractArgs(txt, params)});`;
+      const func = `(...args) => (${extractArgs(txt, params)})`;
       return new EmbraceCommentIf(n, emTempl, func, params);
     }
     return emTempl;
   }
 }
 
-async function convert(exp) {
-  exp.cb = await DoubleDots.importBasedEval(exp.func);
+function extractFuncs(expressions, name = "embrace") {
+  const funcs = {};
+  for (let i = 0; i < expressions.length; i++) {
+    const id = name + "_" + i;
+    const exp = expressions[i];
+    if (exp?.func) {
+      funcs[id] = exp.func;
+      exp.func = id;
+    }
+    if (exp?.innerRoot)
+      Object.assign(funcs, extractFuncs(exp.innerRoot.expressions, id));
+  }
+  return funcs;
 }
 
-function loadAllFuncs(root, promises = []) {
+function setCbs(root, funcs) {
   for (let exp of root.expressions) {
     if (exp?.func)
-      promises.push(convert(exp));
+      exp.cb = funcs[exp.func];
     if (exp?.innerRoot)
-      loadAllFuncs(exp.innerRoot, promises);
+      setCbs(exp.innerRoot, funcs);
   }
-  return promises;
+}
+
+async function loadEmbraces(funcs) {
+  const body = Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(',');
+  return await DoubleDots.importBasedEval("{" + body + "}");
 }
 
 export function embrace(templ, dataObject) {
+  //todo I think that embrace should work only with the child class... maybe..
   dataObject = Object.assign({ $: dataObject }, dataObject);
   if (this.__embrace)
     return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);
-  this.__embrace = parseTemplate(templ);
-  return Promise.all(loadAllFuncs(this.__embrace)).then(_ => {
-    this.ownerElement.prepend(this.__embrace.template);
-    return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);
+  this.__embrace = parseTemplate(templ);//todo we need to name the functions properly during parsing
+  const funcs = extractFuncs(this.__embrace.expressions);
+  //todo once we have he engine, then we can prepend it.
+  this.ownerElement.prepend(this.__embrace.template);
+
+  //todo The embrace ID. It should be the name of the template and the embraced=[script]
+  //todo and the name of the functions...^...
+  //check against an id for the ownerElement..
+  if (DoubleDots.Embraced) {
+    return this.__embrace.prep(DoubleDots.Embraced)
+      .run(Object.create(null), dataObject, 0, this.ownerElement);
+  }
+  const script = "{" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(',') + "}";
+  this.ownerElement.insertAdjacentHTML("beforebegin",
+    `<script embraced>DoubleDots.Embrace = ${script}</script>`);
+  //the browser doesn't allow this to run
+  console.log(`Embrace is:
+${this.ownerElement.previousElementSibling.outerHTML}
+${this.ownerElement.outerHTML}    
+`);
+  DoubleDots.importBasedEval(script).then(funcsObj => {
+    this.__embrace.prep(DoubleDots.Embrace = funcsObj)
+      .run(Object.create(null), dataObject, 0, this.ownerElement);
   });
 }
