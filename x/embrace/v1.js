@@ -37,7 +37,12 @@ class EmbraceRoot {
       exp.cb = funcs[exp.func];
       exp.innerRoot?.prep(funcs);
     }
-    return this;
+  }
+
+  runFirst(el, dataObject, funcs) {
+    this.prep(funcs);
+    el.prepend(this.template);
+    this.run(Object.create(null), dataObject, 0, el);
   }
 }
 
@@ -92,7 +97,7 @@ class EmbraceCommentFor {
 }
 
 class EmbraceCommentIf {
-  constructor(templateEl, emRoot, {func, params}) {
+  constructor(templateEl, emRoot, { func, params }) {
     this.innerRoot = emRoot;
     this.templateEl = templateEl;
     this.func = func;
@@ -152,7 +157,7 @@ function parseFor(txt) {
   return { params, func, varName, ofIn };
 }
 
-function parseIf(txt){
+function parseIf(txt) {
   const params = [];
   const func = `(...args) => (${extractArgs(txt, params)})`;
   return { params, func };
@@ -183,7 +188,7 @@ function parseNode(n, i, name) {
     const emTempl = parseTemplate(n);
     let txt;
     if (txt = n.getAttribute("for")) {
-      if (res = parseFor(txt)) 
+      if (res = parseFor(txt))
         return new EmbraceCommentFor(emTempl, res);
     }
     if (txt = n.getAttribute("if")) {
@@ -209,35 +214,46 @@ function extractFuncs(expressions, name = "embrace") {
   return funcs;
 }
 
+//TUTORIAL
+
+function embraceTutorial(script, ownerElement) {
+  console.log(`
+#################################
+#  Embrace production tutorial: #
+#################################
+
+1. add the following script in the <head> element:
+
+<script embraced="${ownerElement.id}">
+  window.Embrace.${ownerElement.id} = ${script};
+</script>
+
+
+2. update the content of this element:
+
+${ownerElement.outerHTML}
+
+#################################
+`);
+}
+
+// :embrace
 export function embrace(templ, dataObject) {
   dataObject = Object.assign({ $: dataObject }, dataObject);
   //1. we have already run the embrace before, we run it again.
   if (this.__embrace)
     return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);
 
+  const id = this.ownerElement.id; //todo we need to turn this into a good name.
   //2. we parse the template. 
-  this.__embrace = parseTemplate(templ);//todo we need to name the functions properly during parsing
+  this.__embrace = parseTemplate(templ);
   const funcs = extractFuncs(this.__embrace.expressions);
-  //todo once we have he engine, then we can prepend it.
-  this.ownerElement.prepend(this.__embrace.template);
+  if (DoubleDots.Embraced)
+    return this.__embrace.runFirst(this.ownerElement, dataObject, DoubleDots.Embraced);
 
-  //todo The embrace ID. It should be the name of the template and the embraced=[script]
-  //todo and the name of the functions...^...
-  //check against an id for the ownerElement..
-  if (DoubleDots.Embraced) {
-    return this.__embrace.prep(DoubleDots.Embraced)
-      .run(Object.create(null), dataObject, 0, this.ownerElement);
-  }
   const script = "{" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(',') + "}";
-  this.ownerElement.insertAdjacentHTML("beforebegin",
-    `<script embraced>DoubleDots.Embrace = ${script}</script>`);
-  //the browser doesn't allow this to run
-  console.log(`Embrace is:
-${this.ownerElement.previousElementSibling.outerHTML}
-${this.ownerElement.outerHTML}    
-`);
   DoubleDots.importBasedEval(script).then(funcsObj => {
-    this.__embrace.prep(DoubleDots.Embrace = funcsObj)
-      .run(Object.create(null), dataObject, 0, this.ownerElement);
+    embraceTutorial(script, this.ownerElement);
+    this.__embrace.runFirst(this.ownerElement, dataObject, DoubleDots.Embrace = funcsObj);
   });
 }
