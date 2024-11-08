@@ -42,10 +42,10 @@ class EmbraceRoot {
 }
 
 class EmbraceTextNode {
-  constructor({ params, cb, func }) {
-    this.cb = cb;
+  constructor({ params, func }) {
     this.params = params;
     this.func = func;
+    this.cb;
   }
 
   run(argsDict, dataIn, node, ancestor) {
@@ -55,7 +55,7 @@ class EmbraceTextNode {
 }
 
 class EmbraceCommentFor {
-  constructor(innerRoot, varName, func, params, ofIn) {
+  constructor(innerRoot, { varName, func, params, ofIn }) {
     this.innerRoot = innerRoot;
     this.varName = varName;
     this.func = func;
@@ -92,7 +92,7 @@ class EmbraceCommentFor {
 }
 
 class EmbraceCommentIf {
-  constructor(templateEl, emRoot, func, params) {
+  constructor(templateEl, emRoot, {func, params}) {
     this.innerRoot = emRoot;
     this.templateEl = templateEl;
     this.func = func;
@@ -152,6 +152,12 @@ function parseFor(txt) {
   return { params, func, varName, ofIn };
 }
 
+function parseIf(txt){
+  const params = [];
+  const func = `(...args) => (${extractArgs(txt, params)})`;
+  return { params, func };
+}
+
 function paramDict(listOfExpressions) {
   const params = {};
   for (let e of listOfExpressions.filter(Boolean))
@@ -168,7 +174,7 @@ function parseTemplate(template) {
   return new EmbraceRoot(template.content, nodes, expressions, paramsDict);
 }
 
-function parseNode(n) {
+function parseNode(n, i, name) {
   let res;
   if (n instanceof Text || n instanceof Attr) {
     if (res = parseTextNode(n))
@@ -177,16 +183,12 @@ function parseNode(n) {
     const emTempl = parseTemplate(n);
     let txt;
     if (txt = n.getAttribute("for")) {
-      const res = parseFor(txt);
-      if (res) {
-        const { params, func, varName, ofIn } = res;
-        return new EmbraceCommentFor(emTempl, varName, func, params, ofIn);
-      }
+      if (res = parseFor(txt)) 
+        return new EmbraceCommentFor(emTempl, res);
     }
     if (txt = n.getAttribute("if")) {
-      const params = [];
-      const func = `(...args) => (${extractArgs(txt, params)})`;
-      return new EmbraceCommentIf(n, emTempl, func, params);
+      const res = parseIf(txt);
+      return new EmbraceCommentIf(n, emTempl, res);
     }
     return emTempl;
   }
