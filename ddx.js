@@ -249,12 +249,18 @@ var EmbraceRoot = class {
     for (let param in this.paramsDict)
       argsDictionary[param] ??= this.paramsDict[param].reduce((o, p) => o?.[p], dataObject);
     for (let i of this.todos) {
-      const ex = this.expressions[i];
-      const n = this.nodes[i];
-      if (!ancestor.contains(n.ownerElement ?? n))
-        return;
-      ex.run(argsDictionary, dataObject, n, ancestor);
+      const ex = this.expressions[i], n = this.nodes[i];
+      if (ancestor.contains(n.ownerElement ?? n))
+        ex.run(argsDictionary, dataObject, n, ancestor);
     }
+  }
+  prep(funcs) {
+    for (let i of this.todos) {
+      const exp = this.expressions[i];
+      exp.cb = funcs[exp.func];
+      exp.innerRoot?.prep(funcs);
+    }
+    return this;
   }
 };
 var EmbraceTextNode = class {
@@ -310,18 +316,18 @@ var EmbraceCommentIf = class {
     this.func = func;
     this.cb;
     this.params = params;
-    this.state = false;
   }
   run(argsDict, dataObject, node, ancestor) {
+    const em = node.__ifEmbrace ??= this.innerRoot.clone();
     const args = this.params.map((p) => argsDict[p]);
     const test2 = !!this.cb(...args);
-    if (test2 && !this.state)
-      node.before(...this.innerRoot.topNodes);
-    else if (this.state)
-      this.templateEl.append(...this.innerRoot.topNodes);
+    if (test2 && !em.state)
+      node.before(...em.topNodes);
+    else if (!test2 && em.state)
+      this.templateEl.append(...em.topNodes);
     if (test2)
-      this.innerRoot.run(Object.assign({}, argsDict), dataObject, void 0, ancestor);
-    this.state = test2;
+      em.run(Object.assign({}, argsDict), dataObject, void 0, ancestor);
+    em.state = test2;
   }
 };
 function flatDomNodesAll(docFrag) {
@@ -352,7 +358,7 @@ function parseFor(txt) {
   const [, , varName, ofIn, listName] = ctrlFor;
   const params = [];
   const body = extractArgs(listName, params);
-  const func = `(...args) => (${body});`;
+  const func = `(...args) => (${body})`;
   return { params, func, varName, ofIn };
 }
 function paramDict(listOfExpressions) {
@@ -386,32 +392,47 @@ function parseNode(n) {
     }
     if (txt = n.getAttribute("if")) {
       const params = [];
-      const func = `(...args) => (${extractArgs(txt, params)});`;
+      const func = `(...args) => (${extractArgs(txt, params)})`;
       return new EmbraceCommentIf(n, emTempl, func, params);
     }
     return emTempl;
   }
 }
-async function convert(exp) {
-  exp.cb = await DoubleDots.importBasedEval(exp.func);
-}
-function loadAllFuncs(root, promises = []) {
-  for (let exp of root.expressions) {
-    if (exp?.func)
-      promises.push(convert(exp));
+function extractFuncs(expressions, name = "embrace") {
+  const funcs = {};
+  for (let i = 0; i < expressions.length; i++) {
+    const id = name + "_" + i;
+    const exp = expressions[i];
+    if (exp?.func) {
+      funcs[id] = exp.func;
+      exp.func = id;
+    }
     if (exp?.innerRoot)
-      loadAllFuncs(exp.innerRoot, promises);
+      Object.assign(funcs, extractFuncs(exp.innerRoot.expressions, id));
   }
-  return promises;
+  return funcs;
 }
 function embrace(templ, dataObject) {
   dataObject = Object.assign({ $: dataObject }, dataObject);
   if (this.__embrace)
     return this.__embrace.run(/* @__PURE__ */ Object.create(null), dataObject, 0, this.ownerElement);
   this.__embrace = parseTemplate(templ);
-  return Promise.all(loadAllFuncs(this.__embrace)).then((_) => {
-    this.ownerElement.prepend(this.__embrace.template);
-    return this.__embrace.run(/* @__PURE__ */ Object.create(null), dataObject, 0, this.ownerElement);
+  const funcs = extractFuncs(this.__embrace.expressions);
+  this.ownerElement.prepend(this.__embrace.template);
+  if (DoubleDots.Embraced) {
+    return this.__embrace.prep(DoubleDots.Embraced).run(/* @__PURE__ */ Object.create(null), dataObject, 0, this.ownerElement);
+  }
+  const script = "{" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(",") + "}";
+  this.ownerElement.insertAdjacentHTML(
+    "beforebegin",
+    `<script embraced>DoubleDots.Embrace = ${script}<\/script>`
+  );
+  console.log(`Embrace is:
+${this.ownerElement.previousElementSibling.outerHTML}
+${this.ownerElement.outerHTML}    
+`);
+  DoubleDots.importBasedEval(script).then((funcsObj) => {
+    this.__embrace.prep(DoubleDots.Embrace = funcsObj).run(/* @__PURE__ */ Object.create(null), dataObject, 0, this.ownerElement);
   });
 }
 
