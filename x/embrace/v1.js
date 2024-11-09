@@ -41,7 +41,7 @@ class EmbraceRoot {
   }
 
   prep(funcs) {
-    for (let {exp} of this.todos) {
+    for (let { exp } of this.todos) {
       exp.cb = funcs[exp.name];
       exp.innerRoot?.prep(funcs);
     }
@@ -174,13 +174,12 @@ function parseNode(n, name) {
   }
 }
 
-function extractFuncs(expressions) {
+function extractFuncs(root) {
   const funcs = {};
-  for (let exp of expressions) {
-    if (exp?.exp)
-      funcs[exp.name] = `function ${exp.name}(args, v) { return ${exp.exp}; }`;
-    if (exp?.innerRoot)
-      Object.assign(funcs, extractFuncs(exp.innerRoot.expressions));
+  for (let { exp, node } of root.todos) {
+    funcs[exp.name] = `function ${exp.name}(args, v) { return ${exp.exp}; }`;
+    if (exp.innerRoot)
+      Object.assign(funcs, extractFuncs(exp.innerRoot));
   }
   return funcs;
 }
@@ -215,7 +214,7 @@ export function embrace(templ, dataObject) {
   this.__embrace = parseTemplate(templ, this.ownerElement.id || "embrace");
   if (DoubleDots.Embraced)
     return this.__embrace.runFirst(this.ownerElement, dataObject, DoubleDots.Embraced);
-  const funcs = extractFuncs(this.__embrace.expressions);
+  const funcs = extractFuncs(this.__embrace);
   const script = "{" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(',') + "}";
   DoubleDots.importBasedEval(script).then(funcsObj => {
     console.log(embraceTutorial(script, this.ownerElement));
