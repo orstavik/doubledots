@@ -15,7 +15,7 @@ class EmbraceRoot {
 
   clone() {
     const docFrag = this.template.cloneNode(true);
-    const nodes = flatDomNodesAll(docFrag);
+    const nodes = [...flatDomNodesAll(docFrag)];
     return new EmbraceRoot(docFrag, nodes, this.expressions, this.paramsDict);
   }
 
@@ -119,16 +119,14 @@ class EmbraceCommentIf {
     em.state = test;
   }
 }
-//PARSER
 
-function flatDomNodesAll(docFrag) {
-  const res = [];
+//PARSER
+function* flatDomNodesAll(docFrag) {
   const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
   for (let n = it.nextNode(); n = it.nextNode();) {
-    res.push(n);
-    n instanceof Element && res.push(...n.attributes);
+    yield n;
+    if (n instanceof Element) yield* n.attributes;
   }
-  return res;
 }
 
 function parseTextNode({ textContent: txt }) {
@@ -173,7 +171,7 @@ function paramDict(listOfExpressions) {
 }
 
 function parseTemplate(template) {
-  const nodes = flatDomNodesAll(template.content);
+  const nodes = [...flatDomNodesAll(template.content)];
   const expressions = nodes.map(parseNode);
   const paramsDict = paramDict(expressions);
   return new EmbraceRoot(template.content, nodes, expressions, paramsDict);
@@ -217,7 +215,7 @@ function extractFuncs(expressions, name = "embrace") {
 //TUTORIAL
 
 function embraceTutorial(script, ownerElement) {
-  console.log(`
+  return `
 #################################
 #  Embrace production tutorial: #
 #################################
@@ -234,7 +232,7 @@ function embraceTutorial(script, ownerElement) {
 ${ownerElement.outerHTML}
 
 #################################
-`);
+`;
 }
 
 // :embrace
@@ -248,12 +246,13 @@ export function embrace(templ, dataObject) {
   //2. we parse the template. 
   this.__embrace = parseTemplate(templ);
   const funcs = extractFuncs(this.__embrace.expressions);
+
   if (DoubleDots.Embraced)
     return this.__embrace.runFirst(this.ownerElement, dataObject, DoubleDots.Embraced);
 
   const script = "{" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(',') + "}";
   DoubleDots.importBasedEval(script).then(funcsObj => {
-    embraceTutorial(script, this.ownerElement);
+    console.log(embraceTutorial(script, this.ownerElement));
     this.__embrace.runFirst(this.ownerElement, dataObject, DoubleDots.Embrace = funcsObj);
   });
 }
