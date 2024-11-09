@@ -20,7 +20,12 @@ class EmbraceRoot {
     this.nodes = nodes;
     this.topNodes = [...docFrag.childNodes];
     this.expressions = expressions;
-    this.todos = expressions.reduce((res, e, i) => (e && res.push(i), res), []);
+    this.todos = [];
+    for (let i = 0; i < expressions.length; i++) {
+      const exp = expressions[i];
+      if (exp)
+        this.todos.push({ exp, node: nodes[i] });
+    }
   }
 
   clone() {
@@ -30,16 +35,13 @@ class EmbraceRoot {
   }
 
   run(argsDictionary, _, ancestor) {
-    for (let i of this.todos) {
-      const ex = this.expressions[i], n = this.nodes[i];
-      if (ancestor.contains(n.ownerElement ?? n))
-        ex.run(argsDictionary, n, ancestor);
-    }
+    for (let { exp, node } of this.todos)
+      if (ancestor.contains(node.ownerElement ?? node))
+        exp.run(argsDictionary, node, ancestor);
   }
 
   prep(funcs) {
-    for (let i of this.todos) {
-      const exp = this.expressions[i];
+    for (let {exp} of this.todos) {
       exp.cb = funcs[exp.name];
       exp.innerRoot?.prep(funcs);
     }
@@ -53,14 +55,13 @@ class EmbraceRoot {
 }
 
 class EmbraceTextNode {
-  constructor({ exp }, name) {
+  constructor(exp, name) {
     this.name = name;
     this.exp = exp;
-    this.cb;
   }
 
-  run(argsDict, node, ancestor) {
-    node.textContent = this.cb(argsDict);
+  run(scope, node) {
+    node.textContent = this.cb(scope);
   }
 }
 
@@ -79,7 +80,7 @@ class EmbraceCommentFor {
   run(args, node, ancestor) {
     const cube = node.__cube ??= new LoopCube(this.innerRoot);
     let list = this.cb(args);
-    const now = this.ofIn === "in" ?Object.keys(list): list;
+    const now = this.ofIn === "in" ? Object.keys(list) : list;
     const { embraces, removes, changed } = cube.step(now);
     for (let em of removes)
       for (let n of em.topNodes)
@@ -97,12 +98,11 @@ class EmbraceCommentFor {
 }
 
 class EmbraceCommentIf {
-  constructor(templateEl, emRoot, { exp }, name) {
+  constructor(templateEl, emRoot, exp, name) {
     this.name = name;
     this.innerRoot = emRoot;
     this.templateEl = templateEl;
     this.exp = exp;
-    this.cb;
   }
 
   run(argsDict, node, ancestor) {
@@ -138,7 +138,7 @@ function parseTextNode({ textContent }) {
   }
   for (let i = 0; i < segs.length; i += 2)
     segs[i] = segs[i].replaceAll("`", "\\`");
-  return { exp: "`" + segs.join("") + "`" };
+  return "`" + segs.join("") + "`";
 }
 
 function parseFor(text) {
@@ -168,7 +168,7 @@ function parseNode(n, name) {
 
     if (res = n.getAttribute("if"))
       if (res = extractArgs(res))
-        return new EmbraceCommentIf(n, emTempl, { exp: res }, name);
+        return new EmbraceCommentIf(n, emTempl, res, name);
 
     return emTempl;
   }
