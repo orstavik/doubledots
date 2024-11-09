@@ -3,32 +3,43 @@ import { extractArgs } from "./Tokenizer.js";
 
 //Template engine
 
+function dotScope(data, superior, cache = {}) {
+  const me = function scope(path) {
+    return path.constructor === Object ? dotScope(data, me, path) :
+      path === "$" ? data : cache[path] ??=
+        path.split('.').reduce((o, p) => o?.[p], cache) ??
+        superior?.(path) ??
+        path.split('.').reduce((o, p) => o?.[p], data);
+  };
+  return me;
+}
+
 class EmbraceRoot {
-  constructor(docFrag, nodes, expressions, paramsDict, name) {
+  constructor(docFrag, nodes, expressions, /*paramsDict,*/ name) {
     this.name = name;
     this.template = docFrag;
     this.nodes = nodes;
     this.topNodes = [...docFrag.childNodes];
     this.expressions = expressions;
-    this.paramsDict = paramsDict;
+    // this.paramsDict = paramsDict;
     this.todos = expressions.reduce((res, e, i) => (e && res.push(i), res), []);
   }
 
   clone() {
     const docFrag = this.template.cloneNode(true);
     const nodes = [...flatDomNodesAll(docFrag)];
-    return new EmbraceRoot(docFrag, nodes, this.expressions, this.paramsDict);
+    return new EmbraceRoot(docFrag, nodes, this.expressions/*, this.paramsDict*/, this.name);
   }
 
-  run(argsDictionary, dataObject, _, ancestor) {
+  run(argsDictionary, _, ancestor) {
     //1. make the argumentsDictionary
-    for (let param in this.paramsDict)
-      argsDictionary[param] ??= this.paramsDict[param].reduce((o, p) => o?.[p], dataObject);
+    // for (let param in this.paramsDict)
+    //   argsDictionary[param] ??= this.paramsDict[param].reduce((o, p) => o?.[p], dataObject);
     //2. run rules
     for (let i of this.todos) {
       const ex = this.expressions[i], n = this.nodes[i];
       if (ancestor.contains(n.ownerElement ?? n))
-        ex.run(argsDictionary, dataObject, n, ancestor);
+        ex.run(argsDictionary, n, ancestor);
     }
   }
 
@@ -42,26 +53,26 @@ class EmbraceRoot {
 
   runFirst(el, dataObject, funcs) {
     this.prep(funcs);
-    el.prepend(this.template);
-    this.run(Object.create(null), dataObject, 0, el);
+    el.prepend(...this.topNodes);
+    this.run(dotScope(dataObject), 0, el);
   }
 }
 
 class EmbraceTextNode {
-  constructor({ params, exp }, name) {
+  constructor({ /*params,*/ exp }, name) {
     this.name = name;
-    this.params = params;
+    // this.params = params;
     this.exp = exp;
     this.cb;
   }
 
-  run(argsDict, dataIn, node, ancestor) {
+  run(argsDict, /*dataIn,*/ node, ancestor) {
     node.textContent = this.cb(argsDict);
   }
 }
 
 class EmbraceCommentFor {
-  constructor(innerRoot, { varName, exp, params, ofIn }, name) {
+  constructor(innerRoot, { varName, exp, /*params,*/ ofIn }, name) {
     this.name = name;
     this.innerRoot = innerRoot;
     this.varName = varName;
@@ -69,11 +80,11 @@ class EmbraceCommentFor {
     this.cb;
     this.ofIn = ofIn;
     this.iName = `#${varName}`;
-    this.params = params;
+    // this.params = params;
     this.dName = `$${varName}`;
   }
 
-  run(args, data, node, ancestor) {
+  run(args, /*data,*/ node, ancestor) {
     const cube = node.__cube ??= new LoopCube(this.innerRoot);
     let list = this.cb(args);
     let now = list;
@@ -87,29 +98,30 @@ class EmbraceCommentFor {
       for (let n of em.topNodes)
         n.remove();
     node.before(...embraces.map(em => em.template));
-    const a = data[this.varName], b = data[this.iName], c = data[this.dName];
+    // const a = data[this.varName], b = data[this.iName], c = data[this.dName];
     for (let i of changed) {
-      data[this.varName] = now[i];
-      data[this.iName] = i;
+      const subScope = {};
+      subScope[this.varName] = now[i];
+      subScope[this.iName] = i;
       if (this.ofIn === "in")
-        data[this.dName] = list[now[i]];
-      embraces[i].run(Object.assign({}, args), data, undefined, ancestor);
+        subScope[this.dName] = list[now[i]];
+      embraces[i].run(args(subScope)/*, data*/, undefined, ancestor);
     }
-    data[this.varName] = a, data[this.iName] = b, data[this.dName] = c;
+    // data[this.varName] = a, data[this.iName] = b, data[this.dName] = c;
   }
 }
 
 class EmbraceCommentIf {
-  constructor(templateEl, emRoot, { exp, params }, name) {
+  constructor(templateEl, emRoot, { exp/*, params*/ }, name) {
     this.name = name;
     this.innerRoot = emRoot;
     this.templateEl = templateEl;
     this.exp = exp;
     this.cb;
-    this.params = params;
+    // this.params = params;
   }
 
-  run(argsDict, dataObject, node, ancestor) {
+  run(argsDict, /*dataObject,*/ node, ancestor) {
     const em = node.__ifEmbrace ??= this.innerRoot.clone();
     const test = !!this.cb(argsDict);
     //we are adding state to the em object. instead of the node.
@@ -118,7 +130,7 @@ class EmbraceCommentIf {
     else if (!test && em.state)
       this.templateEl.append(...em.topNodes);
     if (test)
-      em.run(Object.assign({}, argsDict), dataObject, undefined, ancestor);
+      em.run(argsDict({}),/* dataObject,*/ undefined, ancestor);
     em.state = test;
   }
 }
@@ -136,14 +148,14 @@ function parseTextNode({ textContent }) {
   const segs = textContent.split(/{{([^}]+)}}/);
   if (segs.length === 1)
     return;
-  let params = {}, exp;
+  // let params = {}, exp;
   for (let i = 1; i < segs.length; i += 2) {
-    ({ exp, params } = extractArgs(segs[i], params));
+    let exp = extractArgs(segs[i]/*, params*/);
     segs[i] = `\${(v = ${exp}) === false || v === undefined ? "": v}`;
   }
   for (let i = 0; i < segs.length; i += 2)
     segs[i] = segs[i].replaceAll("`", "\\`");
-  return { params, exp: "`" + segs.join("") + "`" };
+  return { /*params,*/ exp: "`" + segs.join("") + "`" };
 }
 
 function parseFor(text) {
@@ -151,23 +163,23 @@ function parseFor(text) {
   if (!ctrlFor)
     return;
   const [, , varName, ofIn, exp] = ctrlFor;
-  return { varName, ofIn, ...extractArgs(exp) };
+  return { varName, ofIn, exp: extractArgs(exp) };
 }
 
-function paramDict(expressions) {
-  const res = {};
-  for (let e of expressions)
-    if (e?.params)
-      for (let path in e.params)
-        res[path] = path.split(".");
-  return res;
-}
+// function paramDict(expressions) {
+//   const res = {};
+//   for (let e of expressions)
+//     if (e?.params)
+//       for (let path in e.params)
+//         res[path] = path.split(".");
+//   return res;
+// }
 
 function parseTemplate(template, name = "embrace") {
   const nodes = [...flatDomNodesAll(template.content)];
   const expressions = nodes.map((n, i) => parseNode(n, name + "_" + i));
-  const paramsDict = paramDict(expressions);
-  return new EmbraceRoot(template.content, nodes, expressions, paramsDict);
+  // const paramsDict = paramDict(expressions);
+  return new EmbraceRoot(template.content, nodes, expressions/*, paramsDict*/, name);
 }
 
 function parseNode(n, name) {
@@ -183,7 +195,7 @@ function parseNode(n, name) {
 
     if (res = n.getAttribute("if"))
       if (res = extractArgs(res))
-        return new EmbraceCommentIf(n, emTempl, res, name);
+        return new EmbraceCommentIf(n, emTempl, { exp: res }, name);
 
     return emTempl;
   }
@@ -225,7 +237,7 @@ ${ownerElement.outerHTML}
 
 // :embrace
 export function embrace(templ, dataObject) {
-  dataObject = Object.assign({ $: dataObject }, dataObject);
+  // dataObject = Object.assign({ $: dataObject }, dataObject);
   //1. we have already run the embrace before, we run it again.
   if (this.__embrace)
     return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);

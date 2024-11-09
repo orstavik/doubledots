@@ -17,10 +17,9 @@ const starcomment = /\/\*[^]*?\*\//;
 const tokens = [ignore, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
 const tokenizer = new RegExp(tokens.map(r => `(${r.source})`).join("|"), "gu");
 
-export function extractArgs(txt, params = {}) {
-  const exp = txt.replaceAll(tokenizer, (o, _, p) =>
-    p ? params[p = p.replace(/\s+/g, "")] ??= `args["${p}"]` : o);
-  return { exp, params };
+export function extractArgs(txt) {
+  return txt.replaceAll(tokenizer, (o, _, p) =>
+    p ? `args("${p.replace(/\s+/g, "")}")` : o);
 }
 
 const tsts = [[
@@ -32,25 +31,25 @@ const tsts = [[
   const starcomment = /\/\*[^]*?\*\//;`,
 
   `//the word are all references. They will *all* be replaced with arg[i]
-  const args["word"] = / #something.else */u;
-  const args["quote"] = / name /;
-  const args["number"] = /n . a . m . e/;
-  const args["regex"] = //[^/\\]*(?:\\.[^/\\]*)*/[gimyu]*/;
-  const args["starcomment"] = //*[^]*?*//;`
+  const args("word") = / #something.else */u;
+  const args("quote") = / name /;
+  const args("number") = /n . a . m . e/;
+  const args("regex") = //[^/\\]*(?:\\.[^/\\]*)*/[gimyu]*/;
+  const args("starcomment") = //*[^]*?*//;`
 ], [
   `name hello . sunshine #hello.world bob123 _123`,
-  `args["name"] args["hello.sunshine"] args["#hello.world"] args["bob123"] args["_123"]`
+  `args("name") args("hello.sunshine") args("#hello.world") args("bob123") args("_123")`
 ], [
   `name.hello["bob"].sunshine  . bob`,
-  `args["name.hello"]["bob"].sunshine  . bob`
-]
+  `args("name.hello")["bob"].sunshine  . bob`
+] 
+//todo this last test.. it should actually turn this into args("name.hello.bob.sunshine.bob"), right? We should disallow property names with space in them? " "
 
 ];
 
 function test() {
   for (let [before, after] of tsts) {
-    let { exp, params } = extractArgs(before);
-    exp = exp.trim();
+    const exp = extractArgs(before).trim();
     if (exp !== after)
       console.log(exp);
   }
