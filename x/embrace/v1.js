@@ -21,7 +21,7 @@ class EmbraceRoot {
     this.topNodes = [...docFrag.childNodes];
     this.expressions = expressions;
     this.todos = [];
-    for (let i = 0; i < expressions.length; i++) 
+    for (let i = 0; i < expressions.length; i++)
       if (expressions[i])
         this.todos.push({ exp: expressions[i], node: nodes[i] });
   }
@@ -53,7 +53,7 @@ class EmbraceRoot {
 }
 
 class EmbraceTextNode {
-  constructor(exp, name) {
+  constructor(name, exp) {
     this.name = name;
     this.exp = exp;
   }
@@ -126,25 +126,6 @@ function* flatDomNodesAll(docFrag) {
   }
 }
 
-function parseTextNode({ textContent }) {
-  const segs = textContent.split(/{{([^}]+)}}/);
-  if (segs.length === 1)
-    return;
-  for (let i = 1; i < segs.length; i += 2)
-    segs[i] = `\${(v = ${extractArgs(segs[i])}) === false || v === undefined ? "": v}`;
-  for (let i = 0; i < segs.length; i += 2)
-    segs[i] = segs[i].replaceAll("`", "\\`");
-  return "`" + segs.join("") + "`";
-}
-
-function parseFor(text) {
-  const ctrlFor = text.match(/^\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
-  if (!ctrlFor)
-    return;
-  const [, , varName, ofIn, exp] = ctrlFor;
-  return { varName, ofIn, exp: extractArgs(exp) };
-}
-
 function parseTemplate(template, name = "embrace") {
   const nodes = [...flatDomNodesAll(template.content)];
   const expressions = nodes.map((n, i) => parseNode(n, name + "_" + i));
@@ -154,30 +135,43 @@ function parseTemplate(template, name = "embrace") {
 function parseNode(n, name) {
   let res;
   if (n instanceof Text || n instanceof Attr) {
-    if (res = parseTextNode(n))
-      return new EmbraceTextNode(res, name);
+    if (n.textContent.match(/{{([^}]+)}}/))
+      return new EmbraceTextNode(name, n.textContent);
   } else if (n instanceof HTMLTemplateElement) {
     const emTempl = parseTemplate(n, name);
-    if (res = n.getAttribute("for"))
-      if (res = parseFor(res))
-        return new EmbraceCommentFor(emTempl, res, name);
-
+    if (res = n.getAttribute("for")) {
+      const ctrlFor = res.match(/^\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
+      if (!ctrlFor)
+        throw new SyntaxError("embrace for error: " + res);
+      const [, , varName, ofIn, exp] = ctrlFor;
+      res = { varName, ofIn, exp };
+      return new EmbraceCommentFor(emTempl, res, name);
+    }
     if (res = n.getAttribute("if"))
-      if (res = extractArgs(res))
-        return new EmbraceCommentIf(n, emTempl, res, name);
-
+      return new EmbraceCommentIf(n, emTempl, res, name);
     return emTempl;
   }
 }
 
-function extractFuncs(root) {
-  const funcs = {};
-  for (let { exp, node } of root.todos) {
-    funcs[exp.name] = `function ${exp.name}(args, v) { return ${exp.exp}; }`;
+function textContentFunc(textContent) {
+  return `\`${textContent.split(/{{([^}]+)}}/).map((str, i) =>
+    i % 2 ?
+      `\${(v = ${extractArgs(str)}) === false || v === undefined ? "": v}` :
+      str.replaceAll("`", "\\`")).join("")}\``;
+}
+
+function extractFuncs(root, res = {}) {
+  for (let { exp } of root.todos) {
+    const code =
+      exp instanceof EmbraceTextNode ? textContentFunc(exp.exp) :
+        exp instanceof EmbraceCommentFor ? extractArgs(exp.exp) :
+          exp instanceof EmbraceCommentIf ? extractArgs(exp.exp) :
+            undefined;
+    res[exp.name] = `function ${exp.name}(args, v) { return ${code}; }`;
     if (exp.innerRoot)
-      Object.assign(funcs, extractFuncs(exp.innerRoot));
+      extractFuncs(exp.innerRoot, res);
   }
-  return funcs;
+  return res;
 }
 
 //TUTORIAL
