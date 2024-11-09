@@ -4,7 +4,8 @@ import { extractArgs } from "./Tokenizer.js";
 //Template engine
 
 class EmbraceRoot {
-  constructor(docFrag, nodes, expressions, paramsDict) {
+  constructor(docFrag, nodes, expressions, paramsDict, name) {
+    this.name = name;
     this.template = docFrag;
     this.nodes = nodes;
     this.topNodes = [...docFrag.childNodes];
@@ -34,7 +35,7 @@ class EmbraceRoot {
   prep(funcs) {
     for (let i of this.todos) {
       const exp = this.expressions[i];
-      exp.cb = funcs[exp.exp];
+      exp.cb = funcs[exp.name];
       exp.innerRoot?.prep(funcs);
     }
   }
@@ -47,7 +48,8 @@ class EmbraceRoot {
 }
 
 class EmbraceTextNode {
-  constructor({ params, exp }) {
+  constructor({ params, exp }, name) {
+    this.name = name;
     this.params = params;
     this.exp = exp;
     this.cb;
@@ -59,7 +61,8 @@ class EmbraceTextNode {
 }
 
 class EmbraceCommentFor {
-  constructor(innerRoot, { varName, exp, params, ofIn }) {
+  constructor(innerRoot, { varName, exp, params, ofIn }, name) {
+    this.name = name;
     this.innerRoot = innerRoot;
     this.varName = varName;
     this.exp = exp;
@@ -97,7 +100,8 @@ class EmbraceCommentFor {
 }
 
 class EmbraceCommentIf {
-  constructor(templateEl, emRoot, { exp, params }) {
+  constructor(templateEl, emRoot, { exp, params }, name) {
+    this.name = name;
     this.innerRoot = emRoot;
     this.templateEl = templateEl;
     this.exp = exp;
@@ -159,43 +163,39 @@ function paramDict(expressions) {
   return res;
 }
 
-function parseTemplate(template) {
+function parseTemplate(template, name = "embrace") {
   const nodes = [...flatDomNodesAll(template.content)];
-  const expressions = nodes.map(parseNode);
+  const expressions = nodes.map((n, i) => parseNode(n, name + "_" + i));
   const paramsDict = paramDict(expressions);
   return new EmbraceRoot(template.content, nodes, expressions, paramsDict);
 }
 
-function parseNode(n, i, name) {
+function parseNode(n, name) {
   let res;
   if (n instanceof Text || n instanceof Attr) {
     if (res = parseTextNode(n))
-      return new EmbraceTextNode(res);
+      return new EmbraceTextNode(res, name);
   } else if (n instanceof HTMLTemplateElement) {
-    const emTempl = parseTemplate(n);
+    const emTempl = parseTemplate(n, name);
     if (res = n.getAttribute("for"))
       if (res = parseFor(res))
-        return new EmbraceCommentFor(emTempl, res);
+        return new EmbraceCommentFor(emTempl, res, name);
 
     if (res = n.getAttribute("if"))
       if (res = extractArgs(res))
-        return new EmbraceCommentIf(n, emTempl, res);
+        return new EmbraceCommentIf(n, emTempl, res, name);
 
     return emTempl;
   }
 }
 
-function extractFuncs(expressions, name = "embrace") {
+function extractFuncs(expressions) {
   const funcs = {};
-  for (let i = 0; i < expressions.length; i++) {
-    const id = name + "_" + i;
-    const exp = expressions[i];
-    if (exp?.exp) {
-      funcs[id] = `(args, v) => ${exp.exp}`;
-      exp.exp = id;
-    }
+  for (let exp of expressions) {
+    if (exp?.exp)
+      funcs[exp.name] = `function ${exp.name}(args, v) { return ${exp.exp}; }`;
     if (exp?.innerRoot)
-      Object.assign(funcs, extractFuncs(exp.innerRoot.expressions, id));
+      Object.assign(funcs, extractFuncs(exp.innerRoot.expressions));
   }
   return funcs;
 }
