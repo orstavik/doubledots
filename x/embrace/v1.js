@@ -168,23 +168,19 @@ function extractFuncs(root, res = {}) {
 
 //TUTORIAL
 
-function embraceTutorial(script, ownerElement) {
+function hashDebug(script, id) {
   return `
 #################################
-#  Embrace production tutorial: #
+#  ":embrace" production        #
 #################################
 
-1. add the following script in the <head> element:
+Add the following script in the <head> element:
 
-<script embraced="${ownerElement.id}">
-  window.Embrace.${ownerElement.id} = ${script};
+<script embrace="${id}">
+  window.Embrace = {
+    ${id} : ${script}
+  };
 </script>
-
-
-2. update the content of this element:
-
-${ownerElement.outerHTML}
-
 #################################
 `;
 }
@@ -193,13 +189,16 @@ ${ownerElement.outerHTML}
 export function embrace(templ, dataObject) {
   if (this.__embrace)
     return this.__embrace.run(Object.create(null), dataObject, 0, this.ownerElement);
-  this.__embrace = parseTemplate(templ, this.ownerElement.id || "embrace");
-  if (DoubleDots.Embraced)
-    return this.__embrace.runFirst(this.ownerElement, dataObject, DoubleDots.Embraced);
+  const id = this.ownerElement.id || "embrace";
+  this.__embrace = parseTemplate(templ, id);
+  if (window.Embrace?.[id])
+    return this.__embrace.runFirst(this.ownerElement, dataObject, window.Embrace[id]);
   const funcs = extractFuncs(this.__embrace);
   const script = "{" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(',') + "}";
-  DoubleDots.importBasedEval(script).then(funcsObj => {
-    console.log(embraceTutorial(script, this.ownerElement));
-    this.__embrace.runFirst(this.ownerElement, dataObject, DoubleDots.Embrace = funcsObj);
+  DoubleDots.importBasedEval(script).then(funcs => {
+    if (location.hash.includes("debug"))
+      console.log(hashDebug(script, id));
+    window.Embrace = { [id]: funcs };
+    this.__embrace.runFirst(this.ownerElement, dataObject, funcs);
   });
 }

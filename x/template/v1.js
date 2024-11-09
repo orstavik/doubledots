@@ -74,6 +74,24 @@
         yield n;
   }
 
+  function hashDebug(el) {
+    el = el.cloneNode(true);
+    for (let a of el.attributes)
+      if (a.name.startsWith("template:"))
+        el.removeAttribute(a.name);
+    return `
+#################################
+#    "template:" production     #
+#################################
+
+Replace the following element in your code:
+
+${el.outerHTML}
+
+#################################
+  `;
+  }
+
   class Template extends AttrCustom {
     upgrade(dynamic) {
       const el = this.ownerElement;
@@ -89,6 +107,9 @@
       for (let t of templates)
         for (let comment of [...templateCommentStarts(t.content)].reverse())
           absorb(gobble(comment));
+
+      if (location.hash.includes("debug"))
+        console.log(hashDebug(el));
       //todo now we don't have any events coming from the template: trigger.
       //todo below is what it looks like if we upgrade and dispatch an event using downward propagation.
       // for (let a of attributes)

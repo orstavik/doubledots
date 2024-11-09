@@ -1164,6 +1164,23 @@ document.Reactions.define("define", define);
       if (n.textContent.match(/^\s*template(\s|$)/))
         yield n;
   }
+  function hashDebug(el) {
+    el = el.cloneNode(true);
+    for (let a of el.attributes)
+      if (a.name.startsWith("template:"))
+        el.removeAttribute(a.name);
+    return `
+#################################
+#    "template:" production     #
+#################################
+
+Replace the following element in your code:
+
+${el.outerHTML}
+
+#################################
+  `;
+  }
   class Template extends AttrCustom {
     upgrade(dynamic) {
       const el = this.ownerElement;
@@ -1178,6 +1195,8 @@ document.Reactions.define("define", define);
       for (let t of templates)
         for (let comment of [...templateCommentStarts(t.content)].reverse())
           absorb(gobble(comment));
+      if (location.hash.includes("debug"))
+        console.log(hashDebug(el));
     }
   }
   document.Triggers.define("template", Template);
