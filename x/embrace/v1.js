@@ -14,7 +14,7 @@ function dotScope(data, superior, cache = {}) {
 }
 
 class EmbraceRoot {
-  constructor(docFrag, nodes, expressions, name) {
+  constructor(name, docFrag, nodes, expressions) {
     this.name = name;
     this.template = docFrag;
     this.nodes = nodes;
@@ -29,7 +29,7 @@ class EmbraceRoot {
   clone() {
     const docFrag = this.template.cloneNode(true);
     const nodes = [...flatDomNodesAll(docFrag)];
-    return new EmbraceRoot(docFrag, nodes, this.expressions, this.name);
+    return new EmbraceRoot(this.name, docFrag, nodes, this.expressions);
   }
 
   run(scope, _, ancestor) {
@@ -64,7 +64,7 @@ class EmbraceTextNode {
 }
 
 class EmbraceCommentFor {
-  constructor(innerRoot, { varName, exp, ofIn }, name) {
+  constructor(name, innerRoot, varName, ofIn, exp) {
     this.name = name;
     this.innerRoot = innerRoot;
     this.varName = varName;
@@ -96,7 +96,7 @@ class EmbraceCommentFor {
 }
 
 class EmbraceCommentIf {
-  constructor(templateEl, emRoot, exp, name) {
+  constructor(name, templateEl, emRoot, exp) {
     this.name = name;
     this.innerRoot = emRoot;
     this.templateEl = templateEl;
@@ -129,26 +129,25 @@ function* flatDomNodesAll(docFrag) {
 function parseTemplate(template, name = "embrace") {
   const nodes = [...flatDomNodesAll(template.content)];
   const expressions = nodes.map((n, i) => parseNode(n, name + "_" + i));
-  return new EmbraceRoot(template.content, nodes, expressions, name);
+  return new EmbraceRoot(name, template.content, nodes, expressions);
 }
 
 function parseNode(n, name) {
-  let res;
   if (n instanceof Text || n instanceof Attr) {
     if (n.textContent.match(/{{([^}]+)}}/))
       return new EmbraceTextNode(name, n.textContent);
   } else if (n instanceof HTMLTemplateElement) {
     const emTempl = parseTemplate(n, name);
+    let res;
     if (res = n.getAttribute("for")) {
-      const ctrlFor = res.match(/^\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
+      const ctrlFor = res.match(/^\s*(?:let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
       if (!ctrlFor)
         throw new SyntaxError("embrace for error: " + res);
-      const [, , varName, ofIn, exp] = ctrlFor;
-      res = { varName, ofIn, exp };
-      return new EmbraceCommentFor(emTempl, res, name);
+      const [, varName, ofIn, exp] = ctrlFor;
+      return new EmbraceCommentFor(name, emTempl, varName, ofIn, exp);
     }
     if (res = n.getAttribute("if"))
-      return new EmbraceCommentIf(n, emTempl, res, name);
+      return new EmbraceCommentIf(name, n, emTempl, res);
     return emTempl;
   }
 }
