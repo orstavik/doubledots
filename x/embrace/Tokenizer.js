@@ -17,18 +17,11 @@ const starcomment = /\/\*[^]*?\*\//;
 const tokens = [ignore, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
 const tokenizer = new RegExp(tokens.map(r => `(${r.source})`).join("|"), "gu");
 
-export function extractArgs(txt, params = []) {
-  txt = txt.replaceAll(tokenizer, (o, _, prop) => {
-    if (!prop)
-      return o;
-    prop = prop.replaceAll(/\s+/g, "");
-    let i = params.indexOf(prop);
-    if (i < 0)
-      i = params.push(prop) - 1;
-    return `args[${i}]`;
-  });
-  return txt;
-};
+export function extractArgs(txt, params = {}) {
+  const exp = txt.replaceAll(tokenizer, (o, _, p) =>
+    p ? params[p = p.replace(/\s+/g, "")] ??= `args["${p}"]` : o);
+  return { exp, params };
+}
 
 const tsts = [[
   `//the word are all references. They will *all* be replaced with arg[i]
@@ -39,26 +32,27 @@ const tsts = [[
   const starcomment = /\/\*[^]*?\*\//;`,
 
   `//the word are all references. They will *all* be replaced with arg[i]
-  const args[0] = / #something.else */u;
-  const args[1] = / name /;
-  const args[2] = /n . a . m . e/;
-  const args[3] = //[^/\\]*(?:\\.[^/\\]*)*/[gimyu]*/;
-  const args[4] = //*[^]*?*//;`
+  const args["word"] = / #something.else */u;
+  const args["quote"] = / name /;
+  const args["number"] = /n . a . m . e/;
+  const args["regex"] = //[^/\\]*(?:\\.[^/\\]*)*/[gimyu]*/;
+  const args["starcomment"] = //*[^]*?*//;`
 ], [
   `name hello . sunshine #hello.world bob123 _123`,
-  `args[0] args[1] args[2] args[3] args[4]`
+  `args["name"] args["hello.sunshine"] args["#hello.world"] args["bob123"] args["_123"]`
 ], [
   `name.hello["bob"].sunshine  . bob`,
-  `args[0]["bob"].sunshine  . bob`
+  `args["name.hello"]["bob"].sunshine  . bob`
 ]
 
 ];
 
 function test() {
   for (let [before, after] of tsts) {
-    const res = extractArgs(before).trim();
-    if (res !== after)
-      console.log(res);
+    let { exp, params } = extractArgs(before);
+    exp = exp.trim();
+    if (exp !== after)
+      console.log(exp);
   }
 }
 

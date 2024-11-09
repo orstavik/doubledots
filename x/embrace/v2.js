@@ -1,5 +1,5 @@
 import { LoopCube } from "./LoopCube.js";
-import { extractArgs } from "./Tokenizer.js";
+import { extractArgs3 } from "./Tokenizer.js";
 
 //Template engine
 
@@ -34,7 +34,7 @@ class EmbraceRoot {
   prep(funcs) {
     for (let i of this.todos) {
       const exp = this.expressions[i];
-      exp.cb = funcs[exp.exp];
+      exp.cb = funcs[exp.func];
       exp.innerRoot?.prep(funcs);
     }
   }
@@ -47,9 +47,9 @@ class EmbraceRoot {
 }
 
 class EmbraceTextNode {
-  constructor({ params, exp }) {
+  constructor({ params, func }) {
     this.params = params;
-    this.exp = exp;
+    this.func = func;
     this.cb;
   }
 
@@ -59,10 +59,10 @@ class EmbraceTextNode {
 }
 
 class EmbraceCommentFor {
-  constructor(innerRoot, { varName, exp, params, ofIn }) {
+  constructor(innerRoot, { varName, func, params, ofIn }) {
     this.innerRoot = innerRoot;
     this.varName = varName;
-    this.exp = exp;
+    this.func = func;
     this.cb;
     this.ofIn = ofIn;
     this.iName = `#${varName}`;
@@ -70,9 +70,9 @@ class EmbraceCommentFor {
     this.dName = `$${varName}`;
   }
 
-  run(args, data, node, ancestor) {
+  run(argsDict, dataObject, node, ancestor) {
     const cube = node.__cube ??= new LoopCube(this.innerRoot);
-    let list = this.cb(args);
+    let list = this.cb(argsDict);
     let now = list;
     if (this.ofIn === "in") {
       now = Object.keys(list);
@@ -84,23 +84,30 @@ class EmbraceCommentFor {
       for (let n of em.topNodes)
         n.remove();
     node.before(...embraces.map(em => em.template));
-    const a = data[this.varName], b = data[this.iName], c = data[this.dName];
+    // const [a, b, c] = [
+    //   dataObject[this.varName],
+    //   dataObject[this.iName],
+    //   dataObject[this.dName]
+    // ];
     for (let i of changed) {
-      data[this.varName] = now[i];
-      data[this.iName] = i;
+      dataObject[this.varName] = now[i];
+      dataObject[this.iName] = i;
       if (this.ofIn === "in")
-        data[this.dName] = list[now[i]];
-      embraces[i].run(Object.assign({}, args), data, undefined, ancestor);
+        dataObject[this.dName] = list[now[i]];
+      embraces[i].run(Object.assign({}, argsDict), dataObject, undefined, ancestor);
     }
-    data[this.varName] = a, data[this.iName] = b, data[this.dName] = c;
+    //todo if we use $ ahead of dataobject
+    // dataObject[this.varName] = a;
+    // dataObject[this.iName] = b;
+    // dataObject[this.dName] = c;
   }
 }
 
 class EmbraceCommentIf {
-  constructor(templateEl, emRoot, { exp, params }) {
+  constructor(templateEl, emRoot, { func, params }) {
     this.innerRoot = emRoot;
     this.templateEl = templateEl;
-    this.exp = exp;
+    this.func = func;
     this.cb;
     this.params = params;
   }
@@ -128,35 +135,42 @@ function* flatDomNodesAll(docFrag) {
   }
 }
 
-function parseTextNode({ textContent }) {
-  const segs = textContent.split(/{{([^}]+)}}/);
+function parseTextNode({ textContent: txt }) {
+  const segs = txt.split(/{{([^}]+)}}/);
   if (segs.length === 1)
     return;
-  let params = {}, exp;
+  let params = {};
   for (let i = 1; i < segs.length; i += 2) {
-    ({ exp, params } = extractArgs(segs[i], params));
-    segs[i] = `\${(v = ${exp}) === false || v === undefined ? "": v}`;
+    ({ txt, params } = extractArgs3(segs[i], params));
+    segs[i] = `\${(v = ${txt}) === false || v === undefined ? "": v}`;
   }
+  debugger
   for (let i = 0; i < segs.length; i += 2)
     segs[i] = segs[i].replaceAll("`", "\\`");
-  return { params, exp: "`" + segs.join("") + "`" };
+  return { params, func: `args => {let v; return \`${segs.join("")}\`}` };
 }
-
+//args, v => exp..
 function parseFor(text) {
   const ctrlFor = text.match(/^\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
   if (!ctrlFor)
     return;
-  const [, , varName, ofIn, exp] = ctrlFor;
-  return { varName, ofIn, ...extractArgs(exp) };
+  const [, , varName, ofIn, listName] = ctrlFor;
+  const { txt, params } = extractArgs3(listName);
+  const func = `args => ${txt}`;
+  return { params, func, varName, ofIn };
 }
 
-function paramDict(expressions) {
-  const res = {};
-  for (let e of expressions)
-    if (e?.params)
-      for (let path in e.params)
-        res[path] = path.split(".");
-  return res;
+function parseIf(text) {
+  const { txt, params } = extractArgs3(text);
+  return { params, func: `args => ${txt}` };
+}
+
+function paramDict(listOfExpressions) {
+  const paramss = listOfExpressions.map(e => e?.params).filter(Boolean);
+  const obj = Object.assign({}, ...paramss);
+  for (let path in obj)
+    obj[path] = path.split(".");
+  return obj;
 }
 
 function parseTemplate(template) {
@@ -173,14 +187,15 @@ function parseNode(n, i, name) {
       return new EmbraceTextNode(res);
   } else if (n instanceof HTMLTemplateElement) {
     const emTempl = parseTemplate(n);
-    if (res = n.getAttribute("for"))
-      if (res = parseFor(res))
+    let txt;
+    if (txt = n.getAttribute("for")) {
+      if (res = parseFor(txt))
         return new EmbraceCommentFor(emTempl, res);
-
-    if (res = n.getAttribute("if"))
-      if (res = extractArgs(res))
-        return new EmbraceCommentIf(n, emTempl, res);
-
+    }
+    if (txt = n.getAttribute("if")) {
+      const res = parseIf(txt);
+      return new EmbraceCommentIf(n, emTempl, res);
+    }
     return emTempl;
   }
 }
@@ -190,9 +205,9 @@ function extractFuncs(expressions, name = "embrace") {
   for (let i = 0; i < expressions.length; i++) {
     const id = name + "_" + i;
     const exp = expressions[i];
-    if (exp?.exp) {
-      funcs[id] = `(args, v) => ${exp.exp}`;
-      exp.exp = id;
+    if (exp?.func) {
+      funcs[id] = exp.func;
+      exp.func = id;
     }
     if (exp?.innerRoot)
       Object.assign(funcs, extractFuncs(exp.innerRoot.expressions, id));
@@ -232,7 +247,7 @@ export function embrace(templ, dataObject) {
 
   const id = this.ownerElement.id; //todo we need to turn this into a good name.
   //2. we parse the template. 
-  this.__embrace = parseTemplate(templ); //todo give each node a name here..
+  this.__embrace = parseTemplate(templ);
   const funcs = extractFuncs(this.__embrace.expressions);
 
   if (DoubleDots.Embraced)
