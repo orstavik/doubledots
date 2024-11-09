@@ -22,6 +22,13 @@ export function extractArgs(txt) {
     p ? `args("${p.replace(/\s+/g, "")}")` : o);
 }
 
+export function interpretTemplateString(txt) {
+  return `\`${txt.split(/{{([^}]+)}}/).map((str, i) =>
+    i % 2 ?
+      `\${(v = ${extractArgs(str)}) === false || v === undefined ? "": v}` :
+      str.replaceAll("`", "\\`")).join("")}\``;
+}
+
 const tsts = [[
   `//the word are all references. They will *all* be replaced with arg[i]
   const word = / #something.else */u;

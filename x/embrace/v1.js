@@ -1,5 +1,5 @@
 import { LoopCube } from "./LoopCube.js";
-import { extractArgs } from "./Tokenizer.js";
+import { extractArgs, interpretTemplateString } from "./Tokenizer.js";
 
 //Template engine
 function dotScope(data, superior, cache = {}) {
@@ -153,17 +153,10 @@ function parseNode(n, name) {
   }
 }
 
-function textContentFunc(textContent) {
-  return `\`${textContent.split(/{{([^}]+)}}/).map((str, i) =>
-    i % 2 ?
-      `\${(v = ${extractArgs(str)}) === false || v === undefined ? "": v}` :
-      str.replaceAll("`", "\\`")).join("")}\``;
-}
-
 function extractFuncs(root, res = {}) {
   for (let { exp } of root.todos) {
     const code =
-      exp instanceof EmbraceTextNode ? textContentFunc(exp.exp) :
+      exp instanceof EmbraceTextNode ? interpretTemplateString(exp.exp) :
         exp instanceof EmbraceCommentFor ? extractArgs(exp.exp) :
           exp instanceof EmbraceCommentIf ? extractArgs(exp.exp) :
             undefined;
