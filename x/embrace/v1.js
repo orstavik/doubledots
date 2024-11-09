@@ -1,5 +1,5 @@
 import { LoopCube } from "./LoopCube.js";
-import { extractArgs } from "./Tokenizer.js";
+import { extractArgs3 } from "./Tokenizer.js";
 
 //Template engine
 
@@ -54,8 +54,7 @@ class EmbraceTextNode {
   }
 
   run(argsDict, dataIn, node, ancestor) {
-    const args = this.params.map(p => argsDict[p]);
-    node.textContent = this.cb(...args);
+    node.textContent = this.cb(argsDict);
   }
 }
 
@@ -73,8 +72,7 @@ class EmbraceCommentFor {
 
   run(argsDict, dataObject, node, ancestor) {
     const cube = node.__cube ??= new LoopCube(this.innerRoot);
-    const args = this.params.map(p => argsDict[p]);
-    let list = this.cb(...args);
+    let list = this.cb(argsDict);
     let now = list;
     if (this.ofIn === "in") {
       now = Object.keys(list);
@@ -86,6 +84,11 @@ class EmbraceCommentFor {
       for (let n of em.topNodes)
         n.remove();
     node.before(...embraces.map(em => em.template));
+    // const [a, b, c] = [
+    //   dataObject[this.varName],
+    //   dataObject[this.iName],
+    //   dataObject[this.dName]
+    // ];
     for (let i of changed) {
       dataObject[this.varName] = now[i];
       dataObject[this.iName] = i;
@@ -93,6 +96,10 @@ class EmbraceCommentFor {
         dataObject[this.dName] = list[now[i]];
       embraces[i].run(Object.assign({}, argsDict), dataObject, undefined, ancestor);
     }
+    //todo if we use $ ahead of dataobject
+    // dataObject[this.varName] = a;
+    // dataObject[this.iName] = b;
+    // dataObject[this.dName] = c;
   }
 }
 
@@ -107,8 +114,7 @@ class EmbraceCommentIf {
 
   run(argsDict, dataObject, node, ancestor) {
     const em = node.__ifEmbrace ??= this.innerRoot.clone();
-    const args = this.params.map(p => argsDict[p]);
-    const test = !!this.cb(...args);
+    const test = !!this.cb(argsDict);
     //we are adding state to the em object. instead of the node.
     if (test && !em.state)
       node.before(...em.topNodes);
@@ -133,41 +139,37 @@ function parseTextNode({ textContent: txt }) {
   const segs = txt.split(/{{([^}]+)}}/);
   if (segs.length === 1)
     return;
-  const params = [];
-  let body = "";
-  for (let i = 0; i < segs.length; i++) {
-    body += i % 2 ?
-      `\${((v = (${extractArgs(segs[i], params)})) === false || v === undefined ? "": v)}` :
-      segs[i].replaceAll("`", "\\`");
+  let params = {};
+  for (let i = 1; i < segs.length; i += 2) {
+    ({ txt, params } = extractArgs3(segs[i], params));
+    segs[i] = `\${(v = ${txt}) === false || v === undefined ? "": v}`;
   }
-  const func = `(...args) => {let v; return \`${body}\`;}`;
-  return { func, params };
+  for (let i = 0; i < segs.length; i += 2)
+    segs[i] = segs[i].replaceAll("`", "\\`");
+  return { params, func: `args => {let v; return \`${segs.join("")}\`}` };
 }
 
-function parseFor(txt) {
-  const ctrlFor = txt.match(/^\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
+function parseFor(text) {
+  const ctrlFor = text.match(/^\s*(let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
   if (!ctrlFor)
     return;
   const [, , varName, ofIn, listName] = ctrlFor;
-  const params = [];
-  const body = extractArgs(listName, params);
-  const func = `(...args) => (${body})`;
+  const { txt, params } = extractArgs3(listName);
+  const func = `args => ${txt}`;
   return { params, func, varName, ofIn };
 }
 
-function parseIf(txt) {
-  const params = [];
-  const func = `(...args) => (${extractArgs(txt, params)})`;
-  return { params, func };
+function parseIf(text) {
+  const { txt, params } = extractArgs3(text);
+  return { params, func: `args => ${txt}` };
 }
 
 function paramDict(listOfExpressions) {
-  const params = {};
-  for (let e of listOfExpressions.filter(Boolean))
-    if (e.params?.length)
-      for (let p of e.params)
-        params[p] ??= p.split(".");
-  return params;
+  const paramss = listOfExpressions.map(e => e?.params).filter(Boolean);
+  const obj = Object.assign({}, ...paramss);
+  for (let path in obj)
+    obj[path] = path.split(".");
+  return obj;
 }
 
 function parseTemplate(template) {
