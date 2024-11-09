@@ -21,23 +21,21 @@ class EmbraceRoot {
     this.topNodes = [...docFrag.childNodes];
     this.expressions = expressions;
     this.todos = [];
-    for (let i = 0; i < expressions.length; i++) {
-      const exp = expressions[i];
-      if (exp)
-        this.todos.push({ exp, node: nodes[i] });
-    }
+    for (let i = 0; i < expressions.length; i++) 
+      if (expressions[i])
+        this.todos.push({ exp: expressions[i], node: nodes[i] });
   }
 
   clone() {
     const docFrag = this.template.cloneNode(true);
     const nodes = [...flatDomNodesAll(docFrag)];
-    return new EmbraceRoot(docFrag, nodes, this.expressions/*, this.paramsDict*/, this.name);
+    return new EmbraceRoot(docFrag, nodes, this.expressions, this.name);
   }
 
-  run(argsDictionary, _, ancestor) {
+  run(scope, _, ancestor) {
     for (let { exp, node } of this.todos)
       if (ancestor.contains(node.ownerElement ?? node))
-        exp.run(argsDictionary, node, ancestor);
+        exp.run(scope, node, ancestor);
   }
 
   prep(funcs) {
@@ -77,9 +75,9 @@ class EmbraceCommentFor {
     this.dName = `$${varName}`;
   }
 
-  run(args, node, ancestor) {
+  run(scope, node, ancestor) {
     const cube = node.__cube ??= new LoopCube(this.innerRoot);
-    let list = this.cb(args);
+    let list = this.cb(scope);
     const now = this.ofIn === "in" ? Object.keys(list) : list;
     const { embraces, removes, changed } = cube.step(now);
     for (let em of removes)
@@ -92,7 +90,7 @@ class EmbraceCommentFor {
       subScope[this.iName] = i;
       if (this.ofIn === "in")
         subScope[this.dName] = list[now[i]];
-      embraces[i].run(args(subScope), undefined, ancestor);
+      embraces[i].run(scope(subScope), undefined, ancestor);
     }
   }
 }
@@ -132,10 +130,8 @@ function parseTextNode({ textContent }) {
   const segs = textContent.split(/{{([^}]+)}}/);
   if (segs.length === 1)
     return;
-  for (let i = 1; i < segs.length; i += 2) {
-    let exp = extractArgs(segs[i]);
-    segs[i] = `\${(v = ${exp}) === false || v === undefined ? "": v}`;
-  }
+  for (let i = 1; i < segs.length; i += 2)
+    segs[i] = `\${(v = ${extractArgs(segs[i])}) === false || v === undefined ? "": v}`;
   for (let i = 0; i < segs.length; i += 2)
     segs[i] = segs[i].replaceAll("`", "\\`");
   return "`" + segs.join("") + "`";
