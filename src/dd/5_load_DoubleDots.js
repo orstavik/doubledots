@@ -1,10 +1,11 @@
+import { monkeyPatch } from "./1_DoubleDots.js";
 const Specializers = {
-  cloneNode: [Node.prototype, DocumentFragment.prototype],
-  innerHTML: [Element.prototype, HTMLTemplateElement.prototype],
-  insertAdjacentHTML: [Element.prototype, HTMLTemplateElement.prototype],
+  "DocumentFragment.prototype.cloneNode": Node.prototype.cloneNode,
+  "HTMLTemplateElement.prototype.insertAdjacentHTML": Element.prototype.insertAdjacentHTML,
+  "HTMLTemplateElement.prototype.innerHTML": Object.getOwnPropertyDescriptor(Element.prototype, "innerHTML").set,
 };
-for (let [m, [TOP, DOWN]] of Object.entries(Specializers))
-  Object.defineProperty(DOWN, m, Object.getOwnPropertyDescriptor(TOP, m));
+for (let [path, superior] of Object.entries(Specializers))
+  monkeyPatch(path, superior);
 
 // const state = [...document.querySelectorAll("*")];
 //1. Since the DoubleDots is the only script.
@@ -17,18 +18,6 @@ for (let [m, [TOP, DOWN]] of Object.entries(Specializers))
 //   1. It can only happen when new Trigger Defs are added to the main document.Triggers. 
 //      This is because the shadowRoot.Triggers are locked post register time.
 //5. WaitForItAttr. Promise Definitions.
-
-function monkeyPatchSetter(proto, prop, fun) {
-  const desc = Object.getOwnPropertyDescriptor(proto, prop);
-  desc.set = fun;
-  Object.defineProperty(proto, prop, desc);
-}
-
-function monkeyPatch(proto, prop, fun) {
-  const desc = Object.getOwnPropertyDescriptor(proto, prop);
-  desc.value = fun;
-  Object.defineProperty(proto, prop, desc);
-}
 
 (function (Element_p, ShadowRoot_p) {
   const Element_innerHTML_OG = Object.getOwnPropertyDescriptor(Element_p, "innerHTML").set;
@@ -81,11 +70,14 @@ function monkeyPatch(proto, prop, fun) {
     at = getAttributeNodeOG.call(this, name);
     AttrCustom.upgrade(at);
   }
-
-  monkeyPatchSetter(Element_p, "innerHTML", innerHTML_DD_el);
-  monkeyPatchSetter(ShadowRoot_p, "innerHTML", innerHTML_DD_sr);
-  monkeyPatch(Element_p, "insertAdjacentHTML", insertAdjacentHTML_DD);
-  monkeyPatch(Element_p, "setAttribute", setAttribute_DD);
+  const mainOverrides = {
+    "Element.prototype.innerHTML": innerHTML_DD_el,
+    "ShadowRoot.prototype.innerHTML": innerHTML_DD_sr,
+    "Element.prototype.insertAdjacentHTML": insertAdjacentHTML_DD,
+    "Element.prototype.setAttribute": setAttribute_DD,
+  };
+  for (let [path, func] of Object.entries(mainOverrides))
+    monkeyPatch(path, func);
 })(Element.prototype, ShadowRoot.prototype);
 
 (function () {
@@ -118,49 +110,6 @@ function monkeyPatch(proto, prop, fun) {
     return args.map(child => checkRoot(this, child, r)).flat();
   }
 
-  const Mask = {
-    "Comment.prototype": {
-      after: sameRootSpreadArg,
-      before: sameRootSpreadArg,
-      insertBefore: sameRootFirstArg,
-    },
-    "Text.prototype": {
-      after: sameRootSpreadArg,
-      before: sameRootSpreadArg,
-      insertBefore: sameRootFirstArg,
-    },
-    "Element.prototype": {
-      //replaceChild
-      after: sameRootSpreadArg,
-      before: sameRootSpreadArg,
-      appendChild: sameRootFirstArg,
-      insertBefore: sameRootFirstArg,
-      append: sameRootSpreadArg,
-      prepend: sameRootSpreadArg,
-      insertAdjacentElement: sameRootSecond,
-    },
-    "Document.prototype": {
-      //replaceChild
-      appendChild: sameRootFirstArg,
-      insertBefore: sameRootFirstArg,
-      append: sameRootSpreadArg,
-      prepend: sameRootSpreadArg,
-    },
-    "DocumentFragment.prototype": {
-      //replaceChild
-      appendChild: sameRootFirstArg,
-      insertBefore: sameRootFirstArg,
-      append: sameRootSpreadArg,
-      prepend: sameRootSpreadArg,
-    }
-  };
-
-  function monkeyPatch(proto, prop, value) {
-    Object.defineProperty(proto, prop, {
-      ...Object.getOwnPropertyDescriptor(proto, prop), value
-    });
-  }
-
   function verifyAndUpgrade(OG, verify) {
     return function (...args) {
       const upgrades = verify.call(this, ...args);
@@ -170,58 +119,22 @@ function monkeyPatch(proto, prop, fun) {
     };
   }
 
-  for (let [path, objMask] of Object.entries(Mask)) {
-    path = path.split(".");
-    const obj = path.reduce((o, p) => o[p], window);
-    const nativeObj = path.reduce((o, p) => o[p] ??= {}, DoubleDots.nativeMethods);
-    for (let [prop, verifyMethod] of Object.entries(objMask)) {
-      const OG = nativeObj[prop] = obj[prop];
-      const newFunc = verifyAndUpgrade(OG, verifyMethod);
-      monkeyPatch(obj, prop, newFunc);
-    }
-  }
+  const Mask = {
+    "Node.prototype.insertBefore": sameRootFirstArg,
+    "Node.prototype.appendChild": sameRootFirstArg,
+    "Element.prototype.after": sameRootSpreadArg,
+    "Element.prototype.before": sameRootSpreadArg,
+    "Element.prototype.insertAdjacentElement": sameRootSecond,
+    "Element.prototype.append": sameRootSpreadArg,
+    "Element.prototype.prepend": sameRootSpreadArg,
+    "Document.prototype.append": sameRootSpreadArg,
+    "Document.prototype.prepend": sameRootSpreadArg,
+    "DocumentFragment.prototype.append": sameRootSpreadArg,
+    "DocumentFragment.prototype.prepend": sameRootSpreadArg,
+    //replaceChild
+  };
+
+  for (let [path, verify] of Object.entries(Mask))
+    monkeyPatch(path,
+      verifyAndUpgrade(path.split(".").reduce((o, p) => o[p], window), verify));
 })();
-
-// //_:define  => must be installed to enable the loading of doubledots triggers and reactions.
-// (function () {
-
-//   //Att!! Only call the :define reaction once, either using _: or :once
-//   //_:define="url?name=value" 
-//   function define() {
-//     const src = this.ownerElement.getAttribute("src");
-//     const base = src ? new URL(src, location) : location;
-//     DoubleDots.define(new URL(this.value, base), this.ownerDocument);
-//   }
-
-//   class AttrEmpty extends AttrCustom {
-//     upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
-//   };
-
-//   document.Reactions.define("define", define);
-//   document.Triggers.define("_", AttrEmpty);
-// })();
-
-//_t: and :_t => trigger-reaction pair for extracting and retrieving the childNodes as a template. _tt: is an alternative to _t: that will not re-interpret the html-nodes, but it *can only be added in html template text, not via setAttribute() from js*. To implement this, we could add a parameter to upgrade that says what context the current upgrade is called from. It is easy to add such an argument for the simple case when .setAttribute() is done via js.
-// const map = new WeakMap();
-// class _T extends AttrCustom {
-//   upgrade() {
-//     const t = document.createElement("template");
-//     t.innerHTML = this.ownerElement.innerHTML;
-//     map.set(this.ownerElement, t.content);
-//     this.ownerElement.textContent = "";
-//   }
-// }
-// class _Tt extends AttrCustom {
-//   upgrade() {
-//     const df = document.createDocumentFragment();
-//     df.append(...this.ownerElement.childNodes);
-//     map.set(this.ownerElement, df);
-//     this.ownerElement.textContent = "";
-//   } 
-// }
-// function _t() {
-//   return map.get(this.ownerElement);
-// }
-// document.Triggers.define("_t", _T);
-// document.Triggers.define("_tt", _Tt);
-// document.Reactions.define("_t", _t);

@@ -1,9 +1,9 @@
 (function () {
-  const ElAppendOG = DoubleDots.nativeMethods2("Element.prototype.append");
-  const DocfragAppendOG = DoubleDots.nativeMethods2("DocumentFragment.prototype.append");
-  const CommentAfterOG = DoubleDots.nativeMethods2("Comment.prototype.after");
-  const ElCloneNodeOG = DoubleDots.nativeMethods2("Element.prototype.cloneNode");
-  const docCreateElOG = DoubleDots.nativeMethods2("Document.prototype.createElement");
+  const ElAppendOG = DoubleDots.nativeMethods("Element.prototype.append");
+  const DocfragAppendOG = DoubleDots.nativeMethods("DocumentFragment.prototype.append");
+  const CommentAfterOG = DoubleDots.nativeMethods("Comment.prototype.after");
+  const cloneNodeOG = DoubleDots.nativeMethods("Node.prototype.cloneNode");
+  const docCreateElOG = DoubleDots.nativeMethods("Document.prototype.createElement");
 
   function setAttributes(el, txt) {
     const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
@@ -77,7 +77,7 @@
   }
 
   function hashDebug(el) {
-    el = el.cloneNode(true);
+    el = cloneNodeOG.call(el, true);
     for (let a of el.attributes)
       if (a.name.startsWith("template:"))
         el.removeAttribute(a.name);

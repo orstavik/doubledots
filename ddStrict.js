@@ -93,9 +93,7 @@ function deprecate(mask, OGs = {}) {
 }
 
 // src/dd/ddStrict.js
-noPrimitiveConstructor(String);
-noPrimitiveConstructor(Number);
-noPrimitiveConstructor(Boolean);
+[String, Number, Boolean].map(noPrimitiveConstructor);
 ShadowRootAlwaysOpen();
 deprecate(DoubleDotStrictMask, window.DoubleDots ??= {});
 //# sourceMappingURL=ddStrict.js.map

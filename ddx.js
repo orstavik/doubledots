@@ -365,20 +365,13 @@ function extractFuncs(root, res = {}) {
   return res;
 }
 function hashDebug(script, id) {
-  return `
-#################################
-#  ":embrace" production        #
-#################################
-
-Add the following script in the <head> element:
+  return `Add the following script in the <head> element:
 
 <script embrace="${id}">
   window.Embrace = {
     ${id} : ${script}
   };
-<\/script>
-#################################
-`;
+<\/script>`;
 }
 function embrace(templ, dataObject) {
   if (this.__embrace)
@@ -390,8 +383,7 @@ function embrace(templ, dataObject) {
   const funcs = extractFuncs(this.__embrace);
   const script = "{" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(",") + "}";
   DoubleDots.importBasedEval(script).then((funcs2) => {
-    if (location.hash.includes("debug"))
-      console.log(hashDebug(script, id));
+    DoubleDots.log?.(":embrace production", hashDebug(script, id));
     window.Embrace = { [id]: funcs2 };
     this.__embrace.runFirst(this.ownerElement, dataObject, funcs2);
   });

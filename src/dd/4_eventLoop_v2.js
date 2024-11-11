@@ -1,10 +1,4 @@
 //.attachShadow(/*always open*/); is necessary to capture the full composedPath of customEvents.
-const attachShadowOG = HTMLElement.prototype.attachShadow;
-HTMLElement.prototype.attachShadow = function attachShadowforceModeOpen(...args) {
-  (args[0] ??= {}).mode = "open";
-  return attachShadowOG.apply(this, args);
-};
-
 Event.data = Symbol("Event data");
 class EventLoopError extends DoubleDots.DoubleDotsError { }
 DoubleDots.EventLoopError = EventLoopError;

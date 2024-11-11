@@ -1,3 +1,25 @@
+const OG = {};
+
+export function monkeyPatch(path, valueOrSet, get) {
+  const dots = path.split(".");
+  const prop = dots.pop();
+  const proto = dots.reduce((o, p) => o[p], window);
+  let desc = Object.getOwnPropertyDescriptor(proto, prop);
+  if (!desc)
+    for (let p = Object.getPrototypeOf(proto); p; p = Object.getPrototypeOf(p))
+      if (desc = Object.getOwnPropertyDescriptor(p, prop))
+        break;
+  const key = desc.value ? "value" : "set";
+  OG[path] ??= desc[key];
+  desc[key] = valueOrSet;
+  get && key === "set" && (desc.get = get);
+  Object.defineProperty(proto, prop, desc);
+}
+
+export function nativeMethods(path) {
+  return OG[path] ?? path.split(".").reduce((o, p) => o[p], window);
+}
+
 const dce = document.createElement;
 const ael = EventTarget.prototype.addEventListener;
 const si = setInterval;
@@ -171,7 +193,8 @@ class ThisArrowFunctionError extends DoubleDotsError {
 }
 
 window.DoubleDots = {
-  nativeMethods: {},
+  nativeMethods,
+  monkeyPatch,
 
   DoubleDotsError,
   ThisArrowFunctionError,

@@ -99,8 +99,8 @@ var nativeEvents = function() {
   const dOn = extractHandlers(Document.prototype);
   const e = [...eOn, ...hOn].filter((a, i, ar) => ar.indexOf(a) === i);
   const w = wOn.filter((x) => !e.includes(x));
-  const d = dOn.filter((x) => !e.includes(x) && !w.includes(x));
-  const result = { element: e, window: w, document: d };
+  const d2 = dOn.filter((x) => !e.includes(x) && !w.includes(x));
+  const result = { element: e, window: w, document: d2 };
   result.element.push("touchstart", "touchmove", "touchend", "touchcancel");
   result.document.push("DOMContentLoaded");
   Object.values(result).forEach(Object.freeze);
@@ -155,9 +155,9 @@ function* hosts(el, q = "*") {
       yield h;
 }
 function* downwide(el, q = "*") {
-  for (let d, queue = [...el.children]; d = queue.shift(); queue.push(...el.children))
-    if (q === "*" || d.matches(q))
-      yield d;
+  for (let d2, queue = [...el.children]; d2 = queue.shift(); queue.push(...el.children))
+    if (q === "*" || d2.matches(q))
+      yield d2;
 }
 var DoubleDotsError = class extends Error {
   constructor(msg, at) {
@@ -1182,4 +1182,94 @@ ${el.outerHTML}`;
     return AttrCustom.upgradeBranch(document.htmlElement);
   aelOG.call(document, "DOMContentLoaded", (_) => AttrCustom.upgradeBranch(document.documentElement));
 })(EventTarget.prototype.addEventListener);
-//# sourceMappingURL=dd.js.map
+
+// src/dd/7_logging.js
+function log(name, first, ...rest) {
+  console.groupCollapsed(first);
+  console[name](...rest);
+  console.groupEnd();
+}
+var funcs = {};
+for (let name of ["debug", "log", "info", "warn", "error"])
+  funcs[name] = log.bind(null, name);
+
+// src/dd/8_strict_deprecation.js
+var BooleanOG = Boolean;
+var NumberOG = Number;
+var StringOG = String;
+var PrimitiveConstructors = {
+  Boolean: function Boolean2(arg) {
+    if (new.target)
+      throw new Error(`Replace "new Boolean(${arg})" with "Boolean(${arg})".`);
+    return BooleanOG(arg);
+  },
+  Number: function Number2(arg) {
+    if (new.target)
+      throw new Error(`Replace "new Number(${arg})" with "Number(${arg})".`);
+    return NumberOG(arg);
+  },
+  String: function String2(arg) {
+    if (new.target)
+      throw new Error(`Replace "new String(${arg})" with "String(${arg})".`);
+    return StringOG(arg);
+  }
+};
+var attachShadowOG = Element.prototype.attachShadow;
+function attachShadowAlwaysOpen(...args) {
+  (args[0] ??= {}).mode = "open";
+  return attachShadowOG.call(this, ...args);
+}
+var d = function deprecated() {
+  throw new Error("Deprecated in DoubleDots strict.");
+};
+var DoubleDotDeprecated = {
+  "Element.prototype.hasAttributeNS": d,
+  "Element.prototype.getAttributeNS": d,
+  "Element.prototype.setAttributeNS": d,
+  "Element.prototype.removeAttributeNS": d,
+  "Element.prototype.setAttributeNode": d,
+  "Element.prototype.removeAttributeNode": d,
+  "Element.prototype.getAttributeNodeNS": d,
+  "Element.prototype.setAttributeNodeNS": d,
+  //     "outerHTML"
+  //.setAttribute(name, value)
+  //.hasAttribute(name)
+  //.getAttribute(name)
+  //.getAttributeNode(name)
+  //.attributes
+  "Event.prototype.stopPropagation": d,
+  "Event.prototype.stopImmediatePropagation": d,
+  "EventTarget.prototype.addEventListener": d,
+  "EventTarget.prototype.removeEventListener": d,
+  //.dispatchEvent
+  "window.setTimeout": d,
+  "window.clearTimeout": d,
+  "window.setInterval": d,
+  "window.clearInterval": d,
+  "window.event": d,
+  //must add "async sleep(ms)" first
+  //MutationObserver
+  //ResizeObserver
+  //IntersectionObserver
+  "Document.prototype.createAttribute": d,
+  "Document.prototype.createComment": d,
+  "Document.prototype.createDocumentFragment": d,
+  "Document.prototype.createElement": d,
+  "Document.prototype.createTextNode": d,
+  "Document.prototype.importNode": d,
+  "Document.prototype.currentScript": d,
+  "Document.prototype.write": d,
+  // "createRange" //todo research
+  "Node.prototype.cloneNode": d
+};
+
+// src/dd/dd_dev.js
+Object.assign(DoubleDots, funcs);
+for (let [name, func] of Object.entries(funcs))
+  document.Reactions.define(name, func);
+for (let [path, func] of Object.entries(PrimitiveConstructors))
+  monkeyPatch(path, func);
+monkeyPatch("Element.prototype.attachShadow", attachShadowAlwaysOpen);
+for (let [path, deprecate] of Object.entries(DoubleDotDeprecated))
+  monkeyPatch(path, deprecate, deprecate);
+//# sourceMappingURL=dd_dev.js.map
