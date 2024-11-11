@@ -1,7 +1,7 @@
 <script src="/dd.js"></script>
 <script>
   function testLog() {
-    console.log(this.ownerElement.outerHTML);
+    // console.log(this.ownerElement.outerHTML);
     const tst = document.querySelector("body > template").content.children[0].outerHTML.replaceAll(/\s/g, "");
     const res = this.ownerElement.outerHTML.replaceAll(/\s/g, "");
     console.log(tst === res);

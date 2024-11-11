@@ -1,7 +1,9 @@
 (function () {
-  const ElAppendOG = DoubleDots.nativeMethods.Element.prototype.append;
-  const DocfragAppendOG = DoubleDots.nativeMethods.DocumentFragment.prototype.append;
-  const CommentAfterOG = DoubleDots.nativeMethods.Comment.prototype.after;
+  const ElAppendOG = DoubleDots.nativeMethods2("Element.prototype.append");
+  const DocfragAppendOG = DoubleDots.nativeMethods2("DocumentFragment.prototype.append");
+  const CommentAfterOG = DoubleDots.nativeMethods2("Comment.prototype.after");
+  const ElCloneNodeOG = DoubleDots.nativeMethods2("Element.prototype.cloneNode");
+  const docCreateElOG = DoubleDots.nativeMethods2("Document.prototype.createElement");
 
   function setAttributes(el, txt) {
     const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
@@ -17,7 +19,7 @@
 
   function subsumeNodes(at) {
     const el = at.ownerElement;
-    const t = document.createElement("template");
+    const t = docCreateElOG.call(document, "template");
     setAttributes(t, at.value);
     DocfragAppendOG.call(t.content, ...el.childNodes);
     ElAppendOG.call(el, t);
@@ -31,7 +33,7 @@
   }
 
   function absorbNodes({ start, nodes, txt, end }) {
-    const t = document.createElement("template");
+    const t = docCreateElOG.call(document, "template");
     setAttributes(t, txt);
     DocfragAppendOG.call(t.content, ...nodes);
     CommentAfterOG.call(start, t);
@@ -79,17 +81,7 @@
     for (let a of el.attributes)
       if (a.name.startsWith("template:"))
         el.removeAttribute(a.name);
-    return `
-#################################
-#    "template:" production     #
-#################################
-
-Replace the following element in your code:
-
-${el.outerHTML}
-
-#################################
-  `;
+    return `Replace the following element in your code:\n\n${el.outerHTML}`;
   }
 
   class Template extends AttrCustom {
@@ -108,8 +100,7 @@ ${el.outerHTML}
         for (let comment of [...templateCommentStarts(t.content)].reverse())
           absorb(gobble(comment));
 
-      if (location.hash.includes("debug"))
-        console.log(hashDebug(el));
+      DoubleDots.log?.('template: production tutorial', hashDebug(el));
       //todo now we don't have any events coming from the template: trigger.
       //todo below is what it looks like if we upgrade and dispatch an event using downward propagation.
       // for (let a of attributes)

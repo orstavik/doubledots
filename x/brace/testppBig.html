@@ -15,14 +15,10 @@
 </head>
 
 <body _::fetch_json:pp="/x/pp/companies.json">
-  <div pp:log="company1">
-    <ol _t: pp:_t:loop=".employees">
-      <li pp:brace hello="mr/s {{fullname}} !!">employee fullname is {{fullname}} -- {{nothing}} --
-        <template is-processed="this will be altered {{fullname}}">
-          {{not.processed}}
-        </template>
-      </li>
-      </template>
-    </ol>
-  </div>
+  <ol _t: pp:brace:_t:loop key="{{#key}}">
+    <li pp:brace>
+      {{#key}} = {{#value}}
+    </li>
+  </ol>
+
 </body>
