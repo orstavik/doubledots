@@ -73,7 +73,7 @@
     }
     document.Triggers.define("hover", Hover);
 
-  })(DoubleDots?.nativeMethods?.EventTarget?.prototype || EventTarget.prototype);
+  })(DoubleDots.nativeMethods("EventTarget.prototype"));
 
   document.Reactions.define("log", e => console.log(e));
 </script>
