@@ -118,7 +118,7 @@ document.documentElement.setAttribute("da:dd-filter-da:dd-run-da");
     document.Triggers.define("domcontentloaded", DCLTrigger);
   })();
 
-})(DoubleDots?.nativeMethods || window);
+})();
 
 /**
 # ComplexPropagation

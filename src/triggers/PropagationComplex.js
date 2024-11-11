@@ -95,7 +95,7 @@
     document.Triggers.define(type + ".", PostRootTrigger);
   }
 
-})(DoubleDots?.nativeMethods || window);
+})();
 
 // <html default-action:reduce-default-action:run-default-action>
 // we can add a special `default-action:reduceda:runda` attribute.

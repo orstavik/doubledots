@@ -33,4 +33,4 @@
 
   document.Triggers.defineRule("overlap_", TriggerOverlapRule);
 
-})(DoubleDots?.nativeMethods || window);
+})();

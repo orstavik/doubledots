@@ -68,4 +68,4 @@
 
   document.Triggers.define("new-sibling", TriggerSiblingAdd);
 
-})(DoubleDots?.nativeMethods || window);
+})();

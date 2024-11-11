@@ -18,4 +18,4 @@
 
   customAttributes.define("cqw", TriggerCQW);
 
-})(DoubleDots?.nativeMethods || window);
+})();

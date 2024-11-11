@@ -118,4 +118,4 @@
   document.reactions.defineRule("sso_", ReactionRuleSSO);
   document.Triggers.defineRule("sso_", TriggerRuleSSO);
   
-})(DoubleDots?.nativeMethods || window);
+})();
