@@ -744,9 +744,6 @@ var MicroFrame = class {
   getReactionIndex() {
     return this.#i < this.#names.length ? this.#i : -1;
   }
-  nextReaction() {
-    return this.getReaction();
-  }
   /**
    * @returns <undefined> when the task is emptied, or is awaiting in async mode, 
    * which both means that the event loop can continue.
@@ -754,10 +751,10 @@ var MicroFrame = class {
    * and we must wait for it in sync mode.
    */
   run(threadMode = false) {
-    for (let re = this.getReaction(); re !== void 0; re = this.nextReaction()) {
+    for (let re = this.getReaction(); re !== void 0; re = this.getReaction()) {
       if (re === "") {
         threadMode = true;
-        this.#runSuccess(this.#inputs[this.#i]);
+        this.#runSuccess(this.#inputs[0]);
         continue;
       }
       if (re.startsWith("catch"))
@@ -779,7 +776,7 @@ var MicroFrame = class {
             return this;
           }
         }
-        const res = this.#outputs[this.#i] = func.apply(this.at, this.#inputs.slice().reverse());
+        const res = this.#outputs[this.#i] = func.apply(this.at, this.#inputs);
         if (res instanceof Promise) {
           if (threadMode) {
             res.then((oi) => this.#runSuccess(oi)).catch((error) => this.#runError(error)).finally((_) => __eventLoop.asyncContinue(this));
@@ -809,13 +806,9 @@ var MicroFrame = class {
     this.#outputs[this.#i] = res;
     if (res === EventLoop.Break) {
       this.#i = this.#names.length;
-    } else if (res instanceof EventLoop.ReactionJump) {
-      const next = this.#i + res.value;
-      this.#inputs[next] = this.#inputs[this.#i];
-      this.#i = next;
     } else {
       const next = this.#i + 1;
-      this.#inputs[next] = res;
+      this.#inputs.unshift(res);
       this.#i = next;
     }
   }
@@ -856,7 +849,7 @@ var __EventLoop = class {
 __eventLoop = new __EventLoop();
 var _a;
 window.EventLoop = (_a = class {
-  //todo freeze the ReactionOrigin, SpreadReaction, ReactionJump, Break.
+  //todo freeze the SpreadReaction, Break.
   get event() {
     return __eventLoop.task?.event;
   }
@@ -876,20 +869,7 @@ window.EventLoop = (_a = class {
   dispatchBatch(event, iterable) {
     __eventLoop.batch(event, iterable);
   }
-}, __publicField(_a, "ReactionJump", class ReactionJump {
-  constructor(n) {
-    n = parseInt(n);
-    if (!n || isNaN(n))
-      throw new DoubleDotsErrorEvent("ReactionJump must be done using a positive or negative integer.");
-    this.value = n;
-  }
-}), __publicField(_a, "Break", {}), __publicField(_a, "ReactionOrigin", class ReactionOrigin {
-  constructor(obj) {
-    if (!obj || !(obj instanceof Object))
-      throw new DoubleDotsErrorEvent("ReactionOrigin must be an object not null.");
-    this.value = obj;
-  }
-}), __publicField(_a, "SpreadReaction", function(fun) {
+}, __publicField(_a, "Break", {}), __publicField(_a, "SpreadReaction", function(fun) {
   return function SpreadReaction(oi) {
     return oi instanceof Iterable ? fun.call(this, ...oi) : fun.call(this, oi);
   };

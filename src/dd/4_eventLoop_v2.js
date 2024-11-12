@@ -40,7 +40,7 @@ class MicroFrame {
       //1. process native reactions
       if (re === "") {
         threadMode = true;
-        this.#runSuccess(this.#inputs[this.#i]);
+        this.#runSuccess(this.#inputs[0]);
         continue;
       }
       //todo this one
@@ -70,9 +70,7 @@ class MicroFrame {
             return this; //halt outside loop
           }
         }
-        // const self = this.#selves[this.#i];
-        //todo this.#inputs.slice().reverse() is inefficient.
-        const res = this.#outputs[this.#i] = func.apply(this.at, this.#inputs.slice().reverse());
+        const res = this.#outputs[this.#i] = func.apply(this.at, this.#inputs);
         if (res instanceof Promise) {
           if (threadMode) {
             res.then(oi => this.#runSuccess(oi))
@@ -114,20 +112,9 @@ class MicroFrame {
     this.#outputs[this.#i] = res;
     if (res === EventLoop.Break) {
       this.#i = this.#names.length;
-    } else if (res instanceof EventLoop.ReactionJump) { //this also looks frail
-      const next = this.#i + res.value;
-      // this.#selves[next] = this.#selves[this.#i];
-      this.#inputs[next] = this.#inputs[this.#i];
-      this.#i = next;
-      // } else if (res instanceof EventLoop.ReactionOrigin) {
-      //   const next = this.#i + 1;
-      //   // this.#selves[next] = res.value;
-      //   this.#inputs[next] = this.#inputs[this.#i];
-      //   this.#i = next;
     } else {
       const next = this.#i + 1;
-      // this.#selves[next] = this.#selves[this.#i];
-      this.#inputs[next] = res;
+      this.#inputs.unshift(res);
       this.#i = next;
     }
   }
@@ -176,24 +163,8 @@ __eventLoop = new __EventLoop();
 
 //external interface
 window.EventLoop = class EventLoop {
-  static ReactionJump = class ReactionJump {
-    constructor(n) {
-      n = parseInt(n);
-      if (!n || isNaN(n))
-        throw new DoubleDotsErrorEvent("ReactionJump must be done using a positive or negative integer.");
-      this.value = n;
-    }
-  };
 
   static Break = {};
-
-  static ReactionOrigin = class ReactionOrigin {
-    constructor(obj) {
-      if (!obj || !(obj instanceof Object))
-        throw new DoubleDotsErrorEvent("ReactionOrigin must be an object not null.");
-      this.value = obj;
-    }
-  };
 
   static SpreadReaction = function (fun) {
     return function SpreadReaction(oi) {
@@ -206,7 +177,7 @@ window.EventLoop = class EventLoop {
     };
   };
 
-  //todo freeze the ReactionOrigin, SpreadReaction, ReactionJump, Break.
+  //todo freeze the SpreadReaction, Break.
 
   get event() {
     return __eventLoop.task?.event;

@@ -437,18 +437,11 @@ function BreakOnTrueReactionRule(fullname) {
   const code = `function dotReaction(oi) { return ${exp} && EventLoop.break; }`;
   return DoubleDots.importBasedEval(code);
 }
-function JumpReactionRule(fullname) {
-  const n = parseInt(fullname.slice(2));
-  if (!n || isNaN(n))
-    throw new DoubleDots.SyntaxError("ReactionJump only accept positive and negative integers: " + fullname.slice(2));
-  return DoubleDots.importBasedEval(`_ => new EventLoop.ReactionJump(${n})`);
-}
 var dynamicDots = {};
 for (let prefix in scopes)
   dynamicDots[prefix] = DotReactionRule;
 dynamicDots["x."] = BreakOnFalseReactionRule;
 dynamicDots["y."] = BreakOnTrueReactionRule;
-dynamicDots["j."] = JumpReactionRule;
 
 // x/er/v1.js
 var ER = class {

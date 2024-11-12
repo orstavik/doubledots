@@ -52,20 +52,10 @@ function BreakOnTrueReactionRule(fullname) {
   return DoubleDots.importBasedEval(code);
 }
 
-//jump
-function JumpReactionRule(fullname) {
-  const n = parseInt(fullname.slice(2));
-  if (!n || isNaN(n))
-    throw new DoubleDots.SyntaxError("ReactionJump only accept positive and negative integers: " + fullname.slice(2));
-  // return _ => new EventLoop.ReactionJump(n);
-  return DoubleDots.importBasedEval(`_ => new EventLoop.ReactionJump(${n})`);
-}
-
 const dynamicDots = {};
 for (let prefix in scopes)
   dynamicDots[prefix] = DotReactionRule;
 dynamicDots["x."] = BreakOnFalseReactionRule;
 dynamicDots["y."] = BreakOnTrueReactionRule;
-dynamicDots["j."] = JumpReactionRule;
 
 export { dynamicDots as dynamicsDots };
