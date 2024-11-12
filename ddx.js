@@ -286,6 +286,13 @@ var EmbraceCommentFor = class {
     this.iName = `#${varName}`;
     this.dName = `$${varName}`;
   }
+  //todo 1. remove the let/const/var part of the expression
+  //todo 2. fix the key+value check for dictionary looping
+  //todo 3. remove the in. If the entity being looped doesn't have an @iterator,
+  //todo    then we need to iterate it as an entry set
+  //todo 4. the reverse the ref/$ref set for the values in the dict iterator.
+  //        the plain ref => the value
+  //        the $ref => the key in the dictionary. Like #0 is the number.
   run(scope, node, ancestor) {
     const cube = node.__cube ??= new LoopCube(this.innerRoot);
     let list = this.cb(scope) ?? [];
@@ -345,7 +352,7 @@ function parseNode(n, name) {
     const emTempl = parseTemplate(n, name);
     let res;
     if (res = n.getAttribute("for")) {
-      const ctrlFor = res.match(/^\s*(?:let|const|var)\s+([^\s]+)\s+(of|in)\s+(.+)\s*$/);
+      const ctrlFor = res.match(/^\s*([^\s]+)\s+(of|in)\s+(.+)\s*$/);
       if (!ctrlFor)
         throw new SyntaxError("embrace for error: " + res);
       const [, varName, ofIn, exp] = ctrlFor;

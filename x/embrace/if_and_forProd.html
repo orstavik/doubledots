@@ -10,16 +10,16 @@
 <div template:="" _::fetch_json:el.first-element-child:embrace="SerSeaEpi.json"><template>
   <h2>List of Series</h2>
   <ol>
-    <template for="let serie of series">
+    <template for="serie of series">
     <li>
       <h3>{{serie.title}} is the no. {{#serie}} in your play list.</h3>
       <ul>
-        <template for="const season of serie.seasons">
+        <template for="season of serie.seasons">
         <li>
           <h4>{{season.title}} is the no. {{#season}} in series {{serie.title}}.</h4>
           <template if="(#season % 2) === 0">
           <ol>
-            <template for="var episode of season.episodes">
+            <template for="episode of season.episodes">
             <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
           </template></ol>
         </template></li>
