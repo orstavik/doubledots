@@ -29,11 +29,6 @@ class MicroFrame {
     return this.#i < this.#names.length ? this.#i : -1;
   }
 
-  nextReaction() {
-    // this.#i++;
-    return this.getReaction();
-  }
-
   /**
    * @returns <undefined> when the task is emptied, or is awaiting in async mode, 
    * which both means that the event loop can continue.
@@ -41,7 +36,7 @@ class MicroFrame {
    * and we must wait for it in sync mode.
    */
   run(threadMode = false) {
-    for (let re = this.getReaction(); re !== undefined; re = this.nextReaction()) {
+    for (let re = this.getReaction(); re !== undefined; re = this.getReaction()) {
       //1. process native reactions
       if (re === "") {
         threadMode = true;
