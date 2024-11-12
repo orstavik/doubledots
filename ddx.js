@@ -288,7 +288,7 @@ var EmbraceCommentFor = class {
   }
   run(scope, node, ancestor) {
     const cube = node.__cube ??= new LoopCube(this.innerRoot);
-    let list = this.cb(scope);
+    let list = this.cb(scope) ?? [];
     const now = this.ofIn === "in" ? Object.keys(list) : list;
     const { embraces, removes, changed } = cube.step(now);
     for (let em of removes)
