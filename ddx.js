@@ -377,7 +377,7 @@ function hashDebug(script, id) {
 }
 function embrace(templ, dataObject) {
   if (this.__embrace)
-    return this.__embrace.run(/* @__PURE__ */ Object.create(null), dataObject, 0, this.ownerElement);
+    return this.__embrace.run(dotScope(dataObject), 0, this.ownerElement);
   const id = this.ownerElement.id || "embrace";
   this.__embrace = parseTemplate(templ, id);
   if (window.Embrace?.[id])
