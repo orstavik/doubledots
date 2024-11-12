@@ -1,12 +1,12 @@
 export class LoopCube {
-  static compareSmall(old, now) {
+  static compareSmall(compare, old, now) {
     const exact = new Array(now.length);
     const unused = [];
     if (!old?.length)
       return { exact, unused };
     main: for (let o = 0; o < old.length; o++) {
       for (let n = 0; n < now.length; n++) {
-        if (!exact[n] && old[o] === now[n]) {
+        if (!exact[n] && compare(old[o], now[n])) {
           exact[n] = o;
           continue main;
         }
@@ -16,17 +16,18 @@ export class LoopCube {
     return { exact, unused };
   }
 
-  constructor(embrace) {
+  constructor(embrace, compare = (a, b) => a === b) {
     this.embrace = embrace;
     this.now = [];
     this.nowEmbraces = [];
+    this.comparator = LoopCube.compareSmall.bind(null, compare);
   }
 
   step(now = []) {
     const old = this.now;
     const oldEmbraces = this.nowEmbraces;
     this.now = now;
-    const { exact, unused } = LoopCube.compareSmall(old, now);
+    const { exact, unused } = this.comparator(old, now);
     const embraces = new Array(now.length);
     const changed = [];
     for (let n = 0; n < exact.length; n++) {

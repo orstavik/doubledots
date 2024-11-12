@@ -64,43 +64,35 @@ class EmbraceTextNode {
 }
 
 class EmbraceCommentFor {
-  constructor(name, innerRoot, varName, ofIn, exp) {
+  constructor(name, innerRoot, varName, exp) {
     this.name = name;
     this.innerRoot = innerRoot;
     this.varName = varName;
     this.exp = exp;
     this.cb;
-    this.ofIn = ofIn;
     this.iName = `#${varName}`;
     this.dName = `$${varName}`;
   }
 
-  //todo 1. remove the let/const/var part of the expression
-  //todo 2. fix the key+value check for dictionary looping
-  //todo 3. remove the in. If the entity being looped doesn't have an @iterator,
-  //todo    then we need to iterate it as an entry set
-  //todo 4. the reverse the ref/$ref set for the values in the dict iterator.
-  //        the plain ref => the value
-  //        the $ref => the key in the dictionary. Like #0 is the number.
   run(scope, node, ancestor) {
-    const cube = node.__cube ??= new LoopCube(this.innerRoot);
     let list = this.cb(scope) ?? [];
-    //todo When we are iterating a dictionary, we are iterating entry sets, not just keys.
-    //todo We must check that both [key, value] are unchanged, not just key.
-    //todo The cube.step() should therefore check against an array[k,v]
-    const now = this.ofIn === "in" ? Object.keys(list) : list;
+    const inMode = !(Symbol.iterator in list);
+    const cube = node.__cube ??=
+      new LoopCube(this.innerRoot, inMode ? (a, b) => JSON.stringify(a) === JSON.stringify(b) : undefined);
+    const now = inMode ? Object.entries(list) : list;
     const { embraces, removes, changed } = cube.step(now);
     for (let em of removes)
       for (let n of em.topNodes)
         n.remove();
     node.before(...embraces.map(em => em.template));
-    //todo update the number and then update the value.
     for (let i of changed) {
-      const subScope = {};
-      subScope[this.varName] = now[i];
-      subScope[this.iName] = i;
-      if (this.ofIn === "in")
-        subScope[this.dName] = list[now[i]];
+      const subScope = { [this.iName]: i };
+      if (inMode) {
+        subScope[this.varName] = now[i][1];
+        subScope[this.dName] = now[i][0];
+      } else {
+        subScope[this.varName] = now[i];
+      }
       embraces[i].run(scope(subScope), undefined, ancestor);
     }
   }
@@ -151,11 +143,11 @@ function parseNode(n, name) {
     const emTempl = parseTemplate(n, name);
     let res;
     if (res = n.getAttribute("for")) {
-      const ctrlFor = res.match(/^\s*([^\s]+)\s+(of|in)\s+(.+)\s*$/);
+      const ctrlFor = res.match(/^\s*([^\s]+)\s+(?:of)\s+(.+)\s*$/);
       if (!ctrlFor)
         throw new SyntaxError("embrace for error: " + res);
-      const [, varName, ofIn, exp] = ctrlFor;
-      return new EmbraceCommentFor(name, emTempl, varName, ofIn, exp);
+      const [, varName, exp] = ctrlFor;
+      return new EmbraceCommentFor(name, emTempl, varName, exp);
     }
     if (res = n.getAttribute("if"))
       return new EmbraceCommentIf(name, n, emTempl, res);
