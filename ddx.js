@@ -309,10 +309,9 @@ var EmbraceCommentFor = class {
   }
 };
 var EmbraceCommentIf = class {
-  constructor(name, templateEl, emRoot, exp) {
+  constructor(name, emRoot, exp) {
     this.name = name;
     this.innerRoot = emRoot;
-    this.templateEl = templateEl;
     this.exp = exp;
   }
   run(argsDict, node, ancestor) {
@@ -321,7 +320,7 @@ var EmbraceCommentIf = class {
     if (test2 && !em.state)
       node.before(...em.topNodes);
     else if (!test2 && em.state)
-      this.templateEl.append(...em.topNodes);
+      node.append(...em.topNodes);
     if (test2)
       em.run(argsDict({}), void 0, ancestor);
     em.state = test2;
@@ -355,7 +354,7 @@ function parseNode(n, name) {
       return new EmbraceCommentFor(name, emTempl, varName, exp);
     }
     if (res = n.getAttribute("if"))
-      return new EmbraceCommentIf(name, n, emTempl, res);
+      return new EmbraceCommentIf(name, emTempl, res);
     return emTempl;
   }
 }
