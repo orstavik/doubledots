@@ -174,6 +174,7 @@ var LoopCube = class {
 };
 
 // x/embrace/Tokenizer.js
+var loophole = /\b(?:JSON.stringify)\b/;
 var ignore = /\b(?:break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|instanceof|interface|let|new|null|package|private|protected|public|return|static|switch|throw|true|try|typeof|var|void|while|with|yield|async|await)\b/;
 var dotWords = /\.\s*[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]*)*/u;
 var words = /#?[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]*)*/u;
@@ -183,10 +184,10 @@ var number = /0[xX][0-9a-fA-F]+|\d*\.?\d+(?:[eE][+-]?\d+)?/;
 var regex = /\/[^/\\]*(?:\\.[^/\\]*)*\/[gimyu]*/;
 var linecomment = /\/\/[^\n]*/;
 var starcomment = /\/\*[^]*?\*\//;
-var tokens = [ignore, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
+var tokens = [ignore, loophole, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
 var tokenizer = new RegExp(tokens.map((r) => `(${r.source})`).join("|"), "gu");
 function extractArgs(txt) {
-  return txt.replaceAll(tokenizer, (o, _, p) => p ? `args("${p.replace(/\s+/g, "")}")` : o);
+  return txt.replaceAll(tokenizer, (o, i, l, p) => p ? `args("${p.replace(/\s+/g, "")}")` : o);
 }
 function interpretTemplateString(txt) {
   return `\`${txt.split(/{{([^}]+)}}/).map((str, i) => i % 2 ? `\${(v = ${extractArgs(str)}) === false || v === undefined ? "": v}` : str.replaceAll("`", "\\`")).join("")}\``;
@@ -337,7 +338,7 @@ function parseTemplate(template, name = "embrace") {
   return new EmbraceRoot(name, template.content, nodes, expressions);
 }
 function parseNode(n, name) {
-  if (n instanceof Text || n instanceof Attr) {
+  if (n instanceof Text || n instanceof Attr || n instanceof Comment) {
     if (n.textContent.match(/{{([^}]+)}}/))
       return new EmbraceTextNode(name, n.textContent);
   } else if (n instanceof HTMLTemplateElement) {
@@ -358,7 +359,7 @@ function parseNode(n, name) {
 function extractFuncs(root, res = {}) {
   for (let { exp } of root.todos) {
     const code = exp instanceof EmbraceTextNode ? interpretTemplateString(exp.exp) : exp instanceof EmbraceCommentFor ? extractArgs(exp.exp) : exp instanceof EmbraceCommentIf ? extractArgs(exp.exp) : void 0;
-    res[exp.name] = `function ${exp.name}(args, v) { return ${code}; }`;
+    res[exp.name] = `(args, v) => ${code}`;
     if (exp.innerRoot)
       extractFuncs(exp.innerRoot, res);
   }

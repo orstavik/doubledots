@@ -15,6 +15,10 @@
           <!--template if="(#season % 2) === 0" -->
           <ol>
             <!--template for="var episode of season.episodes" -->
+
+            <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
             <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
           </ol>
         </li>

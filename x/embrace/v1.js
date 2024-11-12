@@ -133,7 +133,7 @@ function parseTemplate(template, name = "embrace") {
 }
 
 function parseNode(n, name) {
-  if (n instanceof Text || n instanceof Attr) {
+  if (n instanceof Text || n instanceof Attr || n instanceof Comment) {
     if (n.textContent.match(/{{([^}]+)}}/))
       return new EmbraceTextNode(name, n.textContent);
   } else if (n instanceof HTMLTemplateElement) {
@@ -159,7 +159,7 @@ function extractFuncs(root, res = {}) {
         exp instanceof EmbraceCommentFor ? extractArgs(exp.exp) :
           exp instanceof EmbraceCommentIf ? extractArgs(exp.exp) :
             undefined;
-    res[exp.name] = `function ${exp.name}(args, v) { return ${code}; }`;
+    res[exp.name] = `(args, v) => ${code}`; //`function ${exp.name}(args, v) { return ${code}; }`;
     if (exp.innerRoot)
       extractFuncs(exp.innerRoot, res);
   }
