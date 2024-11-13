@@ -4,10 +4,11 @@ function log(name, first, ...rest) {
   console.groupEnd();
 }
 
-const funcs = {};
+const funcs = {
+  cube: log.bind(null, "debug"),
+  debugger: function (...args) { console.log(this, ...args); debugger; },
+};
 for (let name of ["debug", "log", "info", "warn", "error"])
   funcs[name] = log.bind(null, name);
-
-funcs.cube = log.bind(null, "debug");
 
 export { funcs as console };
