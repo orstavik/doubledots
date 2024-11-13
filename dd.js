@@ -254,15 +254,13 @@ var _AttrCustom = class extends Attr {
       this.upgradeElementRoot(c);
   }
   static upgrade(at, Def) {
-    Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
-    if (Def instanceof Error)
-      throw Def;
-    if (Def instanceof Promise) {
-      Object.setPrototypeOf(at, AttrUnknown.prototype);
-      Def.then((Def2) => _AttrCustom.upgrade(at, Def2));
-      return;
-    }
     try {
+      Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
+      if (Def instanceof Promise) {
+        Object.setPrototypeOf(at, AttrUnknown.prototype);
+        Def.then((Def2) => _AttrCustom.upgrade(at, Def2));
+        return;
+      }
       Object.setPrototypeOf(at, Def.prototype);
       at.upgrade?.();
       at.value && (at.value = at.value);
@@ -509,7 +507,7 @@ var DefinitionsMap = class {
       Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname2] = newDef).catch((err) => this.#definitions[fullname2] = new AsyncDefinitionError(err, fullname2, rule, FunFun));
       return Def;
     } catch (err) {
-      return this.#definitions[fullname2] = new DefinitionError(err, fullname2, rule, FunFun);
+      throw this.#definitions[fullname2] = new DefinitionError(err, fullname2, rule, FunFun);
     }
   }
   #checkViaRule(fullname2) {
@@ -727,13 +725,12 @@ var MicroFrame = class {
   #i = 0;
   #names;
   #inputs;
-  #outputs;
   constructor(event, at) {
     this.at = at;
+    this.document = at.getRootNode();
     this.event = event;
     this.#names = this.at.reactions;
     this.#inputs = [event[Event.data] ?? event];
-    this.#outputs = [];
   }
   isConnected() {
     return this.at.isConnected();
@@ -762,21 +759,20 @@ var MicroFrame = class {
       try {
         if (!this.at.isConnected)
           throw new EventLoopError("Disconnected: " + this.at);
-        const func = this.at.getRootNode().Reactions.get(re, this.at);
-        if (func instanceof Error)
-          throw func;
+        const func = this.document.Reactions.get(re, this.at);
         if (func instanceof Promise) {
           if (threadMode) {
-            func.then((_) => __eventLoop.asyncContinue(this));
+            func.then((_) => __eventLoop.asyncContinue(this)).catch((error) => this.#runError(error));
             return;
           } else if (func instanceof DoubleDots.UnknownDefinition) {
-            return this.#runError(new EventLoopError("Reaction not found: " + re));
+            return this.#runError(new EventLoopError("Reaction not defined: " + re));
           } else {
             func.then((_) => __eventLoop.syncContinue());
             return this;
           }
         }
-        const res = this.#outputs[this.#i] = func.apply(this.at, this.#inputs);
+        const res = func.apply(this.at, this.#inputs);
+        this.#inputs.unshift(res);
         if (res instanceof Promise) {
           if (threadMode) {
             res.then((oi) => this.#runSuccess(oi)).catch((error) => this.#runError(error)).finally((_) => __eventLoop.asyncContinue(this));
@@ -789,12 +785,13 @@ var MicroFrame = class {
         this.#runSuccess(res);
       } catch (error) {
         this.#runError(error);
+      } finally {
       }
     }
   }
   #runError(error) {
     console.error(error);
-    this.#outputs[this.#i] = error;
+    this.#inputs[0] = error;
     const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, "-$&").toLowerCase();
     for (this.#i++; this.#i < this.#names.length; this.#i++)
       if (this.#names[this.#i] === "catch" || this.#names[this.#i] === catchKebab)
@@ -803,14 +800,8 @@ var MicroFrame = class {
     target.dispatchEvent(new ErrorEvent("error", { error }));
   }
   #runSuccess(res) {
-    this.#outputs[this.#i] = res;
-    if (res === EventLoop.Break) {
-      this.#i = this.#names.length;
-    } else {
-      const next = this.#i + 1;
-      this.#inputs.unshift(res);
-      this.#i = next;
-    }
+    this.#inputs[0] = res;
+    this.#i = res === EventLoop.Break ? this.#names.length : this.#i + 1;
   }
 };
 var __EventLoop = class {

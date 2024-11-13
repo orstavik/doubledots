@@ -7,14 +7,13 @@ class MicroFrame {
   #i = 0;
   #names;
   #inputs;
-  #outputs;
 
   constructor(event, at) {
     this.at = at;
+    this.document = at.getRootNode();
     this.event = event;
     this.#names = this.at.reactions;
     this.#inputs = [event[Event.data] ?? event];
-    this.#outputs = [];
   }
 
   isConnected() {
@@ -53,15 +52,14 @@ class MicroFrame {
           throw new EventLoopError("Disconnected: " + this.at);
         //todo should this be an error??
 
-        const func = this.at.getRootNode().Reactions.get(re, this.at);
-        if (func instanceof Error)
-          throw func;
+        const func = this.document.Reactions.get(re, this.at);
         if (func instanceof Promise) {
           if (threadMode) {
-            func.then(_ => __eventLoop.asyncContinue(this));
+            func.then(_ => __eventLoop.asyncContinue(this))
+              .catch(error => this.#runError(error));
             return; //continue outside loop
           } else if (func instanceof DoubleDots.UnknownDefinition) {
-            return this.#runError(new EventLoopError("Reaction not found: " + re));
+            return this.#runError(new EventLoopError("Reaction not defined: " + re));
             //RulePromise, DefinitionPromise
           } else {
             func.then(_ => __eventLoop.syncContinue());
@@ -70,7 +68,8 @@ class MicroFrame {
             return this; //halt outside loop
           }
         }
-        const res = this.#outputs[this.#i] = func.apply(this.at, this.#inputs);
+        const res = func.apply(this.at, this.#inputs);
+        this.#inputs.unshift(res);
         if (res instanceof Promise) {
           if (threadMode) {
             res.then(oi => this.#runSuccess(oi))
@@ -89,13 +88,16 @@ class MicroFrame {
         this.#runSuccess(res);
       } catch (error) {
         this.#runError(error);
+      } finally {
+        //todo update the loop and res here,
       }
+      //todo or here?
     }
   }
 
   #runError(error) {
     console.error(error);
-    this.#outputs[this.#i] = error;
+    this.#inputs[0] = error;
     const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, '-$&').toLowerCase();
     for (this.#i++; this.#i < this.#names.length; this.#i++)
       if (this.#names[this.#i] === "catch" || this.#names[this.#i] === catchKebab)
@@ -109,14 +111,8 @@ class MicroFrame {
   }
 
   #runSuccess(res) {
-    this.#outputs[this.#i] = res;
-    if (res === EventLoop.Break) {
-      this.#i = this.#names.length;
-    } else {
-      const next = this.#i + 1;
-      this.#inputs.unshift(res);
-      this.#i = next;
-    }
+    this.#inputs[0] = res;
+    this.#i = res === EventLoop.Break ? this.#names.length : this.#i + 1;
   }
 }
 

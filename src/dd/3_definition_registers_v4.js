@@ -98,7 +98,7 @@ class DefinitionsMap {
         .catch(err => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
       return Def;
     } catch (err) {
-      return this.#definitions[fullname] = new DefinitionError(err, fullname, rule, FunFun);
+      throw this.#definitions[fullname] = new DefinitionError(err, fullname, rule, FunFun);
     }
   }
 

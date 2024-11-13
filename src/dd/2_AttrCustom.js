@@ -65,15 +65,14 @@ class AttrCustom extends Attr {
   }
 
   static upgrade(at, Def) {
-    Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
-    if (Def instanceof Error)
-      throw Def;
-    if (Def instanceof Promise) {
-      Object.setPrototypeOf(at, AttrUnknown.prototype);
-      Def.then(Def => AttrCustom.upgrade(at, Def));
-      return;
-    }
+    //the single place to catch trigger errors.
     try {
+      Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
+      if (Def instanceof Promise) {
+        Object.setPrototypeOf(at, AttrUnknown.prototype);
+        Def.then(Def => AttrCustom.upgrade(at, Def));
+        return;
+      }
       Object.setPrototypeOf(at, Def.prototype);
       at.upgrade?.();
       at.value && (at.value = at.value);
