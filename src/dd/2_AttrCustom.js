@@ -64,20 +64,24 @@ class AttrCustom extends Attr {
     //       AttrCustom.upgrade(at);
   }
 
+  static errorMap = new Map();
   static upgrade(at, Def) {
     //the single place to catch trigger errors.
+    //when triggers error, we add the error in the dom, so that it is trace
     try {
       Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
       if (Def instanceof Promise) {
         Object.setPrototypeOf(at, AttrUnknown.prototype);
-        Def.then(Def => AttrCustom.upgrade(at, Def));
+        Def.then(Def => AttrCustom.upgrade(at, Def))
+          .catch(err => { AttrCustom.errorMap.set(at, err); throw err; });
         return;
       }
       Object.setPrototypeOf(at, Def.prototype);
       at.upgrade?.();
       at.value && (at.value = at.value);
     } catch (err) {
-      throw new DoubleDots.TriggerUpgradeError(Def.name + ".upgrade() caused an error. Triggers shouldn't cause errors.");
+      AttrCustom.errorMap.set(at, err);
+      throw err;
     }
   }
 }
