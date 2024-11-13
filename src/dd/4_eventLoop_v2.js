@@ -4,6 +4,7 @@ class EventLoopError extends DoubleDots.DoubleDotsError { }
 DoubleDots.EventLoopError = EventLoopError;
 
 class MicroFrame {
+  static #ids = 0;
   #i = 0;
   #names;
   #inputs;
@@ -14,6 +15,19 @@ class MicroFrame {
     this.event = event;
     this.#names = this.at.reactions;
     this.#inputs = [event[Event.data] ?? event];
+    this.id = MicroFrame.#ids++;
+  }
+
+  get info() {
+    return {
+      id: this.id,
+      at: this.at,
+      document: this.document,
+      event: this.event,
+      names: this.#names,
+      inputs: this.#inputs,
+      i: this.#i
+    };
   }
 
   isConnected() {
@@ -122,36 +136,43 @@ class __EventLoop {
   #syncTask;
   task;
 
+  #sessionEnd() {
+    DoubleDots.cube?.("eventloop", this.#started.length ? this.#started.map(({ task }) => task.info) : this.task.info);
+    this.#started = [];
+  }
+
+  //todo clean the continue process. but do so after testing framework is up and running
   syncContinue() {
     this.task = this.#syncTask;
     this.#syncTask = this.task.run();
-    if (!this.#syncTask)
-      this.loop();
+    this.#loop();
   }
 
   //asyncContinue is allowed while we are waiting for the sync task
   asyncContinue(task) {
     (this.task = task).run(true);
+    this.#loop();
   }
 
-  loop() {
+  #loop() {
     while (!this.#syncTask && this.#stack[0]) {
       const { event, iterator } = this.#stack[0];
       for (let attr of iterator) {
         this.task = new MicroFrame(event, attr);
-        this.#started.push(this.task);
+        this.#started.push({ event, iterator, task: this.task });
         //if task.run() not emptied, abort to halt eventloop
         if (this.#syncTask = this.task.run())
-          return;
+          return this.#sessionEnd();
       }
       this.#stack.shift();
     }
+    return this.#sessionEnd();
   }
 
   batch(event, iterable) {
     const iterator = iterable[Symbol.iterator]();
     if (this.#stack.push({ event, iterator }) === 1)
-      this.loop();
+      this.#loop();
   }
 }
 
@@ -174,22 +195,11 @@ window.EventLoop = class EventLoop {
   };
 
   //todo freeze the SpreadReaction, Break.
-
-  get event() {
-    return __eventLoop.task?.event;
-  }
-
-  get attribute() {
-    return __eventLoop.task?.at;
-  }
-
-  get reaction() {
-    return __eventLoop.task?.getReaction();
-  }
-
-  get reactionIndex() {
-    return __eventLoop.task?.getReactionIndex();
-  }
+  get taskId() { return __eventLoop.task?.id ?? -1; }
+  get event() { return __eventLoop.task?.event; }
+  get attribute() { return __eventLoop.task?.at; }
+  get reaction() { return __eventLoop.task?.getReaction(); }
+  get reactionIndex() { return __eventLoop.task?.getReactionIndex() ?? -1; }
 
   dispatch(event, attr) {
     __eventLoop.batch(event, [attr]);

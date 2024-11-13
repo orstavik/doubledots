@@ -22,6 +22,14 @@ var __privateSet = (obj, member, value, setter) => {
   setter ? setter.call(obj, value) : member.set(obj, value);
   return value;
 };
+var __privateWrapper = (obj, member, setter, getter) => ({
+  set _(value) {
+    __privateSet(obj, member, value, setter);
+  },
+  get _() {
+    return __privateGet(obj, member, getter);
+  }
+});
 var __privateMethod = (obj, member, method) => {
   __accessCheck(obj, member, "access private method");
   return method;
@@ -212,7 +220,7 @@ window.DoubleDots = {
 };
 
 // src/dd/2_AttrCustom.js
-var _makeRT, makeRT_fn;
+var _makeRT, makeRT_fn, _ids;
 var _AttrCustom = class extends Attr {
   get trigger() {
     var _a2;
@@ -254,18 +262,27 @@ var _AttrCustom = class extends Attr {
       this.upgradeElementRoot(c);
   }
   static upgrade(at, Def) {
+    Object.defineProperty(
+      at,
+      "id",
+      { value: __privateWrapper(this, _ids)._++, writable: false, configurable: false, enumerable: true }
+    );
     try {
       Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
       if (Def instanceof Promise) {
         Object.setPrototypeOf(at, AttrUnknown.prototype);
-        Def.then((Def2) => _AttrCustom.upgrade(at, Def2));
+        Def.then((Def2) => _AttrCustom.upgrade(at, Def2)).catch((err) => {
+          _AttrCustom.errorMap.set(at, err);
+          throw err;
+        });
         return;
       }
       Object.setPrototypeOf(at, Def.prototype);
       at.upgrade?.();
       at.value && (at.value = at.value);
     } catch (err) {
-      throw new DoubleDots.TriggerUpgradeError(Def.name + ".upgrade() caused an error. Triggers shouldn't cause errors.");
+      _AttrCustom.errorMap.set(at, err);
+      throw err;
     }
   }
 };
@@ -279,11 +296,14 @@ makeRT_fn = function(at) {
     "reactions": { value: reactions, enumerable: true }
   });
 };
+_ids = new WeakMap();
 // Interface
 // set value(newValue) { const oldValue = super.value; super.value = newValue; ... }
 // upgrade(){ super.upgrade(); ... }
 // remove(){ ...; super.remove() }
 __privateAdd(AttrCustom2, _makeRT);
+__privateAdd(AttrCustom2, _ids, 0);
+__publicField(AttrCustom2, "errorMap", /* @__PURE__ */ new Map());
 var AttrImmutable = class extends AttrCustom2 {
   remove() {
   }
@@ -473,9 +493,44 @@ Object.assign(DoubleDots, {
   AsyncDefinitionError
 });
 var DefinitionsMap = class {
+  #root;
+  #type;
+  constructor(root, type) {
+    this.#root = root;
+    this.#type = type;
+  }
+  get root() {
+    return this.#root;
+  }
+  get type() {
+    return this.#type;
+  }
   #definitions = {};
   #rules = {};
-  // #ruleRE = new RegExp(" ", "g");
+  #setRule(prefix, Def) {
+    this.#rules[prefix] = Def;
+    DoubleDots.cube?.("defineRule", {
+      type: this.#type,
+      root: this.#root,
+      taskId: eventLoop.taskId,
+      reactionIndex: eventLoop.reactionIndex,
+      name: prefix,
+      Def: Def instanceof Promise ? "Promise" : Def.name || Def.toString()
+    });
+    return Def;
+  }
+  #setDef(name, Def) {
+    this.#definitions[name] = Def;
+    DoubleDots.cube?.("define", {
+      type: this.#type,
+      root: this.#root,
+      taskId: eventLoop.taskId,
+      reactionIndex: eventLoop.reactionIndex,
+      name,
+      Def: Def instanceof Promise ? "Promise" : Def.name || Def.toString()
+    });
+    return Def;
+  }
   defineRule(prefix, FunFun) {
     DefinitionNameError.check(prefix);
     for (let r of Object.keys(this.#rules))
@@ -484,8 +539,8 @@ var DefinitionsMap = class {
     for (let fullname2 of Object.keys(this.#definitions))
       if (fullname2.startsWith(prefix))
         throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname2}' exists.`);
-    this.#rules[prefix] = FunFun;
-    FunFun instanceof Promise && FunFun.then((newFunFun) => this.#rules[prefix] = newFunFun).catch((err) => this.#rules[prefix] = new AsyncDefinitionError(err, null, prefix));
+    this.#setRule(prefix, FunFun);
+    FunFun instanceof Promise && FunFun.then((newFunFun) => this.#setRule(prefix, newFunFun)).catch((err) => this.#setRule(prefix, new AsyncDefinitionError(err, null, prefix)));
   }
   define(fullname2, Def) {
     DefinitionNameError.check(fullname2);
@@ -494,20 +549,20 @@ var DefinitionsMap = class {
     for (let r of Object.keys(this.#rules))
       if (fullname2.startsWith(r))
         throw new DefinitionError(`name/rule conflict: trying to add '${fullname2}' when rule '${r}' exists.`);
-    this.#definitions[fullname2] = Def;
-    Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname2] = newDef).catch((err) => this.#definitions[fullname2] = new AsyncDefinitionError(err, fullname2));
+    this.#setDef(fullname2, Def);
+    Def instanceof Promise && Def.then((newDef) => this.#setDef(fullname2, newDef)).catch((err) => this.#setDef(fullname2, new AsyncDefinitionError(err, fullname2)));
   }
   #processRule(fullname2, rule, FunFun) {
     if (FunFun instanceof Promise)
-      return this.#definitions[fullname2] = FunFun.then((newFunFun) => (FunFun = newFunFun)(fullname2)).catch((err) => new AsyncDefinitionError(err, null, rule, null)).then((newDef) => this.#definitions[fullname2] = newDef).catch((err) => this.#definitions[fullname2] = new AsyncDefinitionError(err, fullname2, rule, FunFun));
+      return this.#definitions[fullname2] = FunFun.then((newFunFun) => (FunFun = newFunFun)(fullname2)).catch((err) => new AsyncDefinitionError(err, null, rule, null)).then((newDef) => this.#setDef(fullname2, newDef)).catch((err) => this.#setDef(fullname2, new AsyncDefinitionError(err, fullname2, rule, FunFun)));
     try {
       if (FunFun instanceof Error)
         throw FunFun;
-      const Def = this.#definitions[fullname2] = FunFun(fullname2);
-      Def instanceof Promise && Def.then((newDef) => this.#definitions[fullname2] = newDef).catch((err) => this.#definitions[fullname2] = new AsyncDefinitionError(err, fullname2, rule, FunFun));
+      const Def = this.#setDef(fullname2, FunFun(fullname2));
+      Def instanceof Promise && Def.then((newDef) => this.#setDef(fullname2, newDef)).catch((err) => this.#setDef(fullname2, new AsyncDefinitionError(err, fullname2, rule, FunFun)));
       return Def;
     } catch (err) {
-      throw this.#definitions[fullname2] = new DefinitionError(err, fullname2, rule, FunFun);
+      throw this.#setDef(fullname2, new DefinitionError(err, fullname2, rule, FunFun));
     }
   }
   #checkViaRule(fullname2) {
@@ -609,19 +664,6 @@ var DefinitionsMapLock = class extends UnknownDefinitionsMap {
   }
 };
 var DefinitionsMapDOM = class extends DefinitionsMapLock {
-  #root;
-  #type;
-  constructor(root, type) {
-    super();
-    this.#root = root;
-    this.#type = type;
-  }
-  get root() {
-    return this.#root;
-  }
-  get type() {
-    return this.#type;
-  }
   get parentMap() {
     return this.root.host?.getRootNode()?.[this.type];
   }
@@ -672,7 +714,7 @@ function TriggerSyntaxCheck(DefMap) {
 Object.defineProperties(Document.prototype, {
   Reactions: {
     get: function() {
-      const map = new UnknownDefinitionsMap();
+      const map = new UnknownDefinitionsMap(this, "Reactions");
       Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
       return map;
     }
@@ -681,7 +723,7 @@ Object.defineProperties(Document.prototype, {
     configurable: true,
     get: function() {
       const TriggerMap = TriggerSyntaxCheck(UnknownDefinitionsMap);
-      const map = new TriggerMap();
+      const map = new TriggerMap(this, "Triggers");
       Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
       return map;
     }
@@ -721,25 +763,40 @@ Event.data = Symbol("Event data");
 var EventLoopError = class extends DoubleDots.DoubleDotsError {
 };
 DoubleDots.EventLoopError = EventLoopError;
-var MicroFrame = class {
-  #i = 0;
-  #names;
-  #inputs;
+var _ids2, _i, _names, _inputs, _runError, runError_fn, _runSuccess, runSuccess_fn;
+var _MicroFrame = class {
   constructor(event, at) {
+    __privateAdd(this, _runError);
+    __privateAdd(this, _runSuccess);
+    __privateAdd(this, _i, 0);
+    __privateAdd(this, _names, void 0);
+    __privateAdd(this, _inputs, void 0);
     this.at = at;
     this.document = at.getRootNode();
     this.event = event;
-    this.#names = this.at.reactions;
-    this.#inputs = [event[Event.data] ?? event];
+    __privateSet(this, _names, this.at.reactions);
+    __privateSet(this, _inputs, [event[Event.data] ?? event]);
+    this.id = __privateWrapper(_MicroFrame, _ids2)._++;
+  }
+  get info() {
+    return {
+      id: this.id,
+      at: this.at,
+      document: this.document,
+      event: this.event,
+      names: __privateGet(this, _names),
+      inputs: __privateGet(this, _inputs),
+      i: __privateGet(this, _i)
+    };
   }
   isConnected() {
     return this.at.isConnected();
   }
   getReaction() {
-    return this.#i < this.#names.length ? this.#names[this.#i] : void 0;
+    return __privateGet(this, _i) < __privateGet(this, _names).length ? __privateGet(this, _names)[__privateGet(this, _i)] : void 0;
   }
   getReactionIndex() {
-    return this.#i < this.#names.length ? this.#i : -1;
+    return __privateGet(this, _i) < __privateGet(this, _names).length ? __privateGet(this, _i) : -1;
   }
   /**
    * @returns <undefined> when the task is emptied, or is awaiting in async mode, 
@@ -751,7 +808,7 @@ var MicroFrame = class {
     for (let re = this.getReaction(); re !== void 0; re = this.getReaction()) {
       if (re === "") {
         threadMode = true;
-        this.#runSuccess(this.#inputs[0]);
+        __privateMethod(this, _runSuccess, runSuccess_fn).call(this, __privateGet(this, _inputs)[0]);
         continue;
       }
       if (re.startsWith("catch"))
@@ -762,85 +819,102 @@ var MicroFrame = class {
         const func = this.document.Reactions.get(re, this.at);
         if (func instanceof Promise) {
           if (threadMode) {
-            func.then((_) => __eventLoop.asyncContinue(this)).catch((error) => this.#runError(error));
+            func.then((_) => __eventLoop.asyncContinue(this)).catch((error) => __privateMethod(this, _runError, runError_fn).call(this, error));
             return;
           } else if (func instanceof DoubleDots.UnknownDefinition) {
-            return this.#runError(new EventLoopError("Reaction not defined: " + re));
+            return __privateMethod(this, _runError, runError_fn).call(this, new EventLoopError("Reaction not defined: " + re));
           } else {
             func.then((_) => __eventLoop.syncContinue());
             return this;
           }
         }
-        const res = func.apply(this.at, this.#inputs);
-        this.#inputs.unshift(res);
+        const res = func.apply(this.at, __privateGet(this, _inputs));
+        __privateGet(this, _inputs).unshift(res);
         if (res instanceof Promise) {
           if (threadMode) {
-            res.then((oi) => this.#runSuccess(oi)).catch((error) => this.#runError(error)).finally((_) => __eventLoop.asyncContinue(this));
+            res.then((oi) => __privateMethod(this, _runSuccess, runSuccess_fn).call(this, oi)).catch((error) => __privateMethod(this, _runError, runError_fn).call(this, error)).finally((_) => __eventLoop.asyncContinue(this));
             return;
           } else {
-            res.then((oi) => this.#runSuccess(oi)).catch((error) => this.#runError(error)).finally((_) => __eventLoop.syncContinue());
+            res.then((oi) => __privateMethod(this, _runSuccess, runSuccess_fn).call(this, oi)).catch((error) => __privateMethod(this, _runError, runError_fn).call(this, error)).finally((_) => __eventLoop.syncContinue());
             return this;
           }
         }
-        this.#runSuccess(res);
+        __privateMethod(this, _runSuccess, runSuccess_fn).call(this, res);
       } catch (error) {
-        this.#runError(error);
+        __privateMethod(this, _runError, runError_fn).call(this, error);
       } finally {
       }
     }
   }
-  #runError(error) {
-    console.error(error);
-    this.#inputs[0] = error;
-    const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, "-$&").toLowerCase();
-    for (this.#i++; this.#i < this.#names.length; this.#i++)
-      if (this.#names[this.#i] === "catch" || this.#names[this.#i] === catchKebab)
-        return;
-    const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
-    target.dispatchEvent(new ErrorEvent("error", { error }));
-  }
-  #runSuccess(res) {
-    this.#inputs[0] = res;
-    this.#i = res === EventLoop.Break ? this.#names.length : this.#i + 1;
-  }
 };
+var MicroFrame = _MicroFrame;
+_ids2 = new WeakMap();
+_i = new WeakMap();
+_names = new WeakMap();
+_inputs = new WeakMap();
+_runError = new WeakSet();
+runError_fn = function(error) {
+  console.error(error);
+  __privateGet(this, _inputs)[0] = error;
+  const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, "-$&").toLowerCase();
+  for (__privateWrapper(this, _i)._++; __privateGet(this, _i) < __privateGet(this, _names).length; __privateWrapper(this, _i)._++)
+    if (__privateGet(this, _names)[__privateGet(this, _i)] === "catch" || __privateGet(this, _names)[__privateGet(this, _i)] === catchKebab)
+      return;
+  const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
+  target.dispatchEvent(new ErrorEvent("error", { error }));
+};
+_runSuccess = new WeakSet();
+runSuccess_fn = function(res) {
+  __privateGet(this, _inputs)[0] = res;
+  __privateSet(this, _i, res === EventLoop.Break ? __privateGet(this, _names).length : __privateGet(this, _i) + 1);
+};
+__privateAdd(MicroFrame, _ids2, 0);
 var __EventLoop = class {
   #stack = [];
   #started = [];
   #syncTask;
   task;
+  #sessionEnd() {
+    DoubleDots.cube?.("eventloop", this.#started.length ? this.#started.map(({ task }) => task.info) : this.task.info);
+    this.#started = [];
+  }
+  //todo clean the continue process. but do so after testing framework is up and running
   syncContinue() {
     this.task = this.#syncTask;
     this.#syncTask = this.task.run();
-    if (!this.#syncTask)
-      this.loop();
+    this.#loop();
   }
   //asyncContinue is allowed while we are waiting for the sync task
   asyncContinue(task) {
     (this.task = task).run(true);
+    this.#loop();
   }
-  loop() {
+  #loop() {
     while (!this.#syncTask && this.#stack[0]) {
       const { event, iterator } = this.#stack[0];
       for (let attr of iterator) {
         this.task = new MicroFrame(event, attr);
-        this.#started.push(this.task);
+        this.#started.push({ event, iterator, task: this.task });
         if (this.#syncTask = this.task.run())
-          return;
+          return this.#sessionEnd();
       }
       this.#stack.shift();
     }
+    return this.#sessionEnd();
   }
   batch(event, iterable) {
     const iterator = iterable[Symbol.iterator]();
     if (this.#stack.push({ event, iterator }) === 1)
-      this.loop();
+      this.#loop();
   }
 };
 __eventLoop = new __EventLoop();
 var _a;
 window.EventLoop = (_a = class {
   //todo freeze the SpreadReaction, Break.
+  get taskId() {
+    return __eventLoop.task?.id ?? -1;
+  }
   get event() {
     return __eventLoop.task?.event;
   }
@@ -851,7 +925,7 @@ window.EventLoop = (_a = class {
     return __eventLoop.task?.getReaction();
   }
   get reactionIndex() {
-    return __eventLoop.task?.getReactionIndex();
+    return __eventLoop.task?.getReactionIndex() ?? -1;
   }
   dispatch(event, attr) {
     __eventLoop.batch(event, [attr]);
@@ -1163,6 +1237,7 @@ function log(name, first, ...rest) {
 var funcs = {};
 for (let name of ["debug", "log", "info", "warn", "error"])
   funcs[name] = log.bind(null, name);
+funcs.cube = log.bind(null, "debug");
 
 // src/dd/8_strict_deprecation.js
 var BooleanOG = Boolean;

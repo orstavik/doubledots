@@ -64,8 +64,11 @@ class AttrCustom extends Attr {
     //       AttrCustom.upgrade(at);
   }
 
+  static #ids = 0;
   static errorMap = new Map();
   static upgrade(at, Def) {
+    Object.defineProperty(at, "id",
+      { value: this.#ids++, writable: false, configurable: false, enumerable: true });
     //the single place to catch trigger errors.
     //when triggers error, we add the error in the dom, so that it is trace
     try {

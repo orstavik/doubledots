@@ -45,9 +45,49 @@ Object.assign(DoubleDots, {
 
 class DefinitionsMap {
 
+  #root;
+  #type;
+  constructor(root, type) {
+    this.#root = root;
+    this.#type = type;
+  }
+
+  get root() {
+    return this.#root;
+  }
+
+  get type() {
+    return this.#type;
+  }
+
   #definitions = {};
   #rules = {};
-  // #ruleRE = new RegExp(" ", "g");
+
+  #setRule(prefix, Def) {
+    this.#rules[prefix] = Def;
+    DoubleDots.cube?.("defineRule", {
+      type: this.#type,
+      root: this.#root,
+      taskId: eventLoop.taskId,
+      reactionIndex: eventLoop.reactionIndex,
+      name: prefix,
+      Def: Def instanceof Promise ? "Promise" : Def.name || Def.toString()
+    });
+    return Def;
+  }
+
+  #setDef(name, Def) {
+    this.#definitions[name] = Def;
+    DoubleDots.cube?.("define", {
+      type: this.#type,
+      root: this.#root,
+      taskId: eventLoop.taskId,
+      reactionIndex: eventLoop.reactionIndex,
+      name,
+      Def: Def instanceof Promise ? "Promise" : Def.name || Def.toString()
+    });
+    return Def;
+  }
 
   defineRule(prefix, FunFun) {
     //FunFun can be either a Function that given the prefix will produce either a class or a Function.
@@ -60,10 +100,10 @@ class DefinitionsMap {
       if (fullname.startsWith(prefix))
         throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname}' exists.`);
     // this.#ruleRE = new RegExp(`^(${Object.keys(this.#rules).join("|")}).*`, "g");
-    this.#rules[prefix] = FunFun;
+    this.#setRule(prefix, FunFun);
     FunFun instanceof Promise && FunFun
-      .then(newFunFun => this.#rules[prefix] = newFunFun)
-      .catch(err => this.#rules[prefix] = new AsyncDefinitionError(err, null, prefix));
+      .then(newFunFun => this.#setRule(prefix, newFunFun))
+      .catch(err => this.#setRule(prefix, new AsyncDefinitionError(err, null, prefix)));
   }
 
   define(fullname, Def) {
@@ -75,10 +115,10 @@ class DefinitionsMap {
     for (let r of Object.keys(this.#rules))
       if (fullname.startsWith(r))
         throw new DefinitionError(`name/rule conflict: trying to add '${fullname}' when rule '${r}' exists.`);
-    this.#definitions[fullname] = Def;
+    this.#setDef(fullname, Def);
     Def instanceof Promise && Def
-      .then(newDef => this.#definitions[fullname] = newDef)
-      .catch(err => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname));
+      .then(newDef => this.#setDef(fullname, newDef))
+      .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname)));
   }
 
   #processRule(fullname, rule, FunFun) {
@@ -86,19 +126,19 @@ class DefinitionsMap {
       return this.#definitions[fullname] = FunFun
         .then(newFunFun => (FunFun = newFunFun)(fullname))
         .catch(err => new AsyncDefinitionError(err, null, rule, null))
-        .then(newDef => this.#definitions[fullname] = newDef)
-        .catch(err => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
+        .then(newDef => this.#setDef(fullname, newDef))
+        .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname, rule, FunFun)));
 
     try {
       if (FunFun instanceof Error)
         throw FunFun;
-      const Def = this.#definitions[fullname] = FunFun(fullname);
+      const Def = this.#setDef(fullname, FunFun(fullname));
       Def instanceof Promise && Def
-        .then(newDef => this.#definitions[fullname] = newDef)
-        .catch(err => this.#definitions[fullname] = new AsyncDefinitionError(err, fullname, rule, FunFun));
+        .then(newDef => this.#setDef(fullname, newDef))
+        .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname, rule, FunFun)));
       return Def;
     } catch (err) {
-      throw this.#definitions[fullname] = new DefinitionError(err, fullname, rule, FunFun);
+      throw this.#setDef(fullname, new DefinitionError(err, fullname, rule, FunFun));
     }
   }
 
@@ -229,22 +269,6 @@ class DefinitionsMapLock extends UnknownDefinitionsMap {
 
 //this map inherits
 class DefinitionsMapDOM extends DefinitionsMapLock {
-  #root;
-  #type;
-  constructor(root, type) {
-    super();
-    this.#root = root;
-    this.#type = type;
-  }
-
-  get root() {
-    return this.#root;
-  }
-
-  get type() {
-    return this.#type;
-  }
-
   get parentMap() {
     return this.root.host?.getRootNode()?.[this.type];
   }
@@ -314,7 +338,7 @@ function ReactionThisInArrowCheck(DefMap) { //todo add this to Reaction maps?
 Object.defineProperties(Document.prototype, {
   Reactions: {
     get: function () {
-      const map = new UnknownDefinitionsMap();
+      const map = new UnknownDefinitionsMap(this, "Reactions");
       Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
       return map;
     }
@@ -323,7 +347,7 @@ Object.defineProperties(Document.prototype, {
     configurable: true,
     get: function () {
       const TriggerMap = TriggerSyntaxCheck(UnknownDefinitionsMap);
-      const map = new TriggerMap();
+      const map = new TriggerMap(this, "Triggers");
       Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
       return map;
     }
