@@ -63,30 +63,14 @@ class DefinitionsMap {
   #definitions = {};
   #rules = {};
 
-  #setRule(prefix, Def) {
-    this.#rules[prefix] = Def;
-    DoubleDots.cube?.("defineRule", {
-      type: this.#type,
-      root: this.#root,
-      taskId: eventLoop.taskId,
-      reactionIndex: eventLoop.reactionIndex,
-      name: prefix,
-      Def: Def instanceof Promise ? "Promise" : Def.name || Def.toString()
-    });
-    return Def;
+  #setRule(name, Def) {
+    DoubleDots.cube?.("defineRule", { type: this.#type, root: this.#root, name, Def });
+    return this.#rules[name] = Def;
   }
 
   #setDef(name, Def) {
-    this.#definitions[name] = Def;
-    DoubleDots.cube?.("define", {
-      type: this.#type,
-      root: this.#root,
-      taskId: eventLoop.taskId,
-      reactionIndex: eventLoop.reactionIndex,
-      name,
-      Def: Def instanceof Promise ? "Promise" : Def.name || Def.toString()
-    });
-    return Def;
+    DoubleDots.cube?.("define", { type: this.#type, root: this.#root, name, Def });
+    return this.#definitions[name] = Def;
   }
 
   defineRule(prefix, FunFun) {

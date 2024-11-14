@@ -507,29 +507,13 @@ var DefinitionsMap = class {
   }
   #definitions = {};
   #rules = {};
-  #setRule(prefix, Def) {
-    this.#rules[prefix] = Def;
-    DoubleDots.cube?.("defineRule", {
-      type: this.#type,
-      root: this.#root,
-      taskId: eventLoop.taskId,
-      reactionIndex: eventLoop.reactionIndex,
-      name: prefix,
-      Def: Def instanceof Promise ? "Promise" : Def.name || Def.toString()
-    });
-    return Def;
+  #setRule(name, Def) {
+    DoubleDots.cube?.("defineRule", { type: this.#type, root: this.#root, name, Def });
+    return this.#rules[name] = Def;
   }
   #setDef(name, Def) {
-    this.#definitions[name] = Def;
-    DoubleDots.cube?.("define", {
-      type: this.#type,
-      root: this.#root,
-      taskId: eventLoop.taskId,
-      reactionIndex: eventLoop.reactionIndex,
-      name,
-      Def: Def instanceof Promise ? "Promise" : Def.name || Def.toString()
-    });
-    return Def;
+    DoubleDots.cube?.("define", { type: this.#type, root: this.#root, name, Def });
+    return this.#definitions[name] = Def;
   }
   defineRule(prefix, FunFun) {
     DefinitionNameError.check(prefix);
@@ -763,40 +747,34 @@ Event.data = Symbol("Event data");
 var EventLoopError = class extends DoubleDots.DoubleDotsError {
 };
 DoubleDots.EventLoopError = EventLoopError;
-var _ids2, _i, _names, _inputs, _runError, runError_fn, _runSuccess, runSuccess_fn;
-var _MicroFrame = class {
+var MicroFrame = class {
+  #i = 0;
+  #names;
+  #inputs;
   constructor(event, at) {
-    __privateAdd(this, _runError);
-    __privateAdd(this, _runSuccess);
-    __privateAdd(this, _i, 0);
-    __privateAdd(this, _names, void 0);
-    __privateAdd(this, _inputs, void 0);
     this.at = at;
     this.document = at.getRootNode();
     this.event = event;
-    __privateSet(this, _names, this.at.reactions);
-    __privateSet(this, _inputs, [event[Event.data] ?? event]);
-    this.id = __privateWrapper(_MicroFrame, _ids2)._++;
+    this.#names = this.at.reactions;
+    this.#inputs = [event[Event.data] ?? event];
   }
   get info() {
     return {
-      id: this.id,
       at: this.at,
-      document: this.document,
-      event: this.event,
-      names: __privateGet(this, _names),
-      inputs: __privateGet(this, _inputs),
-      i: __privateGet(this, _i)
+      reactions: this.#names,
+      i: this.#i,
+      inputs: this.#inputs,
+      document: this.document
     };
   }
   isConnected() {
     return this.at.isConnected();
   }
   getReaction() {
-    return __privateGet(this, _i) < __privateGet(this, _names).length ? __privateGet(this, _names)[__privateGet(this, _i)] : void 0;
+    return this.#names[this.#i];
   }
   getReactionIndex() {
-    return __privateGet(this, _i) < __privateGet(this, _names).length ? __privateGet(this, _i) : -1;
+    return this.#i;
   }
   /**
    * @returns <undefined> when the task is emptied, or is awaiting in async mode, 
@@ -808,7 +786,7 @@ var _MicroFrame = class {
     for (let re = this.getReaction(); re !== void 0; re = this.getReaction()) {
       if (re === "") {
         threadMode = true;
-        __privateMethod(this, _runSuccess, runSuccess_fn).call(this, __privateGet(this, _inputs)[0]);
+        this.#runSuccess(this.#inputs[0]);
         continue;
       }
       if (re.startsWith("catch"))
@@ -819,73 +797,62 @@ var _MicroFrame = class {
         const func = this.document.Reactions.get(re, this.at);
         if (func instanceof Promise) {
           if (threadMode) {
-            func.then((_) => __eventLoop.asyncContinue(this)).catch((error) => __privateMethod(this, _runError, runError_fn).call(this, error));
+            func.then((_) => __eventLoop.asyncContinue(this)).catch((error) => this.#runError(error));
             return;
           } else if (func instanceof DoubleDots.UnknownDefinition) {
-            return __privateMethod(this, _runError, runError_fn).call(this, new EventLoopError("Reaction not defined: " + re));
+            return this.#runError(new EventLoopError("Reaction not defined: " + re));
           } else {
             func.then((_) => __eventLoop.syncContinue());
             return this;
           }
         }
-        const res = func.apply(this.at, __privateGet(this, _inputs));
-        __privateGet(this, _inputs).unshift(res);
+        const res = func.apply(this.at, this.#inputs);
+        this.#inputs.unshift(res);
         if (res instanceof Promise) {
           if (threadMode) {
-            res.then((oi) => __privateMethod(this, _runSuccess, runSuccess_fn).call(this, oi)).catch((error) => __privateMethod(this, _runError, runError_fn).call(this, error)).finally((_) => __eventLoop.asyncContinue(this));
+            res.then((oi) => this.#runSuccess(oi)).catch((error) => this.#runError(error)).finally((_) => __eventLoop.asyncContinue(this));
             return;
           } else {
-            res.then((oi) => __privateMethod(this, _runSuccess, runSuccess_fn).call(this, oi)).catch((error) => __privateMethod(this, _runError, runError_fn).call(this, error)).finally((_) => __eventLoop.syncContinue());
+            res.then((oi) => this.#runSuccess(oi)).catch((error) => this.#runError(error)).finally((_) => __eventLoop.syncContinue());
             return this;
           }
         }
-        __privateMethod(this, _runSuccess, runSuccess_fn).call(this, res);
+        this.#runSuccess(res);
       } catch (error) {
-        __privateMethod(this, _runError, runError_fn).call(this, error);
+        this.#runError(error);
       } finally {
       }
     }
   }
+  #runError(error) {
+    console.error(error);
+    this.#inputs[0] = error;
+    const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, "-$&").toLowerCase();
+    for (this.#i++; this.#i < this.#names.length; this.#i++)
+      if (this.#names[this.#i] === "catch" || this.#names[this.#i] === catchKebab)
+        return;
+    const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
+    target.dispatchEvent(new ErrorEvent("error", { error }));
+  }
+  #runSuccess(res) {
+    this.#inputs[0] = res;
+    this.#i = res === EventLoop.Break ? this.#names.length : this.#i + 1;
+  }
 };
-var MicroFrame = _MicroFrame;
-_ids2 = new WeakMap();
-_i = new WeakMap();
-_names = new WeakMap();
-_inputs = new WeakMap();
-_runError = new WeakSet();
-runError_fn = function(error) {
-  console.error(error);
-  __privateGet(this, _inputs)[0] = error;
-  const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, "-$&").toLowerCase();
-  for (__privateWrapper(this, _i)._++; __privateGet(this, _i) < __privateGet(this, _names).length; __privateWrapper(this, _i)._++)
-    if (__privateGet(this, _names)[__privateGet(this, _i)] === "catch" || __privateGet(this, _names)[__privateGet(this, _i)] === catchKebab)
-      return;
-  const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
-  target.dispatchEvent(new ErrorEvent("error", { error }));
-};
-_runSuccess = new WeakSet();
-runSuccess_fn = function(res) {
-  __privateGet(this, _inputs)[0] = res;
-  __privateSet(this, _i, res === EventLoop.Break ? __privateGet(this, _names).length : __privateGet(this, _i) + 1);
-};
-__privateAdd(MicroFrame, _ids2, 0);
 var __EventLoop = class {
   #stack = [];
-  #started = [];
   #syncTask;
   task;
-  #sessionEnd() {
-    DoubleDots.cube?.("eventloop", this.#started.length ? this.#started.map(({ task }) => task.info) : this.task.info);
-    this.#started = [];
-  }
   //todo clean the continue process. but do so after testing framework is up and running
   syncContinue() {
     this.task = this.#syncTask;
+    DoubleDots.cube?.("task-sync", this.task);
     this.#syncTask = this.task.run();
     this.#loop();
   }
   //asyncContinue is allowed while we are waiting for the sync task
   asyncContinue(task) {
+    DoubleDots.cube?.("task-async", task);
     (this.task = task).run(true);
     this.#loop();
   }
@@ -894,27 +861,26 @@ var __EventLoop = class {
       const { event, iterator } = this.#stack[0];
       for (let attr of iterator) {
         this.task = new MicroFrame(event, attr);
-        this.#started.push({ event, iterator, task: this.task });
         if (this.#syncTask = this.task.run())
-          return this.#sessionEnd();
+          return DoubleDots.cube?.("task-sync-break", this.#syncTask);
+        DoubleDots.cube?.("task", this.task);
       }
       this.#stack.shift();
     }
-    return this.#sessionEnd();
+    return DoubleDots.cube?.("task-empty", {});
   }
   batch(event, iterable) {
     const iterator = iterable[Symbol.iterator]();
     if (this.#stack.push({ event, iterator }) === 1)
       this.#loop();
+    else
+      DoubleDots.cube?.("task-queued", {});
   }
 };
 __eventLoop = new __EventLoop();
 var _a;
 window.EventLoop = (_a = class {
   //todo freeze the SpreadReaction, Break.
-  get taskId() {
-    return __eventLoop.task?.id ?? -1;
-  }
   get event() {
     return __eventLoop.task?.event;
   }
@@ -1234,12 +1200,48 @@ function log(name, first, ...rest) {
   console[name](...rest);
   console.groupEnd();
 }
-var funcs = {
-  cube: log.bind(null, "debug"),
-  debugger: function(...args) {
-    console.log(this, ...args);
-    debugger;
+function setupCubes() {
+  const data = [];
+  let firstTime = function() {
+    console.log("DoubleDots.cubes();");
+    firstTime = void 0;
+  };
+  let i = 0;
+  const makeDocId = (doc) => doc === document ? "#document" : `${doc.host?.tagName}#${i++}`;
+  const eventInfo = (e) => `${e.type}#${e.timeStamp}`;
+  function cubeJson(k, v) {
+    return v instanceof Document || v instanceof ShadowRoot ? v.__uid ??= makeDocId(v) : v instanceof Promise ? `Promise#${v.__uid ??= i++}` : v instanceof Attr ? v.name : v instanceof Function ? v.name || v.toString() : v instanceof Event ? eventInfo(v) : v;
   }
+  function cubes() {
+    const data2 = data.reduce((res, [key, json], I) => {
+      const value = Object.assign({ I, key }, JSON.parse(json));
+      if (key.startsWith("task")) {
+        res.task.push(value);
+      } else if (key.startsWith("define")) {
+        const { I: I2, Def, root, type, key: key2, name } = value;
+        const reg = [root, type, key2].reduce((o, p) => o[p] ??= {}, res.defs);
+        (reg[name] ??= []).push({ I: I2, Def });
+      }
+      return res;
+    }, { task: [], defs: {} });
+    const { task, defs } = data2;
+    const viewCubeHtml = `
+    <pre>${task.map((t) => JSON.stringify(t, cubeJson)).join("\n")}</pre>
+    <pre>${JSON.stringify(defs, cubeJson, 2)}</pre>`;
+    const url = URL.createObjectURL(new Blob([viewCubeHtml], { type: "text/html" }));
+    window.open(url, "_blank");
+  }
+  function cube(key, value) {
+    firstTime?.();
+    log("debug", key, value);
+    data.push([key, JSON.stringify(value.info ?? value, cubeJson)]);
+  }
+  return { cube, cubes };
+}
+var funcs = setupCubes();
+funcs.debugger = function(...args) {
+  console.log(this, ...args);
+  debugger;
 };
 for (let name of ["debug", "log", "info", "warn", "error"])
   funcs[name] = log.bind(null, name);

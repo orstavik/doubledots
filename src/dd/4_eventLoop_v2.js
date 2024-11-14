@@ -1,10 +1,8 @@
-//.attachShadow(/*always open*/); is necessary to capture the full composedPath of customEvents.
 Event.data = Symbol("Event data");
 class EventLoopError extends DoubleDots.DoubleDotsError { }
 DoubleDots.EventLoopError = EventLoopError;
 
 class MicroFrame {
-  static #ids = 0;
   #i = 0;
   #names;
   #inputs;
@@ -15,18 +13,15 @@ class MicroFrame {
     this.event = event;
     this.#names = this.at.reactions;
     this.#inputs = [event[Event.data] ?? event];
-    this.id = MicroFrame.#ids++;
   }
 
   get info() {
     return {
-      id: this.id,
       at: this.at,
-      document: this.document,
-      event: this.event,
-      names: this.#names,
+      reactions: this.#names,
+      i: this.#i,
       inputs: this.#inputs,
-      i: this.#i
+      document: this.document
     };
   }
 
@@ -35,11 +30,11 @@ class MicroFrame {
   }
 
   getReaction() {
-    return this.#i < this.#names.length ? this.#names[this.#i] : undefined;
+    return this.#names[this.#i];
   }
 
   getReactionIndex() {
-    return this.#i < this.#names.length ? this.#i : -1;
+    return this.#i;
   }
 
   /**
@@ -132,24 +127,20 @@ class MicroFrame {
 
 class __EventLoop {
   #stack = [];
-  #started = [];
   #syncTask;
   task;
-
-  #sessionEnd() {
-    DoubleDots.cube?.("eventloop", this.#started.length ? this.#started.map(({ task }) => task.info) : this.task.info);
-    this.#started = [];
-  }
 
   //todo clean the continue process. but do so after testing framework is up and running
   syncContinue() {
     this.task = this.#syncTask;
+    DoubleDots.cube?.("task-sync", this.task);
     this.#syncTask = this.task.run();
     this.#loop();
   }
 
   //asyncContinue is allowed while we are waiting for the sync task
   asyncContinue(task) {
+    DoubleDots.cube?.("task-async", task);
     (this.task = task).run(true);
     this.#loop();
   }
@@ -159,20 +150,22 @@ class __EventLoop {
       const { event, iterator } = this.#stack[0];
       for (let attr of iterator) {
         this.task = new MicroFrame(event, attr);
-        this.#started.push({ event, iterator, task: this.task });
         //if task.run() not emptied, abort to halt eventloop
         if (this.#syncTask = this.task.run())
-          return this.#sessionEnd();
+          return DoubleDots.cube?.("task-sync-break", this.#syncTask);
+        DoubleDots.cube?.("task", this.task);
       }
       this.#stack.shift();
     }
-    return this.#sessionEnd();
+    return DoubleDots.cube?.("task-empty", {});
   }
 
   batch(event, iterable) {
     const iterator = iterable[Symbol.iterator]();
     if (this.#stack.push({ event, iterator }) === 1)
       this.#loop();
+    else
+      DoubleDots.cube?.("task-queued", {});
   }
 }
 
@@ -195,7 +188,6 @@ window.EventLoop = class EventLoop {
   };
 
   //todo freeze the SpreadReaction, Break.
-  get taskId() { return __eventLoop.task?.id ?? -1; }
   get event() { return __eventLoop.task?.event; }
   get attribute() { return __eventLoop.task?.at; }
   get reaction() { return __eventLoop.task?.getReaction(); }
