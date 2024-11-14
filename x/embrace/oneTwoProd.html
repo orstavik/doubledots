@@ -16,7 +16,7 @@
     embrace1_9_2: (args, v) => `${(v = args("should.not.happen")) === false || v === undefined ? "" : v}`
   };
 </script>
-<div id="embrace1" _::fetch_json:el.first-element-child:embrace="/x/pp/companies.json"><template>
+<div id="embrace1" _::fetch_json:embrace="/x/pp/companies.json"><template>
   <ul>
     <template for="company of $">
     <li>company #{{#company}}</li>

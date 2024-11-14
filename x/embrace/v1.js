@@ -179,10 +179,13 @@ function hashDebug(script, id) {
 }
 
 // :embrace
-export function embrace(templ, dataObject) {
+export function embrace(dataObject) {
   if (this.__embrace)
     return this.__embrace.run(dotScope(dataObject), 0, this.ownerElement);
   const id = this.ownerElement.id || "embrace";
+  const templ = this.ownerElement.firstElementChild;
+  if(!(templ instanceof HTMLTemplateElement))
+    throw new Error("This first element child of :embrace ownerElement must be a template");
   this.__embrace = parseTemplate(templ, id);
   if (window.Embrace?.[id])
     return this.__embrace.runFirst(this.ownerElement, dataObject, window.Embrace[id]);
