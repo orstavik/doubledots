@@ -67,8 +67,6 @@ class AttrCustom extends Attr {
   static #ids = 0;
   static errorMap = new Map();
   static upgrade(at, Def) {
-    Object.defineProperty(at, "id",
-      { value: this.#ids++, writable: false, configurable: false, enumerable: true });
     //the single place to catch trigger errors.
     //when triggers error, we add the error in the dom, so that it is trace
     try {
@@ -80,6 +78,8 @@ class AttrCustom extends Attr {
         return;
       }
       Object.setPrototypeOf(at, Def.prototype);
+      Object.defineProperty(at, "id",
+        { value: this.#ids++, writable: false, configurable: false, enumerable: true });
       at.upgrade?.();
       at.value && (at.value = at.value);
     } catch (err) {

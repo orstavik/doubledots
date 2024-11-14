@@ -262,11 +262,6 @@ var _AttrCustom = class extends Attr {
       this.upgradeElementRoot(c);
   }
   static upgrade(at, Def) {
-    Object.defineProperty(
-      at,
-      "id",
-      { value: __privateWrapper(this, _ids)._++, writable: false, configurable: false, enumerable: true }
-    );
     try {
       Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
       if (Def instanceof Promise) {
@@ -278,6 +273,11 @@ var _AttrCustom = class extends Attr {
         return;
       }
       Object.setPrototypeOf(at, Def.prototype);
+      Object.defineProperty(
+        at,
+        "id",
+        { value: __privateWrapper(this, _ids)._++, writable: false, configurable: false, enumerable: true }
+      );
       at.upgrade?.();
       at.value && (at.value = at.value);
     } catch (err) {
