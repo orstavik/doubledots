@@ -60,10 +60,8 @@ async function defineImpl(url, root) {
 };
 
 //_:define  => must be installed to enable the loading of doubledots triggers and reactions.
-function define() {
+export function define() {
   const src = this.ownerElement.getAttribute("src");
   const base = src ? new URL(src, location) : location;
   defineImpl(new URL(this.value, base), this.ownerDocument);
 }
-
-document.Reactions.define("define", define);

@@ -138,3 +138,9 @@ for (let [path, superior] of Object.entries(Specializers))
     monkeyPatch(path,
       verifyAndUpgrade(path.split(".").reduce((o, p) => o[p], window), verify));
 })();
+
+export function loadDoubleDots(aelOG) {
+  if (document.readyState !== "loading")
+    return AttrCustom.upgradeBranch(document.htmlElement);
+  aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));
+}

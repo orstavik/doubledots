@@ -1,4 +1,4 @@
-(function () {
+// (function () {
   const ElAppendOG = DoubleDots.nativeMethods("Element.prototype.append");
   const DocfragAppendOG = DoubleDots.nativeMethods("DocumentFragment.prototype.append");
   const CommentAfterOG = DoubleDots.nativeMethods("Comment.prototype.after");
@@ -84,7 +84,7 @@
     return `Replace the following element in your code:\n\n${el.outerHTML}`;
   }
 
-  class Template extends AttrCustom {
+  export class Template extends AttrCustom {
     upgrade(dynamic) {
       const el = this.ownerElement;
       if (el instanceof HTMLTemplateElement)
@@ -109,11 +109,9 @@
     }
   }
 
-  document.Triggers.define("template", Template);
 
   // todo this is no longer needed. We can now just use el.children.0
-  function template() {
+  export function template() {
     return this.ownerElement.children[0];
   }
-  document.Reactions.define("template", template);
-})();
+// })();

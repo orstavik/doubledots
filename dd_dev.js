@@ -1017,6 +1017,11 @@ for (let [path, superior] of Object.entries(Specializers))
       verifyAndUpgrade(path.split(".").reduce((o, p) => o[p], window), verify)
     );
 })();
+function loadDoubleDots(aelOG) {
+  if (document.readyState !== "loading")
+    return AttrCustom.upgradeBranch(document.htmlElement);
+  aelOG.call(document, "DOMContentLoaded", (_) => AttrCustom.upgradeBranch(document.documentElement));
+}
 
 // x/define/v1.js
 async function loadDef(url, lookup) {
@@ -1082,117 +1087,111 @@ function define() {
   const base = src ? new URL(src, location) : location;
   defineImpl(new URL(this.value, base), this.ownerDocument);
 }
-document.Reactions.define("define", define);
 
 // x/template/v1.js
-(function() {
-  const ElAppendOG = DoubleDots.nativeMethods("Element.prototype.append");
-  const DocfragAppendOG = DoubleDots.nativeMethods("DocumentFragment.prototype.append");
-  const CommentAfterOG = DoubleDots.nativeMethods("Comment.prototype.after");
-  const cloneNodeOG = DoubleDots.nativeMethods("Node.prototype.cloneNode");
-  const docCreateElOG = DoubleDots.nativeMethods("Document.prototype.createElement");
-  function setAttributes(el, txt) {
-    const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
-    pieces.forEach((unit, i) => {
-      if (i % 2 === 1) {
-        const [_, name, value] = unit.match(/^([_a-zA-Z][a-zA-Z0-9.:_-]*)="([^"]*)"$/);
-        el.setAttribute(name, value);
-      } else if (unit.trim() !== "") {
-        throw new SyntaxError(`<!--template ${txt}--> has an incorrect name="value"`);
+var ElAppendOG = DoubleDots.nativeMethods("Element.prototype.append");
+var DocfragAppendOG = DoubleDots.nativeMethods("DocumentFragment.prototype.append");
+var CommentAfterOG = DoubleDots.nativeMethods("Comment.prototype.after");
+var cloneNodeOG = DoubleDots.nativeMethods("Node.prototype.cloneNode");
+var docCreateElOG = DoubleDots.nativeMethods("Document.prototype.createElement");
+function setAttributes(el, txt) {
+  const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
+  pieces.forEach((unit, i) => {
+    if (i % 2 === 1) {
+      const [_, name, value] = unit.match(/^([_a-zA-Z][a-zA-Z0-9.:_-]*)="([^"]*)"$/);
+      el.setAttribute(name, value);
+    } else if (unit.trim() !== "") {
+      throw new SyntaxError(`<!--template ${txt}--> has an incorrect name="value"`);
+    }
+  });
+}
+function subsumeNodes(at) {
+  const el = at.ownerElement;
+  const t = docCreateElOG.call(document, "template");
+  setAttributes(t, at.value);
+  DocfragAppendOG.call(t.content, ...el.childNodes);
+  ElAppendOG.call(el, t);
+  return t;
+}
+function subsumeHtml(at) {
+  const el = at.ownerElement;
+  el.innerHTML = `<template ${at.value}>${el.innerHTML}</template>`;
+  return el.children[0];
+}
+function absorbNodes({ start, nodes, txt, end }) {
+  const t = docCreateElOG.call(document, "template");
+  setAttributes(t, txt);
+  DocfragAppendOG.call(t.content, ...nodes);
+  CommentAfterOG.call(start, t);
+  start.remove(), end?.remove();
+}
+function absorbHtml({ start, nodes, txt, end }) {
+  let content = "";
+  for (let n of nodes) {
+    content += n.outerHTML ?? n instanceof Comment ? `<!--${n.textContent}-->` : n.textContent;
+    n.remove();
+  }
+  start.insertAdjacentHTML("afterend", `<template ${txt}>${content}</template>`);
+  start.remove(), end?.remove();
+}
+function gobble(start) {
+  const txt = start.textContent.trim().slice(8);
+  const nodes = [];
+  for (let n = start; n = n.nextSibling; ) {
+    if (n instanceof Comment && n.textContent.trim() === "/template")
+      return { start, nodes, txt, end: n };
+    nodes.push(n);
+  }
+  return { start, nodes, txt };
+}
+function* templateTriggers(el, trigger) {
+  for (let n, it = document.createNodeIterator(el, NodeFilter.SHOW_ELEMENT); n = it.nextNode(); )
+    for (let a of n.attributes)
+      if (a.name.startsWith(trigger)) {
+        yield a;
+        break;
       }
-    });
-  }
-  function subsumeNodes(at) {
-    const el = at.ownerElement;
-    const t = docCreateElOG.call(document, "template");
-    setAttributes(t, at.value);
-    DocfragAppendOG.call(t.content, ...el.childNodes);
-    ElAppendOG.call(el, t);
-    return t;
-  }
-  function subsumeHtml(at) {
-    const el = at.ownerElement;
-    el.innerHTML = `<template ${at.value}>${el.innerHTML}</template>`;
-    return el.children[0];
-  }
-  function absorbNodes({ start, nodes, txt, end }) {
-    const t = docCreateElOG.call(document, "template");
-    setAttributes(t, txt);
-    DocfragAppendOG.call(t.content, ...nodes);
-    CommentAfterOG.call(start, t);
-    start.remove(), end?.remove();
-  }
-  function absorbHtml({ start, nodes, txt, end }) {
-    let content = "";
-    for (let n of nodes) {
-      content += n.outerHTML ?? n instanceof Comment ? `<!--${n.textContent}-->` : n.textContent;
-      n.remove();
-    }
-    start.insertAdjacentHTML("afterend", `<template ${txt}>${content}</template>`);
-    start.remove(), end?.remove();
-  }
-  function gobble(start) {
-    const txt = start.textContent.trim().slice(8);
-    const nodes = [];
-    for (let n = start; n = n.nextSibling; ) {
-      if (n instanceof Comment && n.textContent.trim() === "/template")
-        return { start, nodes, txt, end: n };
-      nodes.push(n);
-    }
-    return { start, nodes, txt };
-  }
-  function* templateTriggers(el, trigger) {
-    for (let n, it = document.createNodeIterator(el, NodeFilter.SHOW_ELEMENT); n = it.nextNode(); )
-      for (let a of n.attributes)
-        if (a.name.startsWith(trigger)) {
-          yield a;
-          break;
-        }
-  }
-  function* templateCommentStarts(root) {
-    for (let n, it = document.createNodeIterator(root, NodeFilter.SHOW_COMMENT); n = it.nextNode(); )
-      if (n.textContent.match(/^\s*template(\s|$)/))
-        yield n;
-  }
-  function hashDebug(el) {
-    el = cloneNodeOG.call(el, true);
-    for (let a of el.attributes)
-      if (a.name.startsWith("template:"))
-        el.removeAttribute(a.name);
-    return `Replace the following element in your code:
+}
+function* templateCommentStarts(root) {
+  for (let n, it = document.createNodeIterator(root, NodeFilter.SHOW_COMMENT); n = it.nextNode(); )
+    if (n.textContent.match(/^\s*template(\s|$)/))
+      yield n;
+}
+function hashDebug(el) {
+  el = cloneNodeOG.call(el, true);
+  for (let a of el.attributes)
+    if (a.name.startsWith("template:"))
+      el.removeAttribute(a.name);
+  return `Replace the following element in your code:
 
 ${el.outerHTML}`;
+}
+var Template = class extends AttrCustom {
+  upgrade(dynamic) {
+    const el = this.ownerElement;
+    if (el instanceof HTMLTemplateElement)
+      throw new Error("template trigger cannot be applied to template elements.");
+    if (!el.childNodes.length === 0 || el.children.length === 1 && el.children[0] instanceof HTMLTemplateElement)
+      return;
+    const subsume = dynamic ? subsumeHtml : subsumeNodes;
+    const absorb = dynamic ? absorbHtml : absorbNodes;
+    const attributes = [...templateTriggers(el, this.trigger + ":")].reverse();
+    const templates = attributes.map(subsume);
+    for (let t of templates)
+      for (let comment of [...templateCommentStarts(t.content)].reverse())
+        absorb(gobble(comment));
+    DoubleDots.log?.("template: production tutorial", hashDebug(el));
   }
-  class Template extends AttrCustom {
-    upgrade(dynamic) {
-      const el = this.ownerElement;
-      if (el instanceof HTMLTemplateElement)
-        throw new Error("template trigger cannot be applied to template elements.");
-      if (!el.childNodes.length === 0 || el.children.length === 1 && el.children[0] instanceof HTMLTemplateElement)
-        return;
-      const subsume = dynamic ? subsumeHtml : subsumeNodes;
-      const absorb = dynamic ? absorbHtml : absorbNodes;
-      const attributes = [...templateTriggers(el, this.trigger + ":")].reverse();
-      const templates = attributes.map(subsume);
-      for (let t of templates)
-        for (let comment of [...templateCommentStarts(t.content)].reverse())
-          absorb(gobble(comment));
-      DoubleDots.log?.("template: production tutorial", hashDebug(el));
-    }
-  }
-  document.Triggers.define("template", Template);
-  function template() {
-    return this.ownerElement.children[0];
-  }
-  document.Reactions.define("template", template);
-})();
+};
+function template() {
+  return this.ownerElement.children[0];
+}
 
-// src/dd/6_run_DoubleDots.js
-(function(aelOG) {
-  if (document.readyState !== "loading")
-    return AttrCustom.upgradeBranch(document.htmlElement);
-  aelOG.call(document, "DOMContentLoaded", (_) => AttrCustom.upgradeBranch(document.documentElement));
-})(EventTarget.prototype.addEventListener);
+// src/dd/dd.js
+document.Triggers.define("template", Template);
+document.Reactions.define("template", template);
+document.Reactions.define("define", define);
+loadDoubleDots(EventTarget.prototype.addEventListener);
 
 // src/dd/7_logging.js
 function log(name, first, ...rest) {
@@ -1200,45 +1199,7 @@ function log(name, first, ...rest) {
   console[name](...rest);
   console.groupEnd();
 }
-function setupCubes() {
-  const data = [];
-  let firstTime = function() {
-    console.log("DoubleDots.cubes();");
-    firstTime = void 0;
-  };
-  let i = 0;
-  const makeDocId = (doc) => doc === document ? "#document" : `${doc.host?.tagName}#${i++}`;
-  const eventInfo = (e) => `${e.type}#${e.timeStamp}`;
-  function cubeJson(k, v) {
-    return v instanceof Document || v instanceof ShadowRoot ? v.__uid ??= makeDocId(v) : v instanceof Promise ? `Promise#${v.__uid ??= i++}` : v instanceof Attr ? v.name : v instanceof Function ? v.name || v.toString() : v instanceof Event ? eventInfo(v) : v;
-  }
-  function cubes() {
-    const data2 = data.reduce((res, [key, json], I) => {
-      const value = Object.assign({ I, key }, JSON.parse(json));
-      if (key.startsWith("task")) {
-        res.task.push(value);
-      } else if (key.startsWith("define")) {
-        const { I: I2, Def, root, type, key: key2, name } = value;
-        const reg = [root, type, key2].reduce((o, p) => o[p] ??= {}, res.defs);
-        (reg[name] ??= []).push({ I: I2, Def });
-      }
-      return res;
-    }, { task: [], defs: {} });
-    const { task, defs } = data2;
-    const viewCubeHtml = `
-    <pre>${task.map((t) => JSON.stringify(t, cubeJson)).join("\n")}</pre>
-    <pre>${JSON.stringify(defs, cubeJson, 2)}</pre>`;
-    const url = URL.createObjectURL(new Blob([viewCubeHtml], { type: "text/html" }));
-    window.open(url, "_blank");
-  }
-  function cube(key, value) {
-    firstTime?.();
-    log("debug", key, value);
-    data.push([key, JSON.stringify(value.info ?? value, cubeJson)]);
-  }
-  return { cube, cubes };
-}
-var funcs = setupCubes();
+var funcs = {};
 funcs.debugger = function(...args) {
   console.log(this, ...args);
   debugger;
@@ -1316,7 +1277,59 @@ var DoubleDotDeprecated = {
   "Node.prototype.cloneNode": d
 };
 
+// x/cube/v1.js
+console.log("DoubleDots.cubes();");
+var data = [];
+var _i = 0;
+function makeDocId(doc) {
+  return doc === document ? "#document" : `${doc.host?.tagName}#${_i++}`;
+}
+var eventInfo = (e) => `${e.type}#${e.timeStamp}`;
+function stringifyCube(k, v) {
+  return v instanceof Document || v instanceof ShadowRoot ? v.__uid ??= makeDocId(v) : v instanceof Promise ? `Promise#${v.__uid ??= _i++}` : v instanceof Attr ? v.name : v instanceof Function ? v.name || v.toString() : v instanceof Event ? eventInfo(v) : v;
+}
+function cube(key, value) {
+  data.push([key, JSON.stringify(value.info ?? value, stringifyCube)]);
+}
+function cubeToHtml(data2) {
+  return `
+<view-cube>${JSON.stringify(data2)}</view-cube>
+<script type="module">
+import {ViewCube} from "http://localhost:3003/x/cube/v1.js";
+customElements.define("view-cube", ViewCube);
+<\/script>`;
+}
+function cubes() {
+  const url = URL.createObjectURL(new Blob([cubeToHtml(data)], { type: "text/html" }));
+  window.open(url, "_blank");
+}
+var ViewCube = class extends HTMLElement {
+  static parseCube(data2) {
+    return data2.reduce((res, [key, json], I) => {
+      const value = Object.assign({ I, key }, JSON.parse(json));
+      if (key.startsWith("task")) {
+        res.task.push(value);
+      } else if (key.startsWith("define")) {
+        const { I: I2, Def, root, type, key: key2, name } = value;
+        const reg = [root, type, key2].reduce((o, p) => o[p] ??= {}, res.defs);
+        (reg[name] ??= []).push({ I: I2, Def });
+      }
+      return res;
+    }, { task: [], defs: {} });
+  }
+  connectedCallback() {
+    const data2 = JSON.parse(this.textContent);
+    const { task, defs } = ViewCube.parseCube(data2);
+    const viewCubeHtml = `
+    <pre>${task.map((t) => JSON.stringify(t, stringifyCube)).join("\n")}</pre>
+    <pre>${JSON.stringify(defs, stringifyCube, 2)}</pre>`;
+    this.attachShadow({ mode: "open" }).innerHTML = viewCubeHtml;
+  }
+};
+
 // src/dd/dd_dev.js
+customElements.define("view-cube", ViewCube);
+Object.assign(funcs, { cube, cubes });
 Object.assign(DoubleDots, funcs);
 for (let [name, func] of Object.entries(funcs))
   document.Reactions.define(name, func);
