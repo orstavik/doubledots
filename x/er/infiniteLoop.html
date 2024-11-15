@@ -1,0 +1,19 @@
+<script src="https://cdn.jsdelivr.net/gh/orstavik/doubledots@main24.11.14.09/dd.js"></script>
+<script type="module" src="https://cdn.jsdelivr.net/gh/orstavik/doubledots@main24.11.14.09/ddx.js?fetch_json&ER&oi.~"
+  _:define></script>
+
+<script>
+  document.Reactions.define("log", (...args) => console.log(...args));
+  document.Reactions.define("get", er => {
+    console.log(er);
+    //todo this is going to break, infinite, because resolve() will exceed max recursion stack depth.
+    try {
+      const pojo = er.resolve("page/directory");
+      return pojo;
+    } catch (err) {
+      return err;
+    }
+  });
+</script>
+
+<div template: _::fetch_json:er="companiesCyclical.json" er:oi.er:get:log></div>

@@ -1,0 +1,150 @@
+{
+  "company/acme": {
+    "type": "company",
+    "slug": "acme",
+    "name": "Acme Corp",
+    "description": "A leading innovation company specializing in advanced technology.",
+    "departments": [
+      "department/research-development",
+      "department/marketing"
+    ],
+    "thumbnail": "https://example.com/images/acme-logo.png"
+  },
+  "company/globex": {
+    "type": "company",
+    "slug": "globex",
+    "name": "Globex Corporation",
+    "description": "A global conglomerate with diverse business ventures.",
+    "departments": [
+      "department/engineering",
+      "department/sales"
+    ],
+    "thumbnail": "https://example.com/images/globex-logo.png"
+  },
+  "department/research-development": {
+    "type": "department",
+    "slug": "research-development",
+    "name": "Research and Development",
+    "manager": "employee/bobby-jones",
+    "employees": [
+      "employee/bobby-jones",
+      "employee/alice-smith",
+      "employee/jensen-lee"
+    ],
+    "description": "Department focusing on new product innovations and technology advancement."
+  },
+  "department/marketing": {
+    "type": "department",
+    "slug": "marketing",
+    "name": "Marketing",
+    "manager": "employee/clark-kent",
+    "employees": [
+      "employee/clark-kent",
+      "employee/diana-prince",
+      "employee/bruce-wayne"
+    ],
+    "description": "Department responsible for brand promotion and market research."
+  },
+  "employee/bobby-jones": {
+    "type": "employee",
+    "slug": "bobby-jones",
+    "name": "Bobby Jones",
+    "role": "Manager",
+    "phone": "12345",
+    "email": "bobby.jones@acme.com",
+    "associates": [
+      "employee/alice-smith",
+      "employee/jensen-lee"
+    ]
+  },
+  "employee/alice-smith": {
+    "type": "employee",
+    "slug": "alice-smith",
+    "name": "Alice Smith",
+    "role": "Engineer",
+    "phone": "67890",
+    "email": "alice.smith@acme.com",
+    "associates": []
+  },
+  "employee/jensen-lee": {
+    "type": "employee",
+    "slug": "jensen-lee",
+    "name": "Jensen Lee",
+    "role": "Technician",
+    "phone": "54321",
+    "email": "jensen.lee@acme.com",
+    "associates": []
+  },
+  "employee/clark-kent": {
+    "type": "employee",
+    "slug": "clark-kent",
+    "name": "Clark Kent",
+    "role": "Manager",
+    "phone": "555-0001",
+    "email": "clark.kent@globex.com",
+    "associates": [
+      "employee/diana-prince",
+      "employee/bruce-wayne"
+    ]
+  },
+  "employee/diana-prince": {
+    "type": "employee",
+    "slug": "diana-prince",
+    "name": "Diana Prince",
+    "role": "Strategist",
+    "phone": "555-0002",
+    "email": "diana.prince@globex.com",
+    "associates": [
+      "employee/clark-kent"
+    ]
+  },
+  "employee/bruce-wayne": {
+    "type": "employee",
+    "slug": "bruce-wayne",
+    "name": "Bruce Wayne",
+    "role": "Analyst",
+    "phone": "555-0003",
+    "email": "bruce.wayne@globex.com",
+    "associates": [
+      "employee/clark-kent"
+    ]
+  },
+  "page/directory": {
+    "type": "page",
+    "slug": "directory",
+    "title": "Company Directory",
+    "description": "Overview of companies and their departments",
+    "featured": [
+      "company/acme",
+      "company/globex"
+    ],
+    "lists": [
+      "list/research",
+      "list/marketing"
+    ]
+  },
+  "list/research": {
+    "type": "list",
+    "slug": "research",
+    "title": "Research and Development",
+    "subtitle": "Innovative Projects",
+    "items": [
+      "department/research-development",
+      "employee/bobby-jones",
+      "employee/alice-smith",
+      "employee/jensen-lee"
+    ]
+  },
+  "list/marketing": {
+    "type": "list",
+    "slug": "marketing",
+    "title": "Marketing Department",
+    "subtitle": "Promoting the Brand",
+    "items": [
+      "department/marketing",
+      "employee/clark-kent",
+      "employee/diana-prince",
+      "employee/bruce-wayne"
+    ]
+  }
+}
