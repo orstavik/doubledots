@@ -1183,10 +1183,17 @@ function template() {
   return this.ownerElement.children[0];
 }
 
+// x/wait/v1.js
+function wait_(rule) {
+  const [_, ms] = rule.split("_");
+  return (arg) => new Promise((r) => setTimeout((_2) => r(arg), ms));
+}
+
 // src/dd/dd.js
 document.Triggers.define("template", Template);
 document.Reactions.define("template", template);
 document.Reactions.define("define", define);
+document.Reactions.defineRule("wait_", wait_);
 loadDoubleDots(EventTarget.prototype.addEventListener);
 
 // src/dd/7_logging.js

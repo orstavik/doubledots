@@ -165,7 +165,7 @@ var LoopCube = class {
         embraces[n] = oldEmbraces[o];
       } else {
         changed.push(n);
-        embraces[n] = unused.length ? oldEmbraces[unused.pop()] : this.embrace.clone();
+        embraces[n] = unused.length ? oldEmbraces[unused.shift()] : this.embrace.clone();
       }
     }
     this.nowEmbraces = embraces;
@@ -295,7 +295,8 @@ var EmbraceCommentFor = class {
     for (let em of removes)
       for (let n of em.topNodes)
         n.remove();
-    node.before(...embraces.map((em) => em.template));
+    for (let em of embraces)
+      node.before(...em.topNodes);
     for (let i of changed) {
       const subScope = { [this.iName]: i };
       if (inMode) {
@@ -375,21 +376,22 @@ function hashDebug(script, id) {
 <\/script>`;
 }
 function embrace(dataObject) {
-  if (this.__embrace)
-    return this.__embrace.run(dotScope(dataObject), 0, this.ownerElement);
+  let em = this.ownerElement.__embrace;
+  if (em)
+    return em.run(dotScope(dataObject), 0, this.ownerElement);
   const id = this.ownerElement.id || "embrace";
   const templ = this.ownerElement.firstElementChild;
   if (!(templ instanceof HTMLTemplateElement))
     throw new Error("This first element child of :embrace ownerElement must be a template");
-  this.__embrace = parseTemplate(templ, id);
+  em = this.ownerElement.__embrace = parseTemplate(templ, id);
   if (window.Embrace?.[id])
-    return this.__embrace.runFirst(this.ownerElement, dataObject, window.Embrace[id]);
-  const funcs = extractFuncs(this.__embrace);
+    return em.runFirst(this.ownerElement, dataObject, window.Embrace[id]);
+  const funcs = extractFuncs(em);
   const script = "{\n" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(",\n") + "\n}";
   DoubleDots.importBasedEval(script).then((funcs2) => {
     DoubleDots.log?.(":embrace production", hashDebug(script, id));
     (window.Embrace ??= {})[id] = funcs2;
-    this.__embrace.runFirst(this.ownerElement, dataObject, funcs2);
+    em.runFirst(this.ownerElement, dataObject, funcs2);
   });
 }
 
@@ -492,8 +494,12 @@ var ErEvent = class extends Event {
     this.er = new ER(er2);
   }
 };
+var lastPosts = {};
 function er(posts) {
-  eventLoop.dispatchBatch(new ErEvent("er", posts), triggers2);
+  eventLoop.dispatchBatch(new ErEvent("er", lastPosts = posts), triggers2);
+}
+function erGet() {
+  return new ER(lastPosts);
 }
 
 // x/fetch/v1.js
@@ -569,6 +575,7 @@ export {
   dynamicDots as dynamicsDots,
   embrace,
   er,
+  erGet,
   fetch_json,
   fetch_text,
   nav,

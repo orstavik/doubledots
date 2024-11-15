@@ -49,6 +49,11 @@ class ErEvent extends Event {
   }
 }
 
+let lastPosts = {};
 export function er(posts) {
-  eventLoop.dispatchBatch(new ErEvent("er", posts), triggers);
+  eventLoop.dispatchBatch(new ErEvent("er", lastPosts = posts), triggers);
+}
+
+export function erGet(){
+  return new ER(lastPosts);
 }

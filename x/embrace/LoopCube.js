@@ -36,7 +36,7 @@ export class LoopCube {
         embraces[n] = oldEmbraces[o];
       } else {
         changed.push(n);
-        embraces[n] = unused.length ? oldEmbraces[unused.pop()] : this.embrace.clone();
+        embraces[n] = unused.length ? oldEmbraces[unused.shift()] : this.embrace.clone();
       }
     }
     this.nowEmbraces = embraces;
