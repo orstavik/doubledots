@@ -82,30 +82,33 @@ function state_(rule) {
 // x/nav/v1.js
 var triggers = new DoubleDots.AttrWeakSet();
 var active;
+var LocationEvent = class extends Event {
+  constructor() {
+    super("location");
+  }
+  get [Event.data]() {
+    return location;
+  }
+};
 var Nav = class extends AttrCustom {
   upgrade() {
     if (!active) {
-      for (let e2 of ["click", "popstate"])
-        document.documentElement.setAttribute(`${e2}:${this.trigger}`);
+      for (let e of ["click", "popstate"])
+        document.documentElement.setAttribute(`${e}:${this.trigger}`);
       active = true;
     }
     triggers.add(this);
-    const e = Object.assign(new Event("nav"), { location });
-    this.dispatchEvent(e);
+    this.dispatchEvent(new LocationEvent());
   }
   remove() {
     triggers.delete(this);
   }
 };
-function triggerNavs() {
-  const e2 = Object.assign(new Event("nav"), { location });
-  eventLoop.dispatchBatch(e2, [...triggers]);
-}
 function nav(e) {
   if (typeof e === "string") {
     const url = new URL(e, location.href);
     history.pushState(null, null, url.href);
-    return triggerNavs();
+    return eventLoop.dispatchBatch(new LocationEvent(), triggers);
   }
   if (!triggers.size) {
     for (let e2 of ["click", "popstate", "hashchange"])
@@ -124,7 +127,7 @@ function nav(e) {
     history.pushState(null, null, a.href);
     e.preventDefault();
   }
-  triggerNavs();
+  eventLoop.dispatchBatch(new LocationEvent(), triggers);
 }
 
 // x/embrace/LoopCube.js
@@ -492,6 +495,9 @@ var ErEvent = class extends Event {
   constructor(type, er2) {
     super(type);
     this.er = new ER(er2);
+  }
+  get [Event.data]() {
+    return this.er;
   }
 };
 var lastPosts = {};

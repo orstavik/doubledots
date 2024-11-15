@@ -1,10 +1,9 @@
-<script src="/dd.js"></script>
-<!-- todo fix the bug when empty script -->
-<script type="module" src="/ddx.js?Click&Popstate" _:define></script>
+<script src="/dd_dev.js"></script>
+
+<script type="module" src="/ddx.js?Click&Popstate&Hashchange" _:define></script>
 <script type="module" src="./v1.js?NAV" _:define></script>
 
 <script>
-  document.Reactions.define("log", console.log);
   document.Reactions.define("new-link", _ => "one/two/three");
 </script>
 

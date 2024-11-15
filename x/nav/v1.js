@@ -1,6 +1,15 @@
 const triggers = new DoubleDots.AttrWeakSet();
 let active;
 
+class LocationEvent extends Event {
+  constructor() {
+    super("location");
+  }
+  get [Event.data]() {
+    return location;
+  }
+}
+
 export class Nav extends AttrCustom {
   upgrade() {
     if (!active) {
@@ -10,24 +19,18 @@ export class Nav extends AttrCustom {
     }
 
     triggers.add(this);
-    const e = Object.assign(new Event("nav"), { location });
-    this.dispatchEvent(e);
+    this.dispatchEvent(new LocationEvent());
   }
   remove() {
     triggers.delete(this);
   }
 }
 
-function triggerNavs() {
-  const e2 = Object.assign(new Event("nav"), { location });
-  eventLoop.dispatchBatch(e2, [...triggers]);
-}
-
 export function nav(e) {
   if (typeof e === "string") {
     const url = new URL(e, location.href);
     history.pushState(null, null, url.href);
-    return triggerNavs();
+    return eventLoop.dispatchBatch(new LocationEvent(), triggers);
   }
   if (!triggers.size) {
     for (let e of ["click", "popstate", "hashchange"])
@@ -47,5 +50,5 @@ export function nav(e) {
     history.pushState(null, null, a.href);
     e.preventDefault();
   }
-  triggerNavs();
+  eventLoop.dispatchBatch(new LocationEvent(), triggers);
 }
