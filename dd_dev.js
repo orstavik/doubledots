@@ -222,13 +222,17 @@ window.DoubleDots = {
 // src/dd/2_AttrCustom.js
 var _makeRT, makeRT_fn, _ids;
 var _AttrCustom = class extends Attr {
+  toJSON() {
+    const { id, trigger, reactions, value, initDocument } = this;
+    return { id, trigger, reactions, value, initDocument };
+  }
   get trigger() {
-    var _a2;
-    return __privateMethod(_a2 = _AttrCustom, _makeRT, makeRT_fn).call(_a2, this), this.trigger;
+    var _a;
+    return __privateMethod(_a = _AttrCustom, _makeRT, makeRT_fn).call(_a, this), this.trigger;
   }
   get reactions() {
-    var _a2;
-    return __privateMethod(_a2 = _AttrCustom, _makeRT, makeRT_fn).call(_a2, this), this.reactions;
+    var _a;
+    return __privateMethod(_a = _AttrCustom, _makeRT, makeRT_fn).call(_a, this), this.reactions;
   }
   isConnected() {
     return this.ownerElement.isConnected();
@@ -273,11 +277,10 @@ var _AttrCustom = class extends Attr {
         return;
       }
       Object.setPrototypeOf(at, Def.prototype);
-      Object.defineProperty(
-        at,
-        "id",
-        { value: __privateWrapper(this, _ids)._++, writable: false, configurable: false, enumerable: true }
-      );
+      Object.defineProperties(at, {
+        "id": { value: __privateWrapper(this, _ids)._++, enumerable: true },
+        "initDocument": { value: at.getRootNode(), enumerable: true }
+      });
       at.upgrade?.();
       at.value && (at.value = at.value);
     } catch (err) {
@@ -293,7 +296,7 @@ makeRT_fn = function(at) {
   reactions.length === 1 && !reactions[0] && reactions.pop();
   Object.defineProperties(at, {
     "trigger": { value: trigger, enumerable: true },
-    "reactions": { value: reactions, enumerable: true }
+    "reactions": { value: Object.freeze(reactions), enumerable: true }
   });
 };
 _ids = new WeakMap();
@@ -746,32 +749,22 @@ Object.assign(DoubleDots, {
 Event.data = Symbol("Event data");
 var EventLoopError = class extends DoubleDots.DoubleDotsError {
 };
-DoubleDots.EventLoopError = EventLoopError;
 var MicroFrame = class {
   #i = 0;
-  #names;
   #inputs;
   constructor(event, at) {
     this.at = at;
-    this.document = at.getRootNode();
     this.event = event;
-    this.#names = this.at.reactions;
     this.#inputs = [event[Event.data] ?? event];
   }
-  get info() {
-    return {
-      at: this.at,
-      reactions: this.#names,
-      i: this.#i,
-      inputs: this.#inputs,
-      document: this.document
-    };
+  toJSON() {
+    return { at: this.at, event: this.event, inputs: this.#inputs, i: this.#i };
   }
   isConnected() {
     return this.at.isConnected();
   }
   getReaction() {
-    return this.#names[this.#i];
+    return this.at.reactions[this.#i];
   }
   getReactionIndex() {
     return this.#i;
@@ -794,7 +787,7 @@ var MicroFrame = class {
       try {
         if (!this.at.isConnected)
           throw new EventLoopError("Disconnected: " + this.at);
-        const func = this.document.Reactions.get(re, this.at);
+        const func = this.at.initDocument.Reactions.get(re, this.at);
         if (func instanceof Promise) {
           if (threadMode) {
             func.then((_) => __eventLoop.asyncContinue(this)).catch((error) => this.#runError(error));
@@ -828,15 +821,15 @@ var MicroFrame = class {
     console.error(error);
     this.#inputs[0] = error;
     const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, "-$&").toLowerCase();
-    for (this.#i++; this.#i < this.#names.length; this.#i++)
-      if (this.#names[this.#i] === "catch" || this.#names[this.#i] === catchKebab)
+    for (this.#i++; this.#i < this.at.reactions.length; this.#i++)
+      if (this.at.reactions[this.#i] === "catch" || this.at.reactions[this.#i] === catchKebab)
         return;
     const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
     target.dispatchEvent(new ErrorEvent("error", { error }));
   }
   #runSuccess(res) {
     this.#inputs[0] = res;
-    this.#i = res === EventLoop.Break ? this.#names.length : this.#i + 1;
+    this.#i = res === EventLoop.Break ? this.at.reactions.length : this.#i + 1;
   }
 };
 var __EventLoop = class {
@@ -878,8 +871,7 @@ var __EventLoop = class {
   }
 };
 __eventLoop = new __EventLoop();
-var _a;
-window.EventLoop = (_a = class {
+var EventLoop = class {
   //todo freeze the SpreadReaction, Break.
   get event() {
     return __eventLoop.task?.event;
@@ -900,12 +892,16 @@ window.EventLoop = (_a = class {
   dispatchBatch(event, iterable) {
     __eventLoop.batch(event, iterable);
   }
-}, __publicField(_a, "Break", {}), __publicField(_a, "SpreadReaction", function(fun) {
+};
+__publicField(EventLoop, "Break", {});
+__publicField(EventLoop, "SpreadReaction", function(fun) {
   return function SpreadReaction(oi) {
     return oi instanceof Iterable ? fun.call(this, ...oi) : fun.call(this, oi);
   };
-}), _a);
+});
 Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
+DoubleDots.EventLoopError = EventLoopError;
+window.EventLoop = EventLoop;
 
 // src/dd/5_load_DoubleDots.js
 var Specializers = {
@@ -1284,12 +1280,13 @@ var _i = 0;
 function makeDocId(doc) {
   return doc === document ? "#document" : `${doc.host?.tagName}#${_i++}`;
 }
-var eventInfo = (e) => `${e.type}#${e.timeStamp}`;
+var eInfo = (e) => `${e.type}#${e.timeStamp}`;
+var dInfo = (v) => v.__uid ??= makeDocId(v);
 function stringifyCube(k, v) {
-  return v instanceof Document || v instanceof ShadowRoot ? v.__uid ??= makeDocId(v) : v instanceof Promise ? `Promise#${v.__uid ??= _i++}` : v instanceof Attr ? v.name : v instanceof Function ? v.name || v.toString() : v instanceof Event ? eventInfo(v) : v;
+  return v instanceof Document || v instanceof ShadowRoot ? dInfo(v) : v instanceof Event ? eInfo(v) : v instanceof Promise ? `Promise#${v.__uid ??= _i++}` : v instanceof Function ? v.name || v.toString() : v;
 }
-function cube(key, value) {
-  data.push([key, JSON.stringify(value.info ?? value, stringifyCube)]);
+function cube(k, v) {
+  data.push([k, JSON.parse(JSON.stringify(v, stringifyCube))]);
 }
 function cubeToHtml(data2) {
   return `
@@ -1305,8 +1302,8 @@ function cubes() {
 }
 var ViewCube = class extends HTMLElement {
   static parseCube(data2) {
-    return data2.reduce((res, [key, json], I) => {
-      const value = Object.assign({ I, key }, JSON.parse(json));
+    return data2.reduce((res, [key, pojo], I) => {
+      const value = Object.assign({ I, key }, pojo);
       if (key.startsWith("task")) {
         res.task.push(value);
       } else if (key.startsWith("define")) {
@@ -1321,7 +1318,7 @@ var ViewCube = class extends HTMLElement {
     const data2 = JSON.parse(this.textContent);
     const { task, defs } = ViewCube.parseCube(data2);
     const viewCubeHtml = `
-    <pre>${task.map((t) => JSON.stringify(t, stringifyCube)).join("\n")}</pre>
+    <pre>${task.map((t) => JSON.stringify(t, stringifyCube, 2)).join("\n")}</pre>
     <pre>${JSON.stringify(defs, stringifyCube, 2)}</pre>`;
     this.attachShadow({ mode: "open" }).innerHTML = viewCubeHtml;
   }

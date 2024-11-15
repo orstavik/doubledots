@@ -10,8 +10,13 @@ class AttrCustom extends Attr {
     reactions.length === 1 && !reactions[0] && reactions.pop();
     Object.defineProperties(at, {
       "trigger": { value: trigger, enumerable: true },
-      "reactions": { value: reactions, enumerable: true },
+      "reactions": { value: Object.freeze(reactions), enumerable: true },
     });
+  }
+
+  toJSON() {
+    const { id, trigger, reactions, value, initDocument } = this;
+    return { id, trigger, reactions, value, initDocument };
   }
 
   get trigger() {
@@ -78,8 +83,10 @@ class AttrCustom extends Attr {
         return;
       }
       Object.setPrototypeOf(at, Def.prototype);
-      Object.defineProperty(at, "id",
-        { value: this.#ids++, writable: false, configurable: false, enumerable: true });
+      Object.defineProperties(at, {
+        "id": { value: this.#ids++, enumerable: true },
+        "initDocument": { value: at.getRootNode(), enumerable: true }
+      });
       at.upgrade?.();
       at.value && (at.value = at.value);
     } catch (err) {

@@ -1,28 +1,18 @@
 Event.data = Symbol("Event data");
 class EventLoopError extends DoubleDots.DoubleDotsError { }
-DoubleDots.EventLoopError = EventLoopError;
 
 class MicroFrame {
   #i = 0;
-  #names;
   #inputs;
 
   constructor(event, at) {
     this.at = at;
-    this.document = at.getRootNode();
     this.event = event;
-    this.#names = this.at.reactions;
     this.#inputs = [event[Event.data] ?? event];
   }
 
-  get info() {
-    return {
-      at: this.at,
-      reactions: this.#names,
-      i: this.#i,
-      inputs: this.#inputs,
-      document: this.document
-    };
+  toJSON() {
+    return { at: this.at, event: this.event, inputs: this.#inputs, i: this.#i };
   }
 
   isConnected() {
@@ -30,7 +20,7 @@ class MicroFrame {
   }
 
   getReaction() {
-    return this.#names[this.#i];
+    return this.at.reactions[this.#i];
   }
 
   getReactionIndex() {
@@ -61,7 +51,7 @@ class MicroFrame {
           throw new EventLoopError("Disconnected: " + this.at);
         //todo should this be an error??
 
-        const func = this.document.Reactions.get(re, this.at);
+        const func = this.at.initDocument.Reactions.get(re, this.at);
         if (func instanceof Promise) {
           if (threadMode) {
             func.then(_ => __eventLoop.asyncContinue(this))
@@ -108,11 +98,11 @@ class MicroFrame {
     console.error(error);
     this.#inputs[0] = error;
     const catchKebab = "catch_" + error.constructor.name.replace(/[A-Z]/g, '-$&').toLowerCase();
-    for (this.#i++; this.#i < this.#names.length; this.#i++)
-      if (this.#names[this.#i] === "catch" || this.#names[this.#i] === catchKebab)
+    for (this.#i++; this.#i < this.at.reactions.length; this.#i++)
+      if (this.at.reactions[this.#i] === "catch" || this.at.reactions[this.#i] === catchKebab)
         return;
 
-    // this.#i = this.#names.length;
+    // this.#i = this.at.reactions.length;
     const target = this.at.isConnected ? this.at.ownerElement : document.documentElement;
     //todo add the at + reactionIndex + self + input to the ErrorEvent, so that we know which attribute caused the error
     //todo or just the at, and then just read the data from the _eventLoop?
@@ -121,7 +111,7 @@ class MicroFrame {
 
   #runSuccess(res) {
     this.#inputs[0] = res;
-    this.#i = res === EventLoop.Break ? this.#names.length : this.#i + 1;
+    this.#i = res === EventLoop.Break ? this.at.reactions.length : this.#i + 1;
   }
 }
 
@@ -172,7 +162,7 @@ class __EventLoop {
 __eventLoop = new __EventLoop();
 
 //external interface
-window.EventLoop = class EventLoop {
+class EventLoop {
 
   static Break = {};
 
@@ -203,3 +193,5 @@ window.EventLoop = class EventLoop {
   }
 };
 Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
+DoubleDots.EventLoopError = EventLoopError;
+window.EventLoop = EventLoop;
