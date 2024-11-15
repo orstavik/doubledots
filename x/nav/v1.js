@@ -30,7 +30,7 @@ export function nav(e) {
     return triggerNavs();
   }
   if (!triggers.size) {
-    for (let e of ["click", "popstate"])
+    for (let e of ["click", "popstate", "hashchange"])
       document.htmlElement.removeAttribute(`${e}:${eventLoop.reaction.name}`);
     //todo check that this eventLoop.reaction.name is correct
     active = false;
