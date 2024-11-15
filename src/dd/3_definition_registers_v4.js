@@ -164,6 +164,7 @@ class UnknownDefinition extends Promise {
   }
 }
 
+const setTimeoutOG = setTimeout;
 class PromiseMap {
   unknowns = {};
   #interval;
@@ -179,7 +180,7 @@ class PromiseMap {
   async #cleanLoop() {
     this.#interval = true;
     while (true) {
-      await new Promise(r => setTimeout(r, 10000));
+      await new Promise(r => setTimeoutOG(r, 10000));
       const all = Object.entries(this.unknowns);
       if (!all.length)
         return this.#interval = false;

@@ -571,6 +571,7 @@ var UnknownDefinition = class extends Promise {
     return Object.assign(promise, { resolve, reject, attr });
   }
 };
+var setTimeoutOG = setTimeout;
 var PromiseMap = class {
   unknowns = {};
   #interval;
@@ -584,7 +585,7 @@ var PromiseMap = class {
   async #cleanLoop() {
     this.#interval = true;
     while (true) {
-      await new Promise((r) => setTimeout(r, 1e4));
+      await new Promise((r) => setTimeoutOG(r, 1e4));
       const all = Object.entries(this.unknowns);
       if (!all.length)
         return this.#interval = false;
