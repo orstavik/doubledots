@@ -273,7 +273,7 @@ class DefinitionsMapDOMOverride extends DefinitionsMapDOM {
    * and is simply wrapped in ^(...) to complete the regex query.
    */
   get rule() {
-    return this.#rule ??= `^(${this.root.host.getAttribute("override-" + this.type.toLowercase())})`;
+    return this.#rule ??= `^(${this.root.host.getAttribute("override-" + this.type.toLowerCase())})`;
   }
 
   /**
