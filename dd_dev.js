@@ -870,7 +870,7 @@ var __EventLoop = class {
       DoubleDots.cube?.("task-queued", {});
   }
 };
-__eventLoop = new __EventLoop();
+globalThis.__eventLoop = new __EventLoop();
 var EventLoop = class {
   //todo freeze the SpreadReaction, Break.
   get event() {
@@ -1281,7 +1281,7 @@ var DoubleDotDeprecated = {
 };
 
 // x/cube/v1.js
-console.log("DoubleDots.cubes();");
+console.info("In the console write:   DoubleDots.cubes()");
 var data = [];
 var _i = 0;
 function makeDocId(doc) {
@@ -1295,44 +1295,15 @@ function stringifyCube(k, v) {
 function cube(k, v) {
   data.push([k, JSON.parse(JSON.stringify(v, stringifyCube))]);
 }
-function cubeToHtml(data2) {
-  return `
-<view-cube>${JSON.stringify(data2)}</view-cube>
-<script type="module">
-import {ViewCube} from "http://localhost:3003/x/cube/v1.js";
-customElements.define("view-cube", ViewCube);
-<\/script>`;
-}
 function cubes() {
-  const url = URL.createObjectURL(new Blob([cubeToHtml(data)], { type: "text/html" }));
-  window.open(url, "_blank");
+  const url = new URL("/x/cube/ViewCube.js", location.href).href;
+  const html = `<view-cube>${JSON.stringify(data)}</view-cube>
+  <script type="module" src="${url}"><\/script>`;
+  const blob = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+  window.open(blob, "_blank");
 }
-var ViewCube = class extends HTMLElement {
-  static parseCube(data2) {
-    return data2.reduce((res, [key, pojo], I) => {
-      const value = Object.assign({ I, key }, pojo);
-      if (key.startsWith("task")) {
-        res.task.push(value);
-      } else if (key.startsWith("define")) {
-        const { I: I2, Def, root, type, key: key2, name } = value;
-        const reg = [root, type, key2].reduce((o, p) => o[p] ??= {}, res.defs);
-        (reg[name] ??= []).push({ I: I2, Def });
-      }
-      return res;
-    }, { task: [], defs: {} });
-  }
-  connectedCallback() {
-    const data2 = JSON.parse(this.textContent);
-    const { task, defs } = ViewCube.parseCube(data2);
-    const viewCubeHtml = `
-    <pre>${task.map((t) => JSON.stringify(t, stringifyCube, 2)).join("\n")}</pre>
-    <pre>${JSON.stringify(defs, stringifyCube, 2)}</pre>`;
-    this.attachShadow({ mode: "open" }).innerHTML = viewCubeHtml;
-  }
-};
 
 // src/dd/dd_dev.js
-customElements.define("view-cube", ViewCube);
 Object.assign(funcs, { cube, cubes });
 Object.assign(DoubleDots, funcs);
 for (let [name, func] of Object.entries(funcs))

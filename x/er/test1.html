@@ -5,7 +5,7 @@
 </head>
 
 <script>
-  function friendEmployeeCompany({er}) {
+  function friendEmployeeCompany(er) {
     const $friend = "person/jensen";
     const $employee = er.parent($friend, "person", "friends");
     const $company = er.parent($employee, "company", "employees");

@@ -870,7 +870,7 @@ var __EventLoop = class {
       DoubleDots.cube?.("task-queued", {});
   }
 };
-__eventLoop = new __EventLoop();
+globalThis.__eventLoop = new __EventLoop();
 var EventLoop = class {
   //todo freeze the SpreadReaction, Break.
   get event() {

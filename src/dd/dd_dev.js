@@ -2,9 +2,8 @@ import { monkeyPatch } from "./1_DoubleDots.js";
 import { } from "./dd.js";
 import { console as CONSOLE } from "./7_logging.js"; //todo this should be in /x/ folder
 import { PrimitiveConstructors, attachShadowAlwaysOpen, DoubleDotDeprecated } from "./8_strict_deprecation.js";
-import { cube, cubes, ViewCube } from "../../x/cube/v1.js";
+import { cube, cubes } from "../../x/cube/v1.js";
 
-customElements.define("view-cube", ViewCube);
 //adding logging
 Object.assign(CONSOLE, { cube, cubes });
 Object.assign(DoubleDots, CONSOLE);

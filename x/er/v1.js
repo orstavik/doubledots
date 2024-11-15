@@ -47,6 +47,9 @@ class ErEvent extends Event {
     super(type);
     this.er = new ER(er);
   }
+  get [Event.data]() {
+    return this.er;
+  }
 }
 
 let lastPosts = {};

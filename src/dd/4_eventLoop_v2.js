@@ -159,7 +159,7 @@ class __EventLoop {
   }
 }
 
-__eventLoop = new __EventLoop();
+globalThis.__eventLoop = new __EventLoop();
 
 //external interface
 class EventLoop {

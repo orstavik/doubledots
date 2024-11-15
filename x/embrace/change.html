@@ -1,8 +1,7 @@
-<script src="/dd.js"></script>
+<script src="/dd_dev.js"></script>
 <script type="module" src="/ddx.js?STATE~~&NAV&fetch_json&ER&oi.~&el.~&e.~&embrace&Change&Click&Popstate&Hashchange"
   _:define></script>
 <script>
-  document.Reactions.define("log", e => (console.log(e), e));
   document.Reactions.define("resolve", state => {
     let { er, nav } = state;
     if (er == null || nav == null)
@@ -12,7 +11,7 @@
   });
 </script>
 
-<body _::fetch_json:er="/x/er/companiesBig.json" er:oi.er:state_er nav:oi.location.hash:state_nav>
+<body _::fetch_json:er="/x/er/companiesBig.json" er:state_er nav:oi.location.hash:state_nav>
   <main template: state_nav_er:oi.state:resolve:embrace>
     _::wait_3000:test-change
     <!-- {{JSON.stringify($, 0, 2)}} -->

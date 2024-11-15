@@ -1,10 +1,9 @@
 <script src="/dd.js"></script>
-<script type="module" src="/ddx.js?STATE~~&NAV&fetch_json&ER&oi.~&el.~" _:define></script>
-<script type="module" src="../embrace/v4.js?embrace" _:define></script>
+<script type="module" src="/ddx.js?STATE~~&NAV&fetch_json&embrace&oi.~" _:define></script>
+<script type="module" src="v1.js?ER" _:define></script>
 <script>
   document.Reactions.define("log", e => (console.log(e), e));
-  document.Reactions.define("make-page", e => {
-    const state = e.state;
+  document.Reactions.define("make-page", ({state}) => {
     console.log(state);
     return state.er && state.nav ?
       state.er.resolve("company/1") :
@@ -16,9 +15,9 @@
 <body 
   _::fetch_json:er="companies.json" 
   nav:oi.location.pathname:state_nav 
-  er:oi.er:state_er
+  er:state_er
   >
-  <div template: state_nav_er:make-page:el.first-element-child:embrace>
+  <div template: state_nav_er:make-page:embrace>
     Company: {{name}} Number of employee: {{employees.length}}
   </div>
 </body>
