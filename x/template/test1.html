@@ -4,6 +4,8 @@
     // console.log(this.ownerElement.outerHTML);
     const tst = document.querySelector("body > template").content.children[0].outerHTML.replaceAll(/\s/g, "");
     const res = this.ownerElement.outerHTML.replaceAll(/\s/g, "");
+    console.log(tst);
+    console.log(res);
     console.log(tst === res);
   }
   document.Reactions.define("test-log", testLog);
@@ -13,9 +15,9 @@
   <main template: _:test-log>
     <section>
       <h1>hello sunshine</h1>
-      <!--template-->
+      <!-- <template> -->
       <div>items being added here</div>
-      <!--/template -->
+      <!-- </template> -->
       <h4>footer</h4>
     </section>
     <div template:>
@@ -23,15 +25,15 @@
     </div>
     <div>
       hello lightness my new friend!
-      <!--template -->
-      <i>items being added here</i>
+      <!-- <template> -->
+      <b>items being added here</b>
     </div>
     <div>
       hello rainbow!
-      <!--template if="{{one}}"-->
-      <!--template for="{{item of two}}"-->
+      <!--<template if="{{one}}">-->
+      <!--<template for="{{item of two}}">-->
       <i>two items being added here</i>
-      <!--/template-->
+      <!-- </template> -->
       <i>and some end if here, with an invisible if end</i>
     </div>
   </main>
@@ -53,7 +55,7 @@
         <div>
           hello lightness my new friend!
           <template>
-            <i>items being added here</i>
+            <b>items being added here</b>
           </template>
         </div>
         <div>

@@ -20,27 +20,27 @@
       <button value="#/company/acme">company Acme</button>
     </div>
 
-    <!--template if="type === 'department'"-->
+    <!-- <template if="type === 'department'"> -->
     <div>
       <h3>{{name}}</h3>
       <h4>Employees:</h4>
-      <!--template for="employee of employees"-->
+      <!-- <template for="employee of employees"> -->
       <p>{{employee.name}}</p>
-      <!--/template-->
+      <!-- </template> -->
     </div>
-    <!--/template-->
+    <!-- </template> -->
 
-    <!--template if="type === 'company'"-->
+    <!-- <template if="type === 'company'"> -->
     <div>
       <h2>This is {{name}}'s Departments:</h2>
       <selector>
         <select name="departments" change:e.target.value:log:nav>
-          <!--template for="dep of departments"-->
+          <!-- <template for="dep of departments"> -->
           <option value="#/{{dep.type}}/{{dep.slug}}">{{dep.name}}</option>
-          <!--/template-->
+          <!-- </template> -->
         </select>
       </selector>
     </div>
-    <!--/template-->
+    <!-- </template> -->
   </main>
 </body>

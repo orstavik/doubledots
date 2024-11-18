@@ -634,7 +634,7 @@ var UnknownDefinitionsMap = class extends DefinitionsMap {
     return super.get(fullname2) ?? this.#unknowns.make(fullname2, attr);
   }
 };
-var DefinitionsMapLock = class extends UnknownDefinitionsMap {
+var DefinitionsMapLock = class extends DefinitionsMap {
   #lock;
   defineRule(rule, FunFun) {
     if (this.#lock)
@@ -646,17 +646,17 @@ var DefinitionsMapLock = class extends UnknownDefinitionsMap {
       throw new DefinitionError("ShadowRoot too-late definition error for definition: " + name);
     return super.define(name, Def);
   }
-  get(name) {
+  get(name, attr) {
     this.#lock = true;
-    return super.get(name);
+    return super.get(name, attr);
   }
 };
 var DefinitionsMapDOM = class extends DefinitionsMapLock {
   get parentMap() {
     return this.root.host?.getRootNode()?.[this.type];
   }
-  get(name) {
-    return super.get(name) || this.parentMap.get(name);
+  get(name, attr) {
+    return super.get(name, attr) ?? this.parentMap.get(name, attr);
   }
 };
 var DefinitionsMapDOMOverride = class extends DefinitionsMapDOM {
@@ -667,14 +667,17 @@ var DefinitionsMapDOMOverride = class extends DefinitionsMapDOM {
    * and is simply wrapped in ^(...) to complete the regex query.
    */
   get rule() {
-    return this.#rule ??= `^(${this.root.host.getAttribute("override-" + this.type.toLowerCase())})`;
+    if (this.#rule !== void 0)
+      return this.#rule;
+    const rider = this.root.host.getAttribute("override-" + this.type.toLowerCase());
+    return this.#rule = rider && new RegExp(`^(${rider})$`);
   }
   /**
    * @param {string} name 
-   * @returns {DefinitionsMap|false} if the name has been overridden above.
+   * @returns {Definition} if the name has been overridden above.
    */
-  overrides(name) {
-    return this.#cache[name] ??= this.parentMap?.overrides?.(name) || this.rule.matches(name) && this.parentMap;
+  overrides(name, attr) {
+    return this.#cache[name] ??= this.parentMap?.overrides?.(name, attr) || this.rule?.exec(name) && super.get(name, attr);
   }
   /**
    * First, we check if there is an override root. If there is, we redirect the query directly to that root instead.
@@ -682,9 +685,8 @@ var DefinitionsMapDOMOverride = class extends DefinitionsMapDOM {
    * @param {string} name 
    * @returns DefinitionsMap from the document that overrides the definition name 
    */
-  get(name) {
-    const overrider = this.overrides(name);
-    return overrider ? overrider.get(name) : super.get(name);
+  get(name, attr) {
+    return this.overrides(name, attr) || super.get(name, attr);
   }
 };
 function TriggerSyntaxCheck(DefMap) {
@@ -1098,7 +1100,7 @@ function setAttributes(el, txt) {
       const [_, name, value] = unit.match(/^([_a-zA-Z][a-zA-Z0-9.:_-]*)="([^"]*)"$/);
       el.setAttribute(name, value);
     } else if (unit.trim() !== "") {
-      throw new SyntaxError(`<!--template ${txt}--> has an incorrect name="value"`);
+      throw new SyntaxError(`<!--<template ${txt}>--> has an incorrect name="value"`);
     }
   });
 }
@@ -1132,10 +1134,10 @@ function absorbHtml({ start, nodes, txt, end }) {
   start.remove(), end?.remove();
 }
 function gobble(start) {
-  const txt = start.textContent.trim().slice(8);
+  const txt = start.textContent.match(/^\s*<template(.*)>\s*$/)[1];
   const nodes = [];
   for (let n = start; n = n.nextSibling; ) {
-    if (n instanceof Comment && n.textContent.trim() === "/template")
+    if (n instanceof Comment && n.textContent.match(/^\s*<\/template\s*>\s*$/))
       return { start, nodes, txt, end: n };
     nodes.push(n);
   }
@@ -1150,8 +1152,9 @@ function* templateTriggers(el, trigger) {
       }
 }
 function* templateCommentStarts(root) {
-  for (let n, it = document.createNodeIterator(root, NodeFilter.SHOW_COMMENT); n = it.nextNode(); )
-    if (n.textContent.match(/^\s*template(\s|$)/))
+  const it = document.createNodeIterator(root, NodeFilter.SHOW_COMMENT);
+  for (let n; n = it.nextNode(); )
+    if (n.textContent.match(/^\s*<template(.*)>\s*$/))
       yield n;
 }
 function hashDebug(el) {
