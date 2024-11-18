@@ -47,7 +47,10 @@ export function nav(e) {
     const a = e.target.closest("a[href]");
     if (!a)
       return;
-    history.pushState(null, null, a.href);
+    const link = new URL(a.href, location.href);
+    if (link.origin !== window.location.origin)
+      return;
+    history.pushState(null, null, link);
     e.preventDefault();
   }
   eventLoop.dispatchBatch(new LocationEvent(), triggers);
