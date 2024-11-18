@@ -232,7 +232,7 @@ class UnknownDefinitionsMap extends DefinitionsMap {
   }
 }
 
-class DefinitionsMapLock extends UnknownDefinitionsMap {
+class DefinitionsMapLock extends DefinitionsMap {
   #lock;
   defineRule(rule, FunFun) {
     if (this.#lock)
@@ -246,9 +246,9 @@ class DefinitionsMapLock extends UnknownDefinitionsMap {
     return super.define(name, Def);
   }
 
-  get(name) {
+  get(name, attr) {
     this.#lock = true;
-    return super.get(name);
+    return super.get(name, attr);
   }
 }
 
@@ -258,8 +258,8 @@ class DefinitionsMapDOM extends DefinitionsMapLock {
     return this.root.host?.getRootNode()?.[this.type];
   }
 
-  get(name) {
-    return super.get(name) || this.parentMap.get(name);
+  get(name, attr) {
+    return super.get(name, attr) ?? this.parentMap.get(name, attr);
   }
 }
 
@@ -273,15 +273,18 @@ class DefinitionsMapDOMOverride extends DefinitionsMapDOM {
    * and is simply wrapped in ^(...) to complete the regex query.
    */
   get rule() {
-    return this.#rule ??= `^(${this.root.host.getAttribute("override-" + this.type.toLowerCase())})`;
+    if (this.#rule !== undefined)
+      return this.#rule;
+    const rider = this.root.host.getAttribute("override-" + this.type.toLowerCase());
+    return this.#rule = rider && new RegExp(`^(${rider})$`);
   }
 
   /**
    * @param {string} name 
-   * @returns {DefinitionsMap|false} if the name has been overridden above.
+   * @returns {Definition} if the name has been overridden above.
    */
-  overrides(name) {
-    return this.#cache[name] ??= this.parentMap?.overrides?.(name) || this.rule.matches(name) && this.parentMap;
+  overrides(name, attr) {
+    return this.#cache[name] ??= this.parentMap?.overrides?.(name, attr) || this.rule?.exec(name) && super.get(name, attr);
   }
 
   /**
@@ -290,9 +293,8 @@ class DefinitionsMapDOMOverride extends DefinitionsMapDOM {
    * @param {string} name 
    * @returns DefinitionsMap from the document that overrides the definition name 
    */
-  get(name) {
-    const overrider = this.overrides(name);
-    return overrider ? overrider.get(name) : super.get(name);
+  get(name, attr) {
+    return this.overrides(name, attr) || super.get(name, attr);
   }
 }
 
