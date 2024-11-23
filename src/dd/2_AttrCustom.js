@@ -87,6 +87,7 @@ class AttrCustom extends Attr {
         "id": { value: this.#ids++, enumerable: true },
         "initDocument": { value: at.getRootNode(), enumerable: true }
       });
+      DoubleDots.cube?.("attr", at);
       at.upgrade?.();
       at.value && (at.value = at.value);
     } catch (err) {
@@ -161,7 +162,7 @@ class AttrListenerGlobal extends AttrListener {
     let dict = this.target.triggers;
     if (!dict)
       Object.defineProperty(this.target, "triggers", { value: dict = {} });
-    return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
+    return dict[this.trigger] ??= new DoubleDots.AttrWeakSet();
   }
 
   get target() {

@@ -1,0 +1,47 @@
+<!-- demo that moves a sun down the page, and then changes the shadow of a group of other elements based on the position of the sun -->
+<script src="/dd_dev.js"></script>
+<script type="module" src="v1.js?Offset" _:define></script>
+<script>
+  function shadow(boxRect) {
+    const { left: sunX, top: sunY, width: sunWidth, height: sunHeight } = document.querySelector('#sun').getBoundingClientRect();
+    const  { left, top, width, height }= boxRect;
+    const x = ((left + width / 2) - (sunX + sunWidth / 2)) / 10;
+    const y = ((top + height / 2) - (sunY + sunHeight / 2)) / 10;
+    this.ownerElement.style.setProperty("box-shadow",
+      `${x}px ${y}px 10px rgba(0, 0, 0, 0.5)`);
+    return boxRect;
+  }
+  document.Reactions.define("shadow", shadow);
+</script>
+<style>
+  .box {
+    position: absolute;
+    width: 5vw;
+    height: 5vw;
+    background: green;
+  }
+
+  #sun {
+    position: fixed;
+    width: 3vw;
+    height: 3vw;
+    background-color: yellow;
+    border-radius: 50%;
+    box-shadow: 0 0 3vw 3vw yellow;
+    transition: all 1s;
+  }
+
+  #background {
+    position: relative;
+    width: 200vw;
+    height: 200vh;
+    background-color: lightblue;
+    overflow: scroll;
+  }
+</style>
+<div id="background">
+  <div class="box" style="top: 90vh; left: 20vw;" offset:shadow> . </div>
+  <div class="box" style="top: 70vh; left: 50vw;" offset:shadow> . </div>
+  <div class="box" style="top: 80vh; left: 80vw;" offset:shadow> . </div>
+  <div id="sun" style="top: 50vh; left: 50vw;"></div>
+</div>
