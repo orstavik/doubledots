@@ -1,0 +1,11 @@
+
+.\$--border {
+  border: 2px dotted;
+  border-collapse: initial;
+  border-spacing: initial;
+  border-radius: 0;
+  border-top-color: var(--border-top-color, var(--border-color, var(--color_3, black)));
+  border-right-color: var(--border-right-color, var(--border-color, var(--color_3, black)));
+  border-bottom-color: var(--border-bottom-color, var(--border-color, var(--color_3, black)));
+  border-left-color: var(--border-left-color, var(--border-color, var(--color_3, black)));
+}
