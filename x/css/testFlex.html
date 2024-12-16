@@ -1,0 +1,40 @@
+<head>
+  <style>
+    html {
+      /* valvars. These are interpreted at the beginning. */
+      --hello-sunshine: red200_green_+00300px;  
+      --hello: flex-row-reverse_gap5;
+    }
+
+    /* .flex {
+    display: flex;
+  }
+
+  .flex-row-reverse {
+    flex-direction: row-reverse;
+  }
+
+  .gap-2 {
+    gap: 0.5rem;
+  } */
+  </style>
+</head>
+
+<!-- <div class="flex flex-row-reverse gap-2"> -->
+
+<div class="flex_row_reverse_gap2">
+  <div>
+    hello
+  </div>
+  <div>
+    sunshine
+  </div>
+</div>
+
+
+<script type="module">
+  import { init } from "./dollInterpreter.js";
+
+  const styleEl = document.querySelector("style");
+  init(styleEl);
+</script>

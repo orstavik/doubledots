@@ -1,0 +1,63 @@
+<head>
+  <style class:="">
+    /*.border and .block is something that we get by default*/
+    .border-hello {
+      border: 5px ridge blue;
+    }
+
+    .border-sunshine {
+      border: 6px dashed red;
+    }
+
+    .border-short {
+      border: solid .2em;
+    }
+
+    .background-firefox-lizzard {
+      background: center / contain no-repeat var(--background-image-source, url("../../media/examples/firefox-logo.svg")),
+        var(--background-image-2, #3ee 35% url("../../media/examples/lizard.png"));
+    }
+
+    /*auto generated*/
+    .\$border-sunshine:hover {
+      border: 5px groove red;
+    }
+
+    .\$border-hello\$border_double {
+      border: 5px solid blue;
+      border-style: double;
+    }
+
+    .flex-navbar {
+      flex-direction: column-reverse;
+    }
+
+  </style>
+</head>
+
+<div class="$border_trb_r50%">
+  <div class="$border-hello $background  background-firefox-lizzard" 
+    style='--background-image-2: #3ee 35% url("../../media/examples/lizard.png")'>
+    hello
+  </div>
+  <div class="$border_dotted $border_left_radius5px $border-sunshine">
+    dollars
+  </div>
+  <div class="$border-hello$border_double  $block_20_40_60em">
+    sunshine
+  </div>
+  <div class="$background-1$background-2$background-3">
+    bob
+  </div>
+  <div class="$flex-navbar_column-reverse"></div>
+</div>
+
+
+<script type="module">
+  import { init } from "./interpreter.js";
+
+  // /block(_(width#(\/#)?(\/#)?|height#(-#)?(-#)?|align|valign))/
+
+  const styleEl = document.querySelector("style");
+  init(styleEl);
+</script>

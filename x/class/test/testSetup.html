@@ -1,0 +1,24 @@
+<head>
+  <style class:="">
+    .border { border-style: solid; }
+    .border-short { border: solid .2em; }
+    .border-hello { border: 5px ridge blue; }
+    .border-sunshine { border: 5px dashed red;}
+  </style>
+</head>
+
+<div class="$border"></div>
+<pre></pre>
+
+<script type="module">
+  import { init, toCssText } from "./interpreter.js";
+
+  // /block(_(width#(\/#)?(\/#)?|height#(-#)?(-#)?|align|valign))/
+
+  const styleEl = document.querySelector("style");
+  const preEl = document.querySelector("pre");
+  const rules = await init(styleEl);
+
+  // for (let unit of Object.values(rules))
+  //   preEl.textContent += toCssText(unit);
+</script>

@@ -1,0 +1,24 @@
+<head>
+  <style class:="">
+    html {
+      --border-sunshine: border_02_solid;
+    }
+  </style>
+</head>
+
+<div class="border_radius-trb-50%">
+  <div class="-border-sunshine">
+    hello
+  </div>
+  <div class="-border-sunshine_radius-left-5%_dotted">
+    sunshine
+  </div>
+</div>
+
+
+<script type="module">
+  import { init } from "./dollInterpreter2.js";
+
+  const styleEl = document.querySelector("style");
+  init(styleEl);
+</script>

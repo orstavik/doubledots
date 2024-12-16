@@ -37,18 +37,17 @@ const NUMBER = new RegExp(`((0*)[0-9]+|0?\\.[0-9]+)${TYPES}?`).source;
 const SIGN = /[+*\/-]/.source;
 const WORD = /[a-z]+/.source;
 const HEX = /#[0-9a-f]+/.source;
-const SHORT = new RegExp(`(${WORD})(${NUMBER})`);
+const SHORT = new RegExp(`(${WORD})${NUMBER}`);
 const VALVAR = /-[a-z][a-z0-9-]*/;
-const SUB_VALUE =
-  new RegExp(`^(?:(${WORD})|(${SIGN}?)(${NUMBER})|(${HEX}))$`);
+const SUB_VALUE = new RegExp(`^(?:(${WORD})|(${SIGN}?)(${NUMBER})|(${HEX}))$`);
 
 function parseShort(value) {
   const m = value.match(SHORT);
   if (!m)
     return;
-  let [, word, two, number, zeros, type] = m;
+  const [, word, number, zeros, type] = m;
   const num = Number(zeros.length ? "." + number.slice(1) : number);
-  return { value, subs: [word, two], subs2: [{ word }, { number, type, num }] };
+  return { value, subs: [word, { number, type, num }] };
 }
 
 function parseValVar(valvar) {
@@ -56,8 +55,8 @@ function parseValVar(valvar) {
 }
 
 function parseSubs(value) {
-  const subs = value.split(/(?<!-)-/);
-  return { value, subs, subs2: subs.map(parseSub) };
+  const subs = value.split(/(?<!-)-/).map(parseSub);
+  return { value, subs };
 }
 
 function parseSub(sub) {
@@ -65,7 +64,7 @@ function parseSub(sub) {
   if (!m)
     throw new SyntaxError("Invalid value: " + sub);
   const [, word, sign, fullNumber, number, zeros, type, hex] = m;
-  if (word) return { word };
+  if (word) return word;
   if (hex) return { hex, num: parseInt(hex.slice(1)) };
   const num = Number(zeros.length ? "." + number.slice(1) : number);
   return { number, type, sign, num };
@@ -80,24 +79,20 @@ function parseValue(value, i) {
 //valueGroup => a valueGroup(:childValueGroup)*
 //childValueGroup => selector_valueGroup
 //valueGroup => value(_value)*
-export function parseValueGroup(elementValueGroup, ...childValueGroups) {
-  elementValueGroup = elementValueGroup.split("_").map(parseValue);
+export function parseValueGroup(valueGroup, ...childValueGroups) {
+  valueGroup = valueGroup.split("_").map(parseValue);
   childValueGroups = childValueGroups.map(childGroup => {
     let [select, ...values] = childGroup.split("_");
     select = parseSelect(select);
     values = values.map(v => parseValue(v, true)); //no valvar in childValueGroups
     return { select, values };
   });
-  return { elementValueGroup, childValueGroups };
+  return { valueGroup, childValueGroups };
 }
 
-function parseExpression(name) {
+export function parseExpression(name) {
   let valueGroups = name.split("$").map(g => g.split(":"));
-  const mainSelect = valueGroups.length > 1 && valueGroups.shift().map(parseSelect);
+  const ctxSelect = valueGroups.length > 1 && valueGroups.shift().map(parseSelect);
   valueGroups = valueGroups.map(group => parseValueGroup(...group));
-  return { name, mainSelect, valueGroups };
-}
-
-export function parseClassAttribute(txt) {
-  return txt.trim().split(/\s+/g).map(parseExpression);
+  return valueGroups.map(valueGroup => ({ name, ctxSelect, ...valueGroup }));
 }

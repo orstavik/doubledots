@@ -1,0 +1,46 @@
+<head>
+  <style>
+    html {
+      --hello-sunshine: red_green_blue;
+      --hello: 12px;
+    }
+  </style>
+</head>
+
+<!-- <div class="blue_green_darkblue">
+  <div>
+    <h1 class="hover:red_red_red">hello</h1>
+  </div>
+  <h2 class="color_+200_-200">sunshine</h2>
+</div> -->
+
+<style>
+  .flex {
+    display: flex;
+  }
+
+  .flex-row-reverse {
+    flex-direction: row-reverse;
+  }
+
+  .gap-2 {
+    gap: 0.5rem;
+  }
+</style>
+
+<div class="flex flex-row-reverse gap-2">
+  <div>
+    hello
+  </div>
+  <div>
+    sunshine
+  </div>
+</div>
+
+
+<script type="module">
+  import { init } from "./dollarValueInterpreter.js";
+
+  const styleEl = document.querySelector("style");
+  init(styleEl);
+</script>

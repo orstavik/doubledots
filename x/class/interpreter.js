@@ -1,181 +1,150 @@
-import { extractNumbers, parseDirections, parse$Expression } from "./parser.js";
-import { identify, findType, checkShorthandSignature } from "./dictionary.js";
+import { CHILD_SELECT, parse$Expression } from "./parser.js";
 
-class Border {
-  static get default() {
-    return /*css*/`
-.\\$--border {
-  border: 2px dotted;
-  border-collapse: initial;
-  border-spacing: initial;
-  border-radius: 0;
-  border-top-color: var(--border-top-color, var(--border-color, var(--color_3, black)));
-  border-right-color: var(--border-right-color, var(--border-color, var(--color_3, black)));
-  border-bottom-color: var(--border-bottom-color, var(--border-color, var(--color_3, black)));
-  border-left-color: var(--border-left-color, var(--border-color, var(--color_3, black)));
-}`;
-  }
+import { Border } from "./shorts/Border.js";
+import { BorderImage } from "./shorts/BorderImage.js";
+import { Flex, FlexChild, InlineFlex } from "./shorts/Flex.js";
+import { TextShadow } from "./shorts/TextShadow.js";
 
-  static element({ direction, style, width, radius, color, collapse }) {
-    const res = {};
-    if (collapse) {
-      let [colSep, { num, type }] = collapse;
-      res["border-collapse"] = colSep;
-      res["border-spacing"] = num + type;
-    }
-    const directions = direction ? parseDirections(direction).map(d => `${d}-`) : [""];
-    for (let dir of directions) {
-      if (style) res[`border-${dir}style`] = style;
-      if (width) res[`border-${dir}width`] = width.fullNumber;
-      if (radius) res[`border-${dir}radius`] = radius;
-      if (color) res[`--border-${dir}color`] = color;
-    }
-    return res;
-  }
-}
-
-const CLASSES = {
-  border: Border
+const TYPES = {
+  border: Border,
+  "border-image": BorderImage,
+  flex: Flex,
+  "inline-flex": InlineFlex,
+  "text-shadow": TextShadow,
 };
+const CHILD_TYPES = {
+  flex: FlexChild,
+  "inline-flex": FlexChild,
+};
+const keysLongShort = Object.keys(TYPES).sort((a, b) => b.length - a.length);
+const TYPE_NAMES = new RegExp(`^(${keysLongShort.join("|")})($|-)`);
+function typeName(name) { return name.match(TYPE_NAMES)?.[1]; }
+// function findType(name) {
+//   const type = typeName(name);
+//   return type && { type, Type: TYPES[type], ChildType: CHILD_TYPES[type] };
+// }
 
-function interpret$Shorthand({ value, childShorts }) {
-  const { valueType, defaultNumType } = identify(value);
+//todo push toTable back into the parser.
+function interpret$short(short, rules) {
+  const { name, args, childArgs } = short;
+  const { type, Type, ChildType, rule, childRules } = rules[name] ?? rules[typeName(name)];
+  const css = Type.parse(args, rule.style);
 
-  const typeStr = [], values = [];
-  for (let v of value.split("_")) {
-    const [, head, tail] = v.match(/(^[a-z]*)(.*)/);
-    const type = findType(valueType, head);
-    if (!type) {
-      typeStr.push(v);
-      values.push(undefined);
-    } else {
-      //todo should defaultNumType be a dict with {width: "px", radius: "%"}??
-      //const defaultNumType = defaultNumTypes[type];
-      let { args, str } = extractNumbers(tail, defaultNumType);
-      args = !args.length ? head : args.length == 1 ? args[0] : args;
-      typeStr.push(type + str);
-      values.push({ type, args });
-    }
+  const childCss = new Map();
+  for (let key in childRules)
+    childCss.set(key, childRules[key]);
+  for (let { select, args } of childArgs) {
+    const childRule = childRules[select];
+    const childCss = ChildType.parse(args, childRule.style);
+    childCss.set(select, { select, childRule, childCss });
   }
-  checkShorthandSignature(valueType, value, typeStr.join("_"));
-  return { valueType, values, childShorts };
+  return { name, type, rule, childRules, css, childCss };
 }
 
-function tryParseExpression(txt) {
-  try { return parse$Expression(txt); } catch (err) { }
-}
-
-function toTable(values) {
-  return values.reduce((o, v) => (v?.type && (o[v.type] = v.args), o), {});
-}
-
-function interpret$Variable({ variable }, valueVars) {
-  if (variable) {
-    if (variable in valueVars)
-      return valueVars[variable]; //valueVars objects must be marked as variables.
-    throw new SyntaxError("Variable is not defined: " + variable);
+function interpret$Expression(txt, rules) {
+  try {
+    const expr = parse$Expression(txt);
+    expr.shorts = expr.shorts.map(short => interpret$short(short, rules));
+    return expr;
+  } catch (err) {
+    return console.error(`C$$ short didn't manage to interpret expression with $: ${txt}.`);
   }
 }
 
-function cloneCSSStyleDeclaration(cssStyle) {
+const commaStack = ["animation", "transition", "clip-path", "text-shadow", "box-shadow", "background"];
+const div = document.createElement("div").style;
+function stackOrSmash(main, rule, add) {
+  for (let p in add)
+    if (p in main && commaStack.includes(p))
+      add[p] = main[p] + ",\n  " + add[p];
+  div.style.setProperty(k, v);
+  return div.style;
+  return Object.assign(main, add);
+}
+
+function smash$Expressions(expr) {
+  const res = document.createElement("div").style;
+  // const res = {};
+  const childRes = {};
+  for (let { rule, css, childCss } of expr.shorts) {
+    //1. we overwrite the rule with the css
+    //2. to do this, we need the rule to become a dict
+    //3. then we can smash the rules onto the other
+    res = stackOrSmash(res, rule.style, css);
+    if (childCss)
+      for (let { select, childRule, childCss } of childCss.values())
+        childRes[select] = stackOrSmash(childRes[select] ?? {}, childRule.style, childCss);
+  }
+  return { expr, res, childRes };
+}
+
+export function filter$ChildRule(parent) {
+  const rx = new RegExp(`^\\s*${parent}\\s*>\\s*${CHILD_SELECT.source.slice(1, -1)}\\s*($|,)`);
+  return r => r.selectorText.match(rx);
+}
+
+const RULE = /^\s*(\.([a-z][a-z0-9-]*))\s*($|,)/;
+function extract$Rules(cssRules) {
+  const res = {};
+  for (let rule of cssRules) {
+    const m = rule.selectorText.match(RULE);
+    if (!m)
+      continue;
+    const [, select, name] = m;
+    const type = typeName(name) ?? {};
+    const Type = TYPES[type], ChildType = CHILD_TYPES[type];
+    const childRules = ChildType && cssRules.filter(filter$ChildRule(select));
+    res[name] = { name, rule, childRules, type, Type, ChildType };
+  }
+  return res;
+}
+
+function toNativeCssProps(cssStyle) {
   const el = document.createElement('div');
   for (let prop of cssStyle)
     el.style[prop] = cssStyle.getPropertyValue(prop);
   return el.style;
 }
 
-
-function interpret$Expression(txt, valueVars) {
-  //todo manage big variables
-  const m = tryParseExpression(txt.trim());
-  if (!m)
-    return;
-  const { expression, select, shorts } = m;
-  const shorts2 = shorts.map(short =>
-    interpret$Variable(short, valueVars) ??
-    interpret$Shorthand(short));
-
-  //all valueTypes must have a default rule.
-  //all valueTypes with children must have a default child rule.
-  const cssDeclarations = {};
-  for (let { valueType, values, childShorts } of shorts2) {
-
-    const Type = CLASSES[valueType];
-
-    if (childShorts.length && !Type.child)
-      throw new SyntaxError(`The type '${valueType}' doesn't support childValue: ${expression}`);
-
-    const values2 = Type.element(toTable(values), values);
-    const target = cssDeclarations[valueType] ??=
-      cloneCSSStyleDeclaration(valueVars[`.\\$--${valueType}`]);
-    for (let k in values2)
-      target[k] = values2[k];
-
-    for (let { select, value } of childShorts) {
-
-      const target = cssDeclarations[`${valueType} > ${select}`] ??=
-        cloneCSSStyleDeclaration(valueVars[`--${valueType}_child`]);
-      const values2 = Type.child(value);
-      for (let k in values2)
-        target[k] = values2[k];
-
+export function toCssText({ $dolls, select: { name: selector } }) {
+  const bodies = { [selector]: [] };
+  const main = bodies[selector];
+  for (let { css, childCss, Type } of $dolls) {
+    main.push(`\n  /**${Type.name}**/`);
+    main.push(...Object.entries(css).map(([k, v]) => `\n  ${k}: ${v};`));
+    for (let { select, css } of childCss) {
+      const body = bodies[selector + " > " + select] ??= [];
+      body.push(...Object.entries(css).map(([k, v]) => `\n  ${k}: ${v};`));
     }
   }
-  //todo now we can convert into css rules actually. The object is finished interpreting.
-  return { cssDeclarations, expression, select };
+  return Object.entries(bodies).map(([s, b]) => `\n\n${s} {${b.join("")}\n}`);
 }
 
-function setupDefaultShorthandStyles(styleEl) {
-  //todo make the getCssRule(...rule){} function
-  //todo then try to find the cssRuleStyle first, remove the elements that are there
-  //todo then add all the txt, and then rerun the rule
-  let cssTxt = "";
-  main: for (let [type, Type] of Object.entries(CLASSES)) {
-    for (let rule of styleEl.sheet.cssRules)
-      if (rule.selectorText === `.\\$--${type}`)
-        break main;
-    cssTxt += Type.default;
+export async function init(styleEl, defaultStyle) {
+
+  styleEl.textContent =
+    (await (await fetch(defaultStyle)).text()) +
+    styleEl.textContent;
+
+  //1. extract all referable Rules from the styleSheet {name: {name}}
+  const rules = extract$Rules([...styleEl.sheet.cssRules]);
+  //2. add Types as rules, even if they have no default rule.
+  main: for (let type in TYPES) {
+    for (let { type: t } of Object.values(rules))
+      if (t === type)
+        continue main;
+    rules[type] = { name: type, type, Type: TYPES[type], ChildType: CHILD_TYPES[type] };
   }
-  styleEl.textContent = cssTxt + styleEl.textContent;
 
-  const valueVars = {};
-  for (let rule of styleEl.sheet.cssRules)
-    if (rule.selectorText.startsWith(".\\$"))
-      valueVars[rule.selectorText] = rule.style;
-  return valueVars;
-}
-
-//select$value
-function parseValueVars(styleEl, valueVars) {
+  const newRules = [];
   let val;
-  for (let rule of styleEl.sheet.cssRules)
-    if (rule.selectorText === "html")
-      for (let prop of rule.style)
-        if (prop.startsWith("--"))
-          if (val = interpret$Expression(rule.style.getPropertyValue(prop), valueVars))
-            valueVars[prop] = { ...val, expression: prop };
+  for (let el of document.body.querySelectorAll("[class]"))
+    for (let txt of el.getAttribute("class").split(/\s+/))
+      if (txt.includes("$") && (val = interpret$Expression(txt, rules)))
+        newRules.push({ ...val, txt });
+
+  debugger;
+  const smashedRules = newRules.map(smash$Expressions);
+  debugger;
+  return Object.assign({}, rules, newRules);
 }
-
-function toCSS({ cssDeclarations, expression, select }) {
-  const body = [];
-  for (let type in cssDeclarations) {
-    body.push(`/**${type}**/`);
-    for (let prop of cssDeclarations[type])
-      body.push(`${prop}:${cssDeclarations[type][prop]};`);
-  }
-  const bodyStr = `\n  ${body.join("\n  ")}\n`;
-  return `
-
-${select.css} {
-  ${JSON.stringify(cssDeclarations)}
-}`;
-}
-
-export function init(styleEl) {
-  const valueVars = setupDefaultShorthandStyles(styleEl);
-  parseValueVars(styleEl, valueVars);
-  for (let unit of Object.values(valueVars))
-    styleEl.textContent += toCSS(unit);
-
-}
-

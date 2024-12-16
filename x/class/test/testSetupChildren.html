@@ -1,0 +1,20 @@
+<head>
+  <style class:="">
+html {
+  --flex_1: $flex-col_nowrap_justify-start_item-center_gap4|:nth2_2_0_50%;
+  --flex_2: $flex-row_wrap_gap2|:odd_1_0_auto_-1|:even_0;
+}
+  </style>
+</head>
+<pre></pre>
+
+<script type="module">
+  import { init } from "./interpreter.js";
+
+  // /block(_(width#(\/#)?(\/#)?|height#(-#)?(-#)?|align|valign))/
+
+  const styleEl = document.querySelector("style");
+  const preEl = document.querySelector("pre");
+  await init(styleEl);
+  preEl.textContent = styleEl.textContent;
+</script>
