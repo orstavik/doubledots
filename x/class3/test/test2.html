@@ -1,0 +1,67 @@
+<html style="text-decoration-color: magenta;">
+
+<head>
+  <script></script>
+  <style class="$border-color-one_5px|*$border-color-one_4px" css-shorts="
+    $border-color-one {
+      $border_20px
+      |*
+        $border_2px_solid
+        $color_border[red,green,blue]
+      |:first
+        $border_4px
+    } 
+
+    
+
+    {
+      $border-color-one: {}
+      $border-color-one > *: {
+        border-width: 2px;
+        border-style: solid;
+        border-color: rgb(255,255,255);
+      }
+      $border-color-one > :first {
+        border-width: 4px;
+      }
+    }
+
+    $border-two{
+      |*
+        $border-color-one_4px
+    }
+
+  ">
+    /*here is where the output css rules are coming.*/
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      /*
+      COLOR inheritance fix 
+      att!! makes it problematic to use native css shorthands: border, text-decoration
+      */
+      border-color: inherit;
+      border-top-color: inherit;
+      border-right-color: inherit;
+      border-bottom-color: inherit;
+      border-left-color: inherit;
+      text-decoration-color: inherit;
+    }
+  </style>
+</head>
+
+<div style="text-decoration-style: line-through;" class="
+  $border-one_[02px,.3px]_r[20%,50%]_rr[10%,20%]
+">
+  hello sunshine
+</div>
+
+<script type="module">
+  import { init, interpret } from "../interpreter.js";
+
+  const style = document.querySelector("style");
+  init(style.getAttribute("css-shorts"));
+  for (let el of document.querySelectorAll("[class]"))
+    interpret(el.classList, style);
+</script>

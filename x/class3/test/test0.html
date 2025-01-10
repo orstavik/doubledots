@@ -1,0 +1,25 @@
+<html>
+<head>
+  <script></script>
+  <style css-shorts="
+    $border-one {
+        $border_[*2,-002px,4e12px]_dashed
+      |:hover 
+        $border_4px
+    }  
+  ">
+    
+  </style>
+</head>
+
+<div>
+  hello sunshine
+</div>
+
+<script type="module">
+  import { init } from "../interpreter.js";
+
+  debugger
+  const style = document.querySelector("style");
+  init(style.getAttribute("css-shorts"));
+</script>
