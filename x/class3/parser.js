@@ -1,41 +1,39 @@
-//we can put the directions at the beginning or the end of the ctxSelect
-//and then we can imagine the :root (<.name>) infront or after the direction.
-//and if there is no direction, then it should likely be a <.name>.class:pseudo[attr] selector
+//NO-SPACE-PERCENT-selector
+// 1. ">>" is the descendant space selector.
+// 2. "%" is a placeholder for implied selector. 
+//    If a comma separated expression doesn't contain a "%", 
+//    it is implied at the start. like in regular css.
 
-/**************/
-/** SELECTOR **/
-/**************/
-const DIR = /~|\+|>>|>/.source;
-const ANY = /[^:#[\]="]+/.source;
-const TAG = /[a-z]+(?:-[a-z]+)/.source;
-const HASHDOTS = /[#:\.]/.source;
-const ATTR = /\[[^\]]+\]/.source;
-const EL_SELECTOR = new RegExp(`(${TAG})?(${HASHDOTS}${ANY}|${ATTR})`).source;
-const SELECTOR = new RegExp(`^(${DIR})?(${EL_SELECTOR})(\,${EL_SELECTOR})*(${DIR})?$`);
-const ITEM_SELECT = new RegExp(`^${EL_SELECTOR}$`);
+const styleSheet = new CSSStyleSheet();
 
-function parse$ItemSelector(txt) {
-  if (!txt || txt.match(ITEM_SELECT))
-    return " > " + (txt || "*");
-  throw new SyntaxError("Illegal item selector: " + txt);
+function testSelector(selector, txt) {
+  try {
+    selector = selector.replaceAll("%", ".HELLO-SUNSHINE");
+    styleSheet.insertRule(selector + " { border-width: 2px; }");
+    styleSheet.deleteRule(0);
+  } catch (err) {
+    throw new SyntaxError("Illegal no-space-percent selector: " + txt);
+  }
+}
+
+function parse$NoSpaceSelector(txt, placeholder) {
+  const percentSelector = txt
+    .replaceAll(">>", " ")
+    .split(",")
+    .map(txt => txt.includes("%") ? txt : placeholder + txt)
+    .join(",");
+  testSelector(percentSelector, txt);
+  return percentSelector;
 }
 
 function parse$ContainerSelector(txt) {
-  if (!txt)
-    return "";
-  const m = txt.match(SELECTOR);
-  if (!m)
-    throw new SyntaxError("Illegal container select: " + txt);
-  const [, pre, tag, select, post] = m;
-  if (!select)
-    throw new SyntaxError("Illegal container select: " + txt);
-  if (pre && post)
-    throw new SyntaxError(
-      `Illegal container select: direction can't be both pre: ${pre} and post: ${post} : ${txt}`);
-  if (tag && (!pre || !post))
-    throw new SyntaxError(
-      `Illegal container select: tag selector must be for either pre or post selector: ${txt}`);
-  return txt.replace(">>", " ");
+  return parse$NoSpaceSelector(txt, "%");
+}
+
+function parse$ItemSelector(txt) {
+  if (txt.includes("%"))
+    throw new SyntaxError("$short item selector cannot contain %: " + txt);
+  return parse$NoSpaceSelector(txt, "% > ");
 }
 
 /*************/
@@ -133,22 +131,16 @@ export function parse$SuperShorts(txt) {
 /**
  * toCssText
  */
+function ruleToString(cssName, selector, value) {
+  let str = selector.replaceAll("%", cssName) + " {";
+  for (let [k, v] of Object.entries(value))
+    str += `\n  ${k}: ${v};`;
+  return str + "\n}";
+}
+
 export function toCssText(shortName, dict) {
-  const main = Object.keys(dict).find(key => !key.startsWith(" > "));
   const cssName = "." + shortName.replaceAll(/[^a-z0-9_-]/g, "\\$&");
-  const containerSelector = main.match(/[>~+\s]$/) ?
-    main + cssName :
-    cssName + main;
-  const res = [];
-  for (let [key, value] of Object.entries(dict)) {
-    let str = containerSelector;
-    if (key !== main)
-      str += key;
-    str += " {";
-    for (let [k, v] of Object.entries(value))
-      str += `\n  ${k}: ${v};`;
-    str += "\n}";
-    res.push(str);
-  }
-  return res.join("\n\n");
+  return Object.entries(dict)
+    .map(([select, body]) => ruleToString(cssName, select, body))
+    .join("\n\n");
 }

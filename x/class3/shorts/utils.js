@@ -2,45 +2,47 @@
 // color: /red|blue|green|rgb|hsl/,
 // inherit: /inherit/
 
-function prepArgsCalcs(calc, type) {
-  if (calc instanceof Function)
-    return calc;
-  if (calc instanceof RegExp) {
-    const CHECK = new RegExp(`^(${calc.source})$`);
-    return function (word) {
-      if (word.match(CHECK))
-        return word;
-      throw new SyntaxError(`Bad C$$  ${type}: ${word} ((is not "${calc.source}")).`);
-    };
-  }
-  throw new SyntaxError("Bad C$$ calc: " + calc);
-}
+export const spaceJoin = (a) => a.join(" ");
 
-function processTopArg(dict, { prefix, args }) {
-  for (let [type, [matcher, funcs = [], dictFuncs = []]] of Object.entries(dict)) {
-    try {
-      if (prefix.match(new RegExp(`^(${matcher.source})$`))) {
-        args = args.map(arg => funcs.reduce((acc, func) => func(acc, type), arg));
-        const res = dictFuncs.reduce((acc, func) => (func(acc, type)), { [type]: args });
-        return res;
+export class PrefixTable {
+  constructor(dict) {
+    for (let [type, [matcher, func, func2]] of Object.entries(dict)) {
+      matcher = new RegExp(`^(${matcher.source})$`);
+      if (func instanceof RegExp) {
+        const CHECK = new RegExp(`^(${func.source})$`);
+        func = word => (word.match?.(CHECK) && word);
       }
-    } catch (err) {
+      dict[type] = { matcher, func, func2 };
     }
+    this.dict = Object.entries(dict);
   }
-  throw new SyntaxError("bad argument: " + topArgs.join(" "));
+
+  #processTop(args, func) {
+    args = args.slice();
+    for (let i = 0; i < args.length; i++)
+      if ((args[i] = func(args[i])) === undefined)
+        return;
+    return args;
+  }
+
+  argsToDict(topArgs) {
+    const res = {};
+    top: for (let { prefix, args } of topArgs) {
+      type: for (let [type, { matcher, func, func2 }] of this.dict)
+        if (prefix.match(matcher)) {
+          const a = this.#processTop(args, func);
+          if (a === undefined)
+            continue type;
+          res[type] = func2?.(a) ?? a;
+          continue top;
+        }
+    }
+    return res;
+  }
 }
 
-export function PrefixTable(dict, css = {}) {
-  for (let type in dict)
-    dict[type][1] &&= dict[type][1].map(c => prepArgsCalcs(c, type));
-  const topFunc = processTopArg.bind(null, dict);
-  return args => {
-    const res = args.map(topFunc);
-    return Object.assign(css, ...res);
-  }
-}
-
-export function calcNum(defaultValue, defaultType, { N, n, num, unit, expr }) {
+export function calcNum(defaultValue, defaultType, arg) {
+  let { N, n, num, unit, expr } = arg;
   if (!N && !expr)
     throw new SyntaxError("not a number value");
   if (unit === "auto")
@@ -54,16 +56,25 @@ export function calcNum(defaultValue, defaultType, { N, n, num, unit, expr }) {
   return defaultValue * n + defaultType;
 }
 
+export function normalizeArray4(ar) {
+  if (ar.length > 4 || !ar.length)
+    throw new SyntaxError("Array must have 1-4 items: " + ar);
+  return ar.length == 3 ? (ar.push(ar[1]), ar) :
+    ar.length == 2 ? (ar.push(...ar), ar) :
+      ar.length == 1 ? [ar[0], ar[0], ar[0], ar[0]] :
+        ar; /*ar.length == 4*/
+}
+
 export function trbl(dict, prop) {
   const args = dict[prop];
-  if (!args?.length)
-    return dict;
+  if (!args)
+    return;
   const [head, tail] = prop.split(/-(?=[^-]*$)/);
   dict[`${head}-top-${tail}`] = args[0];
-  dict[`${head}-right-${tail}`] = args[1] ?? args[0];
-  dict[`${head}-bottom-${tail}`] = args[2] ?? args[0];
-  dict[`${head}-left-${tail}`] = args[3] ?? args[1] ?? args[0];
-  return dict;
+  dict[`${head}-right-${tail}`] = args[1];
+  dict[`${head}-bottom-${tail}`] = args[2];
+  dict[`${head}-left-${tail}`] = args[3];
+  delete dict[prop];
 }
 
 export function tailToVariables(dict, prop) {

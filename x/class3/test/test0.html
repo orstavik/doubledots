@@ -17,9 +17,7 @@
 </div>
 
 <script type="module">
-  import { init } from "../interpreter.js";
-
-  debugger
-  const style = document.querySelector("style");
-  init(style.getAttribute("css-shorts"));
+  import { run } from "../interpreter.js";
+  
+  run(document.querySelector("style[css-shorts]"));
 </script>

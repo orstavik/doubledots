@@ -72,18 +72,44 @@ superShorts = {  //bigResult with {name: {container, itemSelector1, itemSelector
 // Color, Palette, Flex], shortTxt);
 const shorts = new ShortsResolver([border, _border]);
 
-export function init(shortTxt) {
+function init(shortTxt) {
   shorts.addSuperShorts(shortTxt);
 }
 
-export function add$Classes(classList, knownShorts) {
+function add$Classes(classList, shortsToCss) {
   let tmp;
   for (let txt of classList)
-    if (!(txt in knownShorts))
+    if (!(txt in shortsToCss))
       if (tmp = parse$Expression(txt))
         if (tmp = interpret$Expression(tmp, shorts))
           if (tmp = toCssText(txt, tmp))
-            knownShorts[txt] = tmp;
+            shortsToCss[txt] = `/*\n${txt}\n*/\n${tmp}`;
+}
+
+const defaultCss = `
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:not(html) {
+  /*COLOR INHERITANCE  (don't use native css shorthands: border, text-decoration)*/
+  border-color: inherit;
+  border-top-color: inherit;
+  border-right-color: inherit;
+  border-bottom-color: inherit;
+  border-left-color: inherit;
+  text-decoration-color: inherit;
+}  
+`;
+
+export function run(style) {
+  init(style.getAttribute("css-shorts"));
+  const shortsToCss = {}; //this should be a global variable??
+  for (let el of document.querySelectorAll('[class*="$"]'))
+    add$Classes(el.classList, shortsToCss);
+  style.discovered = shortsToCss;
+  style.textContent += defaultCss + Object.values(shortsToCss).join("\n\n");
 }
 
 

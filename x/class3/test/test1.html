@@ -10,39 +10,17 @@
       $border-one_4px_r[20%,50%]_rr[10%,20%]
     }
   ">
-    /*here is where the output css rules are coming.*/
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      /*
-      COLOR inheritance fix 
-      att!! makes it problematic to use native css shorthands: border, text-decoration
-      */
-      border-color: inherit;
-      border-top-color: inherit;
-      border-right-color: inherit;
-      border-bottom-color: inherit;
-      border-left-color: inherit;
-      text-decoration-color: inherit;
-    }
   </style>
 </head>
 
 <div class="
-  $border-one_[02px,.3px]_r[20%,50%]_rr[10%,20%]
+  >>:hover$border-one_[02px,.3px]_r[20%,50%]_rr[10%,20%]
 ">
   hello sunshine
 </div>
 
 <script type="module">
-  import { init, add$Classes } from "../interpreter.js";
+  import { run } from "../interpreter.js";
 
-  const style = document.querySelector("style");
-  init(style.getAttribute("css-shorts"));
-  const res = {};
-  for (let el of document.querySelectorAll('[class*="$"]'))
-    add$Classes(el.classList, res);
-  style.discovered = res;
-  style.textContent += Object.values(res).join("\n\n"); 
+  run(document.querySelector("style[css-shorts]"));
 </script>
