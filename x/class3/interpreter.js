@@ -1,16 +1,9 @@
 import { border, _border } from "./shorts/Border.js";
+import { flex, _flex } from "./shorts/Flex.js";
 // import { color, _color } from "./shorts/Color.js";
 // import { Palette } from "./shorts/Palette.js";
-// import { Flex } from "./shorts/Flex.js";
 
 import { parse$Expression, parse$SuperShorts, toCssText } from "./parser.js";
-
-function spaceJoin(dict) {
-  for (let prop in dict)
-    if (dict[prop] instanceof Array)
-      dict[prop] = dict[prop].join(" ");
-  return dict;
-}
 
 class ShortsResolver {
   constructor(funcs) {
@@ -32,7 +25,8 @@ class ShortsResolver {
     const func = this.functions.find(func => camel.startsWith(func.name));
     if (!func)
       throw new SyntaxError(`The $short "${name}" with lookup "${camel}" doesn't match any $short function.`);
-    res[selector] = spaceJoin(func(res[selector] ?? {}, args));
+    res[selector] ??= {};
+    Object.assign(res[selector], func(res[selector], args));
     return res;
   }
 }
@@ -47,30 +41,8 @@ function interpret$Expression(segs, shortResolver) {
   return res;
 }
 
-
-//returns {container: cssDict, itemSelector1: cssDict, itemSelector2: cssDict}
-/**
-const border-one = {
-  "" : {
-    border-width: 2px;
-    border-style: dashed;
-    color: red;
-  },
-  ":hover" : {
-    border-width: 4px;
-    color: orange;
-  }
-}
-
-superShorts = {  //bigResult with {name: {container, itemSelector1, itemSelector2}}
-  border-one,
-  border-two,
-  flex-navbar
-}
- */
-
-// Color, Palette, Flex], shortTxt);
-const shorts = new ShortsResolver([border, _border]);
+// Color, Palette
+const shorts = new ShortsResolver([border, _border, flex, _flex]);
 
 function init(shortTxt) {
   shorts.addSuperShorts(shortTxt);
@@ -140,3 +112,24 @@ $border-color-sale {
 (colorDefault, borderDefault, borderColorSale)
 
 */
+
+//returns {container: cssDict, itemSelector1: cssDict, itemSelector2: cssDict}
+/**
+const border-one = {
+  "" : {
+    border-width: 2px;
+    border-style: dashed;
+    color: red;
+  },
+  ":hover" : {
+    border-width: 4px;
+    color: orange;
+  }
+}
+
+superShorts = {  //bigResult with {name: {container, itemSelector1, itemSelector2}}
+  border-one,
+  border-two,
+  flex-navbar
+}
+ */

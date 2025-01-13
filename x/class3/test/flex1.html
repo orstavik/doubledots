@@ -1,0 +1,25 @@
+<html>
+
+<head>
+  <script></script>
+  <style css-shorts="
+    $flex-one { 
+        $flex_col_wrap_gap[10px]_justify[start]_content[center]_items[center]
+      |*
+        $flex_g[1]_s[1]_b[100%]_order[1]_align[center]
+    }
+    
+  ">
+  </style>
+</head>
+
+<div class="$flex-one">
+  <div>hello</div>
+  <div>sunshine</div>
+</div>
+
+<script type="module">
+  import { run } from "../interpreter.js";
+
+  run(document.querySelector("style[css-shorts]"));
+</script>

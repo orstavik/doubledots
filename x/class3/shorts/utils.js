@@ -10,7 +10,7 @@ export class PrefixTable {
       matcher = new RegExp(`^(${matcher.source})$`);
       if (func instanceof RegExp) {
         const CHECK = new RegExp(`^(${func.source})$`);
-        func = word => (word.match?.(CHECK) && word);
+        func = word => (word.match?.(CHECK) ? word : undefined);
       }
       dict[type] = { matcher, func, func2 };
     }
@@ -42,11 +42,14 @@ export class PrefixTable {
 }
 
 export function calcNum(defaultValue, defaultType, arg) {
-  let { N, n, num, unit, expr } = arg;
+  let { N, n, /*fraction, frac,*/ num, unit, expr } = arg;
   if (!N && !expr)
     throw new SyntaxError("not a number value");
   if (unit === "auto")
     throw new Error("implement this");
+  // debugger
+  // if(frac && !unit)
+  //   return `calc(${expr} ${defaultValue + defaultType})`;
   if (expr?.endsWith(/[-+/*]/))
     return `calc(${expr} ${defaultValue + defaultType})`;
   if (expr?.startsWith(/[-+/*]/))
