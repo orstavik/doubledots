@@ -48,14 +48,38 @@ function init(shortTxt) {
   shorts.addSuperShorts(shortTxt);
 }
 
+function analyzeRule(rule) {
+  const [, item, specificity] = rule.match(/\/\*(item|container) (\d+)\*\//);
+  return { item: item === "item", specificity: parseInt(specificity) };
+}
+
+const ITEM = /\/\*item (\d+)\*\//g;
+const CONTAINER = /\/\*container (\d+)\*\//g;
+function injectRule(shortName, short, res = "") {
+  debugger
+  for (let rule of toCssText(shortName, short)) {
+    const { item, specificity } = analyzeRule(rule);
+    if (item === "item") {
+      for (let m; m = ITEM.exec(res);)
+        if (parseInt(m[0]) > specificity)
+          return res.slice(0, m.index) + rule + res.slice(m.index);
+      if (m = CONTAINER.exec(res))
+        return res.slice(0, m.index) + rule + res.slice(m.index);
+    } else {
+      for (let m; m = CONTAINER.exec(res);)
+        if (parseInt(m[0]) > specificity)
+          return res.slice(0, m.index) + rule + res.slice(m.index);
+    }
+    return res + rule;
+  }
+}
 function add$Classes(classList, shortsToCss) {
   let tmp;
-  for (let txt of classList)
-    if (!(txt in shortsToCss))
-      if (tmp = parse$Expression(txt))
+  for (let short of classList)
+    if (!(short in shortsToCss))
+      if (tmp = parse$Expression(short))
         if (tmp = interpret$Expression(tmp, shorts))
-          if (tmp = toCssText(txt, tmp))
-            shortsToCss[txt] = `/*\n${txt}\n*/\n${tmp}`;
+          shortsToCss[short] = tmp;
 }
 
 const defaultCss = `
@@ -77,11 +101,14 @@ const defaultCss = `
 
 export function run(style) {
   init(style.getAttribute("css-shorts"));
-  const shortsToCss = {}; //this should be a global variable??
+  const shorts = {}; //this should be a global variable??
   for (let el of document.querySelectorAll('[class*="$"]'))
-    add$Classes(el.classList, shortsToCss);
-  style.discovered = shortsToCss;
-  style.textContent += defaultCss + Object.values(shortsToCss).join("\n\n");
+    add$Classes(el.classList, shorts);
+  style.discovered = shorts;
+  let mainTxt = "";
+  for (let shortName in shorts)
+    mainTxt += injectRule(shortName, shorts[shortName], mainTxt);
+  style.textContent += defaultCss + mainTxt;
 }
 
 

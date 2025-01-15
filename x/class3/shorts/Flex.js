@@ -27,7 +27,7 @@ const flexContainerPrefix = new PrefixTable({
 export function flex(start, args) {
   const res = flexContainerPrefix.argsToDict(args);
   res["display"] = "flex";
-  
+
   if (res["flex-direction"])
     res["flex-direction"] = res["flex-direction"]?.replace(/col($|-)/, "column");
   return res;
@@ -45,6 +45,6 @@ const flexItemPrefix = new PrefixTable({
 
 export function _flex(start, args) {
   const res = flexItemPrefix.argsToDict(args);
-  debugger;
+  // debugger;
   return res;
 }

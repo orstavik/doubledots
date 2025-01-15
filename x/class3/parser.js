@@ -1,49 +1,13 @@
-//NO-SPACE-PERCENT-selector
-// 1. ">>" is the descendant space selector.
-// 2. "%" is a placeholder for implied selector. 
-//    If a comma separated expression doesn't contain a "%", 
-//    it is implied at the start. like in regular css.
+import { parse$ContainerSelector, parse$ItemSelector } from "./parseSelector.js";
+export {toCssText} from "./parseSelector.js";
 
-const styleSheet = new CSSStyleSheet();
-
-function testSelector(selector, txt) {
-  try {
-    selector = selector.replaceAll("%", ".HELLO-SUNSHINE");
-    styleSheet.insertRule(selector + " { border-width: 2px; }");
-    styleSheet.deleteRule(0);
-  } catch (err) {
-    throw new SyntaxError("Illegal no-space-percent selector: " + txt);
-  }
-}
-
-function parse$NoSpaceSelector(txt, placeholder) {
-  const percentSelector = txt
-    .replaceAll(">>", " ")
-    .split(",")
-    .map(txt => txt.includes("%") ? txt : placeholder + txt)
-    .join(",");
-  testSelector(percentSelector, txt);
-  return percentSelector;
-}
-
-function parse$ContainerSelector(txt) {
-  return parse$NoSpaceSelector(txt, "%");
-}
-
-function parse$ItemSelector(txt) {
-  if (txt.includes("%"))
-    throw new SyntaxError("$short item selector cannot contain %: " + txt);
-  return parse$NoSpaceSelector(txt, "% > ");
-}
-
-/*************/
-/** $shorts **/
-/*************/
 const ZERO = /(-|)0([0-9]+)/.source; //neg, zeroInt
 const FLOAT = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const UNIT = /[a-z]+|%/.source;
 //prefix shorts
 const NUMBER = `(${ZERO}|${FLOAT})(${UNIT}|)`; //num, neg, zeroInt, unit
+// const FRAC = /[0-9]+\/[0-9]+/.source;
+// const FRACTION = new RegExp(`(${FRAC})(${UNIT}|)`).source;
 const HEX = /#[0-9a-f]{3,6}/.source;
 const START = /([a-z]*)\[/.source;
 //non-prefix shorts
@@ -51,14 +15,18 @@ const WORD = /[-]*[a-z]+[a-z0-9-]*/.source; //word allows for --var syntax. but 
 const QUOTE = /(?:[`'"])(?:\\.|(?!\1).)*?\1/.source; //sign, textBody
 const CALC_EXPR = /[^,\]\[]]+/.source;
 const BRACKETS_COMMA = /(\,)|(\])/.source;
-const TOKENS =
+const TOKENS =                                    //|(${FRACTION})
   new RegExp(`${BRACKETS_COMMA}|${START}|(${HEX})|(${NUMBER})|(${WORD})|(${QUOTE})|(${CALC_EXPR})`, "g");
 
-function processToken([, c, end, prefix, hex, N, num, neg, zInt, unit, word, quote, expr]) {
+function processToken([, c, end, prefix, hex,/* fraction, frac, fracunit,*/ N, num, neg, zInt, unit, word, quote, expr]) {
+  // if (frac)
+  //   return { N: fraction, num: frac, n: frac.split("/").reduce((_, [a, b]) => a / b), unit: fracunit };
+  if (num)
+    return { N, num, n: Number(zInt ? neg + "." + zInt : num), unit };
+  if (prefix != null)
+    return { prefix, args: [] };
   return c ? "" : end ? end : word ? word :
-    prefix != null ? { prefix, args: [] } :
-      num ? { N, num, n: Number(zInt ? neg + "." + zInt : num), unit } :
-        { hex, quote, expr };
+    { hex, quote, expr };
 }
 
 function nestBrackets(active, tokens) {
@@ -87,13 +55,11 @@ function parse$arg(arg) {
     { prefix: "", args: [first] };
 }
 
-function parse$Short(short) {
-  const [name, ...args] = short.split("_");
-  return {
-    name,
-    camel: name.replaceAll(/-([a-z])/g, (_, c) => c.toUpperCase()),
-    args: args.map(parse$arg)
-  };
+function parse$Short(short, item) {
+  let [name, ...args] = short.split("_");
+  const camel = (item ? "_" : "") + name.replaceAll(/-([a-z])/g, (_, c) => c.toUpperCase());
+  args = args.map(parse$arg);
+  return { name, camel, args };
 }
 
 function parse$Shorts(seg, item) {
@@ -101,7 +67,7 @@ function parse$Shorts(seg, item) {
   const selector = item ?
     parse$ItemSelector(select) :
     parse$ContainerSelector(select);
-  return { selector, shorts: shorts.map(parse$Short) };
+  return { selector, shorts: shorts.map(s => parse$Short(s, item)) };
 }
 
 // :hover$flex_row$color_blue|$flex_1_0_auto
@@ -123,24 +89,7 @@ export function parse$SuperShorts(txt) {
   for (let [, name, value] of txt.matchAll(/\$([a-z0-9-]+)\s*\{([^\}]+)\}/g)) {
     res[name] = parse$Expression(value.replaceAll(/\s/g, ""));
     if (res[name][0].selector.container)
-      throw new SyntaxError(`The $superShort "${key}" shouldnt have container selector: ${res[key]}.`);
+      throw new SyntaxError(`$superShort "${key}" cannot have container selector: ${res[key]}.`);
   }
   return res;
-}
-
-/**
- * toCssText
- */
-function ruleToString(cssName, selector, value) {
-  let str = selector.replaceAll("%", cssName) + " {";
-  for (let [k, v] of Object.entries(value))
-    str += `\n  ${k}: ${v};`;
-  return str + "\n}";
-}
-
-export function toCssText(shortName, dict) {
-  const cssName = "." + shortName.replaceAll(/[^a-z0-9_-]/g, "\\$&");
-  return Object.entries(dict)
-    .map(([select, body]) => ruleToString(cssName, select, body))
-    .join("\n\n");
 }
