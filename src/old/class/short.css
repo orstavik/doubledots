@@ -1,0 +1,56 @@
+
+.border {
+  border: 2px dotted;
+  border-collapse: initial;
+  border-spacing: initial;
+  border-radius: 0;
+  border-top-color: var(--border-top-color, var(--border-color, var(--color_3, black)));
+  border-right-color: var(--border-right-color, var(--border-color, var(--color_3, black)));
+  border-bottom-color: var(--border-bottom-color, var(--border-color, var(--color_3, black)));
+  border-left-color: var(--border-left-color, var(--border-color, var(--color_3, black)));
+}
+
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.inline-flex { display: inline-flex; }
+.inline-flex-col { display: inline-flex; flex-direction: column; }
+
+
+
+.flex-start {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;  
+  justify-items: flex-start;
+  align-items: flex-start;
+}
+.flex-start > :first-child {
+  flex: 1 1 auto;
+}
+
+
+.color-mono {
+  --color-mono-1: color(oklch, var(--color-mono-light-1), var(--color-mono-chroma-1), var(--color-mono-hue));
+  --color-mono-2: color(oklch, var(--color-mono-light-2), var(--color-mono-chroma-2), var(--color-mono-hue));
+  --color-mono-3: color(oklch, var(--color-mono-light-3), var(--color-mono-chroma-3), var(--color-mono-hue));
+  --color-mono-4: color(oklch, var(--color-mono-light-4), var(--color-mono-chroma-4), var(--color-mono-hue));
+  --color-mono-5: color(oklch, var(--color-mono-light-5), var(--color-mono-chroma-5), var(--color-mono-hue));
+  --color-mono-6: color(oklch, var(--color-mono-light-6), var(--color-mono-chroma-6), var(--color-mono-hue));
+  --color-mono-7: color(oklch, var(--color-mono-light-7), var(--color-mono-chroma-7), var(--color-mono-hue));
+  --color-mono-8: color(oklch, var(--color-mono-light-8), var(--color-mono-chroma-8), var(--color-mono-hue));
+  --color-mono-9: color(oklch, var(--color-mono-light-9), var(--color-mono-chroma-9), var(--color-mono-hue));
+  --color-mono-10: color(oklch, var(--color-mono-light-10), var(--color-mono-chroma-10), var(--color-mono-hue));
+}
+
+
+.color-lab {
+  --color-lab-1: color(oklab, from currentcolor, l * var(--color-lab-l-1), a * var(--color-lab-a-1), b* var(--color-lab-b));
+  --color-lab-2: color(oklab, from currentcolor, l * var(--color-lab-l-2), a * var(--color-lab-a-2), b* var(--color-lab-b));
+  --color-lab-3: color(oklab, from currentcolor, l * var(--color-lab-l-3), a * var(--color-lab-a-3), b* var(--color-lab-b));
+  --color-lab-4: color(oklab, from currentcolor, l * var(--color-lab-l-4), a * var(--color-lab-a-4), b* var(--color-lab-b));
+  --color-lab-5: color(oklab, from currentcolor, l * var(--color-lab-l-5), a * var(--color-lab-a-5), b* var(--color-lab-b));
+  --color-lab-6: color(oklab, from currentcolor, l * var(--color-lab-l-6), a * var(--color-lab-a-6), b* var(--color-lab-b));
+  --color-lab-7: color(oklab, from currentcolor, l * var(--color-lab-l-7), a * var(--color-lab-a-7), b* var(--color-lab-b));
+  --color-lab-8: color(oklab, from currentcolor, l * var(--color-lab-l-8), a * var(--color-lab-a-8), b* var(--color-lab-b));
+  --color-lab-9: color(oklab, from currentcolor, l * var(--color-lab-l-9), a * var(--color-lab-a-9), b* var(--color-lab-b));
+}

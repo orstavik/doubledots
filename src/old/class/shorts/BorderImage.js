@@ -5,11 +5,11 @@ import { PrefixTable, calcNum } from "./SHORT.js";
 const calc = calcNum.bind(null, 1 / 3, "rem");
 
 const borderImagePrefix = PrefixTable({
-  "border-repeat": [/stretch|repeat|round|space/, 1],
-  "border-width": [/|w|width/, 4, calc],
-  "border-outset": [/o|outset/, 4, calc],
-  "border-slice": [/s|slice/, 4],
-  "url": [/url/, 1, /[a-z][a-z0-9-]*/]
+  "border-repeat": [/stretch|repeat|round|space/],
+  "border-width": [/|w|width/, [calc]],
+  "border-outset": [/o|outset/, [calc]],
+  "border-slice": [/s|slice/],
+  "url": [/url/, [/[a-z][a-z0-9-]*/]]
 });
 
 const BorderImageDefault = {

@@ -1,0 +1,22 @@
+<script type="module">
+  import { init } from "../interpreter.js";
+
+  setTimeout( _ => {
+    const styleEl = document.querySelector("style");
+    init(styleEl, "../short.css");
+  }, 10);
+</script>
+
+<head>
+  <style class:=""></style>
+</head>
+
+<body class="$palette_orangered">
+
+  <h1 class="$color_text[a90]_background[a30,a40]_border[a45,a55]">sunshine</h1>
+
+  <h2 class="$color_text[[a30,l*.5,c,h+180],[a60,l*2,c,h]]">world</h2>
+
+  <div style="color: var(--color-a30); background: var(--color-a95);">hello</div>
+
+</body>

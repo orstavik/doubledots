@@ -24,12 +24,12 @@ const pxOrEm = s => { if (s.endsWith(/px|em/)) return s; throw new SyntaxEror("w
 //this endsWith(/\d/) is often against a digit?
 
 const flexTable2 = PrefixTable({
-  "flex-direction": [/row|column/, 1, /row|column|row-reverse|column-reverse/],
-  "flex-wrap": [/wrap|nowrap/, 1, /wrap|wrap-reverse|nowrap/],
-  "justify-content": [/justify/, 1, /start|end|center|space-between|space-around|space-evenly/],
-  "align-content": [/content/, 1, /stretch|flex-start|flex-end|center|space-between|space-around/],
-  "align-items": [/items/, 1, /stretch|flex-start|flex-end|center|baseline/],//, Var],
-  gap: [/|gap|g/, 2, calcGap, pxOrEm],
+  "flex-direction": [/row|column/, [/row|column|row-reverse|column-reverse/]],
+  "flex-wrap": [/wrap|nowrap/, [/wrap|wrap-reverse|nowrap/]],
+  "justify-content": [/justify/, [/start|end|center|space-between|space-around|space-evenly/]],
+  "align-content": [/content/, [/stretch|flex-start|flex-end|center|space-between|space-around/]],
+  "align-items": [/items/, [/stretch|flex-start|flex-end|center|baseline/]],//, Var],
+  gap: [/|gap|g/, [calcGap, pxOrEm]],
 });
 
 export class Flex {
@@ -55,12 +55,12 @@ const autoNum = function (arg) {
 };
 
 const flexChildTable2 = PrefixTable({
-  "flex": [/|flex/, 3],
-  "flex-grow": [/g|grow/, 1, pureNum],
-  "flex-shrink": [/s|shrink/, 1, pureNum],
-  "flex-basis": [/basis/, 1, autoNum],
-  "flex-order": [/order/, 1, pureInt],
-  "align-self": [/auto|flex-start|flex-end|center|baseline|stretch/, 1, /auto|flex-start|flex-end|center|baseline|stretch/],
+  "flex": [/|flex/], //must be 3 or less
+  "flex-grow": [/g|grow/, [pureNum]],
+  "flex-shrink": [/s|shrink/, [pureNum]],
+  "flex-basis": [/basis/, [autoNum]],
+  "flex-order": [/order/, [pureInt]],
+  "align-self": [/auto|flex-start|flex-end|center|baseline|stretch/, [/auto|flex-start|flex-end|center|baseline|stretch/]],
 });
 
 

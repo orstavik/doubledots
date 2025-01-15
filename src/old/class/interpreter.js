@@ -1,11 +1,15 @@
-import { CHILD_SELECT, parse$Expression } from "./parser.js";
+import { CHILD_SELECT, parse$Expression } from "./parser2.js";
 
 import { Border } from "./shorts/Border.js";
 import { BorderImage } from "./shorts/BorderImage.js";
 import { Flex, FlexChild, InlineFlex } from "./shorts/Flex.js";
 import { TextShadow } from "./shorts/TextShadow.js";
+import { Palette } from "./shorts/Palette.js";
+import { Color } from "./shorts/Color.js";
 
 const TYPES = {
+  color: Color,
+  palette: Palette,
   border: Border,
   "border-image": BorderImage,
   flex: Flex,
@@ -24,21 +28,29 @@ function typeName(name) { return name.match(TYPE_NAMES)?.[1]; }
 //   return type && { type, Type: TYPES[type], ChildType: CHILD_TYPES[type] };
 // }
 
+function spaceJoin(dict){
+  for (let prop in dict)
+    if(dict[prop] instanceof Array) 
+      dict[prop] = dict[prop].join(" ");
+  return dict;
+}
+
 //todo push toTable back into the parser.
 function interpret$short(short, rules) {
   const { name, args, childArgs } = short;
-  const { type, Type, ChildType, rule, childRules } = rules[name] ?? rules[typeName(name)];
-  const css = Type.parse(args, rule.style);
+  // , rule, childRules 
+  const { type, Type, ChildType } = rules[name] ?? rules[typeName(name)];
+  const css = spaceJoin(Type.parse(args));
 
   const childCss = new Map();
-  for (let key in childRules)
-    childCss.set(key, childRules[key]);
+  // for (let key in childRules)
+  //   childCss.set(key, childRules[key]);
   for (let { select, args } of childArgs) {
-    const childRule = childRules[select];
-    const childCss = ChildType.parse(args, childRule.style);
-    childCss.set(select, { select, childRule, childCss });
+    // const childRule = childRules[select];
+    const childCss = spaceJoin(ChildType.parse(args)); //, childRule.style
+    childCss.set(select, { select, childCss }); //childRule,
   }
-  return { name, type, rule, childRules, css, childCss };
+  return { name, type, css, childCss, Type, ChildType }; // rule,childRules, 
 }
 
 function interpret$Expression(txt, rules) {
@@ -62,14 +74,13 @@ function stackOrSmash(main, rule, add) {
   return Object.assign(main, add);
 }
 
-function smash$Expressions(expr) {
+function check$overlap(expr) {
+  debugger;
   const res = document.createElement("div").style;
   // const res = {};
   const childRes = {};
   for (let { rule, css, childCss } of expr.shorts) {
-    //1. we overwrite the rule with the css
-    //2. to do this, we need the rule to become a dict
-    //3. then we can smash the rules onto the other
+    //todo check  that we don't have two overlapping rules. That should trigger a warning.
     res = stackOrSmash(res, rule.style, css);
     if (childCss)
       for (let { select, childRule, childCss } of childCss.values())
@@ -90,6 +101,7 @@ function extract$Rules(cssRules) {
     const m = rule.selectorText.match(RULE);
     if (!m)
       continue;
+    //todo the rule  must be converted from text.. and we need to parse shorthands based on space..
     const [, select, name] = m;
     const type = typeName(name) ?? {};
     const Type = TYPES[type], ChildType = CHILD_TYPES[type];
@@ -106,18 +118,18 @@ function toNativeCssProps(cssStyle) {
   return el.style;
 }
 
-export function toCssText({ $dolls, select: { name: selector } }) {
-  const bodies = { [selector]: [] };
-  const main = bodies[selector];
-  for (let { css, childCss, Type } of $dolls) {
+export function toCssText({ shorts, select: { name: selector } }) {
+  const resultRules = { [selector]: [] };
+  const main = resultRules[selector];
+  for (let { css, childCss, Type } of shorts) {
     main.push(`\n  /**${Type.name}**/`);
     main.push(...Object.entries(css).map(([k, v]) => `\n  ${k}: ${v};`));
     for (let { select, css } of childCss) {
-      const body = bodies[selector + " > " + select] ??= [];
+      const body = resultRules[selector + " > " + select] ??= [];
       body.push(...Object.entries(css).map(([k, v]) => `\n  ${k}: ${v};`));
     }
   }
-  return Object.entries(bodies).map(([s, b]) => `\n\n${s} {${b.join("")}\n}`);
+  return Object.entries(resultRules).map(([s, b]) => `\n\n${s} {${b.join("")}\n}`);
 }
 
 export async function init(styleEl, defaultStyle) {
@@ -127,24 +139,26 @@ export async function init(styleEl, defaultStyle) {
     styleEl.textContent;
 
   //1. extract all referable Rules from the styleSheet {name: {name}}
-  const rules = extract$Rules([...styleEl.sheet.cssRules]);
+  const rules = {};//extract$Rules([...styleEl.sheet.cssRules]);
   //2. add Types as rules, even if they have no default rule.
   main: for (let type in TYPES) {
-    for (let { type: t } of Object.values(rules))
-      if (t === type)
-        continue main;
+    // for (let { type: t } of Object.values(rules))
+    //   if (t === type)
+    //     continue main;
     rules[type] = { name: type, type, Type: TYPES[type], ChildType: CHILD_TYPES[type] };
   }
 
   const newRules = [];
   let val;
-  for (let el of document.body.querySelectorAll("[class]"))
-    for (let txt of el.getAttribute("class").split(/\s+/))
-      if (txt.includes("$") && (val = interpret$Expression(txt, rules)))
+  for (let el of document.querySelectorAll("[class]")) {
+    for (let txt of el.getAttribute("class").split(/\s+/).filter(txt => txt.includes("$"))) {
+      if (val = interpret$Expression(txt, rules))
         newRules.push({ ...val, txt });
+    }
+    // newRules.map(check$overlap); //todo don't know how to test.
+  }
+  //todo add the rule to the styleEl
+  styleEl.textContent += newRules.map(toCssText).join("\n\n");
 
-  debugger;
-  const smashedRules = newRules.map(smash$Expressions);
-  debugger;
-  return Object.assign({}, rules, newRules);
+  return Object.assign({}, newRules);
 }

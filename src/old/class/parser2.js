@@ -1,6 +1,10 @@
 //we can put the directions at the beginning or the end of the ctxSelect
 //and then we can imagine the :root (<.name>) infront or after the direction.
 //and if there is no direction, then it should likely be a <.name>.class:pseudo[attr] selector
+
+/************/
+/** SELECT **/
+/************/
 const DIR = /~|\+|>>|>/.source;
 const ANY = /[^:#[\]="]+/.source;
 const TAG = /[a-z]+(?:-[a-z]+)/.source;
@@ -32,33 +36,53 @@ function check$ChildSelect(txt) {
     throw new SyntaxError("Illegal child select: " + txt);
 }
 
-const INT = /[0-9]+/.source;
-const FLOAT = /0?\.[0-9]+/.source; //.07 and 0.07
-const HEX = /#[0-9a-f]+/.source;
-const SIGN = /[+*/]/.source; //only +*/. If you want to do a calc(-num), then you do calc(+-num)
-const FIX = /[a-z]+(?:-[a-z]+)*/.source;
-// const PRESUFFIX = /^([a-z]+)-([a-z]+(-[a-z]+)*)$/;
-const ARG = new RegExp(`^(${FIX}|)(${SIGN})?(-|)(?:(${HEX})|(${FLOAT})|(${INT}))?(${FIX}|%)?$`);
+/***********/
+/** VALUE **/
+/***********/
+const ZERO = /(-|)0([0-9]+)/.source; //neg, zeroInt
+const FLOAT = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
+const LENGTH = /[a-z]+|%/.source;
+//prefix shorts
+const NUMBER = `(${ZERO}|${FLOAT})(${LENGTH}|)`; //num, neg, zeroInt, len
+const HEX = /#[0-9a-f]{3,6}/.source;
+const VEC = /([a-z]+|)\[/.source;
+//non-prefix shorts
+const WORD = /[-]*[a-z]+[a-z0-9-]*/.source; //word allows for --var syntax. but not prefix.
+const QUOTE = /(?:[`'"])(?:\\.|(?!\1).)*?\1/.source; //sign, textBody
+const CALC_EXPR = /[^,\]]+/.source;
+const TOKENS = new RegExp(`(\,)|(\])|${VEC}|(${HEX})|(${NUMBER})|(${WORD})|(${QUOTE})|(${CALC_EXPR})`, "g");
 
-function parseNumber(neg, hex, float, int) {
-  return hex ? parseInt(neg + hex.slice(1), 16) :
-    float ? Number(float) :
-      int ? parseInt(neg + (int[0] === "0" ? "." + int.slice(1) : int)) :
-        undefined;
+function processToken([, c, end, prefix = "", hex, N, num, neg, zInt, length, word, quote, expr]) {
+  return c ? "" : end ? end : word ? word :
+    prefix ? { prefix, args: [] } :
+      num ? { N, num, n: Number(zInt ? neg + "." + zInt : num), length } :
+        { hex, quote, expr };
 }
 
-// { prefix, sign, neg, hex, float, int, suffix, num }
-function parse$arg(arg) {
-  const m = arg.match(ARG);
-  if (!m)
-    return;
-  let [, prefix, sign, neg, hex, float, int, suffix] = m;
-  if (prefix && !(sign || neg || hex || float || int || suffix)) {
-    [prefix, suffix] = prefix.split(/_/);
-    return { prefix, suffix };
+function nestBrackets(active, tokens) {
+  let prev;
+  for (let t of tokens) {
+    if (t === "]")
+      return active;
+    if (t.args)
+      prev = nestBrackets(t, tokens);
+    else if (t || !prev) //add somethings and commas after commas.
+      active.args.push(prev = t);
+    else
+      prev = t;
   }
-  const num = parseNumber(neg, hex, float, int);
-  return { prefix, sign, neg, hex, float, int, suffix, num };
+  throw new SyntaxError("Too many '['.");
+}
+
+function parse$arg(arg) {
+  const tokens = [];
+  for (let m; m = TOKENS.exec(arg);)
+    tokens.push(processToken(m));
+  const iter = tokens[Symbol.iterator]();
+  const first = iter.next().value;
+  return first.args ?
+    nestBrackets(first, iter, true) :
+    { prefix: "", args: [first] };
 }
 
 function parse$Short(short) {

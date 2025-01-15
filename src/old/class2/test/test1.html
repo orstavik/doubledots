@@ -1,0 +1,24 @@
+<head>
+  <script></script>
+  <style css-shorts="
+    $border-one=border_[-002px,4e12px]_dashed
+    $border-two=border-one_4px_r[20%,50%]_rr[10%,20%]
+  ">
+  /*here is where the output css rules are coming.*/
+</style>
+</head>
+
+<div class="
+  $border-one_[02px,.3px]_r[20%,50%]_rr[10%,20%]
+">
+  hello sunshine
+</div>
+
+<script type="module">
+  import { init, interpret } from "../interpreter.js";
+
+  const style = document.querySelector("style");
+  init(style, style.getAttribute("css-shorts"));
+  for (let el of document.querySelectorAll("[class]"))
+    interpret(el.classList, style);
+</script>

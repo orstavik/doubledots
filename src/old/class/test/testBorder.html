@@ -1,3 +1,13 @@
+<script type="module">
+  import { init } from "../interpreter.js";
+
+  // /block(_(width#(\/#)?(\/#)?|height#(-#)?(-#)?|align|valign))/
+  setTimeout(_ => {
+    const styleEl = document.querySelector("style");
+    init(styleEl, "./short.css");
+  }, 10);
+</script>
+
 <head>
   <style class:="">
     /*.border and .block is something that we get by default*/
@@ -31,19 +41,19 @@
     .flex-navbar {
       flex-direction: column-reverse;
     }
-
   </style>
 </head>
 
-<div class="$border_trb_r50%">
-  <div class="$border-hello $background  background-firefox-lizzard" 
-    style='--background-image-2: #3ee 35% url("../../media/examples/lizard.png")'>
-    hello
-  </div>
+<div class="$border_r[50%,20%]">
+  <div class="$border_r[5%,2%,3%,/,6%,7%]"></div>
   <div class="$border_dotted $border_left_radius5px $border-sunshine">
     dollars
   </div>
-  <div class="$border-hello$border_double  $block_20_40_60em">
+  <div class="$border-hello $background  background-firefox-lizzard"
+    style='--background-image-2: #3ee 35% url("../../media/examples/lizard.png")'>
+    hello
+  </div>
+  <div class="$border-hello$border_double $block_20_40_60em">
     sunshine
   </div>
   <div class="$background-1$background-2$background-3">
@@ -51,13 +61,3 @@
   </div>
   <div class="$flex-navbar_column-reverse"></div>
 </div>
-
-
-<script type="module">
-  import { init } from "./interpreter.js";
-
-  // /block(_(width#(\/#)?(\/#)?|height#(-#)?(-#)?|align|valign))/
-
-  const styleEl = document.querySelector("style");
-  init(styleEl);
-</script>
