@@ -1,8 +1,6 @@
 import { border, _border } from "./shorts/Border.js";
 import { flex, _flex } from "./shorts/Flex.js";
 import { paletteMaterial, colorMaterial } from "./shorts/PaletteMaterial.js";
-// import { color, _color } from "./shorts/Color.js";
-// import { Palette } from "./shorts/Palette.js";
 
 import { parse$Expression, parse$SuperShorts, toCssText } from "./parser.js";
 
@@ -57,7 +55,6 @@ function analyzeRule(rule) {
 const ITEM = /\/\*item (\d+)\*\//g;
 const CONTAINER = /\/\*container (\d+)\*\//g;
 function injectRule(shortName, short, res = "") {
-  debugger
   for (let rule of toCssText(shortName, short)) {
     const { item, specificity } = analyzeRule(rule);
     if (item === "item") {
@@ -74,6 +71,7 @@ function injectRule(shortName, short, res = "") {
     return res + rule;
   }
 }
+
 function add$Classes(classList, shortsToCss) {
   let tmp;
   for (let short of classList)
@@ -89,18 +87,20 @@ const defaultCss = `
   padding: 0;
   box-sizing: border-box;
 }
-:not(html) {
+:where(:not(html)) {
   /*COLOR INHERITANCE  (don't use native css shorthands: border, text-decoration)*/
-  border-color: inherit; /*does this work with inherit*/
-  /*border-top-color: inherit;
+  /*border-color: inherit; /*does this work with inherit*/
+  border-top-color: inherit;
   border-right-color: inherit;
   border-bottom-color: inherit;
-  border-left-color: inherit;*/
+  border-left-color: inherit;
   text-decoration-color: inherit;
   --dark-mode: 1;
-}  
-:dark-mode {
-  --dark-mode: -1;
+}
+@media(prefers-color-scheme:dark){
+  * {
+    --dark-mode: -1;
+  }
 }
 `;
 
@@ -112,7 +112,7 @@ export function run(style) {
   style.discovered = shorts;
   let mainTxt = "";
   for (let shortName in shorts)
-    mainTxt += injectRule(shortName, shorts[shortName], mainTxt);
+    mainTxt = injectRule(shortName, shorts[shortName], mainTxt);
   style.textContent += defaultCss + mainTxt;
 }
 

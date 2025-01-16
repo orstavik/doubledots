@@ -1,7 +1,7 @@
-import { PrefixTable, tailToVariables, spaceJoin, isOnlyOne } from "./utils.js";
+import { PrefixTable, tailToVariables, isOnlyOne, trbl } from "./utils.js";
 
 const materialColors500 = {
-  red: "#F44336",
+  red: "red",//"#F44336",
   pink: "#E91E63",
   purple: "#9C27B0",
   "deep-purple": "#673AB7",
@@ -23,8 +23,7 @@ const materialColors500 = {
 };
 
 const names = Object.keys(materialColors500).join("|");
-const d3 = /\d{1,3}/.source, d2 = /\d\d/.source;
-const COLOR = new RegExp(`^(${names})(${d3})(?:a(${d2}))?$`);
+const COLOR = new RegExp(`^(${names})(\\d{1,3})(?:a(\\d{1,2}))?$`);
 
 function computeColor(arg) {
   const m = arg.match(COLOR);
@@ -33,13 +32,13 @@ function computeColor(arg) {
   let [, color, light, alpha] = m;
   light = Number(light) / 1000;
   alpha = alpha != null ? " / " + Number(alpha) / 100 : "";
-  return `oklab(from var(--palette-material-${color}) calc(.5 + (${light} * var(--dark-mode)) a b${alpha}))`;
+  return `oklab(from var(--palette-material-${color}) calc(.5 + (${light} * var(--dark-mode))) a b${alpha})`;
 }
 
 const colorTable = new PrefixTable({
-  "color": [, computeColor, isOnlyOne],
-  "--background-color": [, computeColor, ],
-  "border-color": [, computeColor, spaceJoin],
+  "--color": [, computeColor, isOnlyOne],
+  "--background-color": [, computeColor,],
+  "border-color": [, computeColor],
   "text-decoration-color": [, computeColor, isOnlyOne],
 });
 
@@ -51,6 +50,9 @@ export function paletteMaterial(start, args) {
 export function colorMaterial(start, args) {
   const res = colorTable.argsToDict(args);
   tailToVariables(res, "--background-color");
+  trbl(res, "border-color");
+  if ("--color" in res)
+    res["color"] = "var(--color)";
   return res;
 }
 

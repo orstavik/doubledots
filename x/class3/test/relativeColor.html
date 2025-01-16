@@ -1,0 +1,82 @@
+<style>
+
+  
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+:where(:not(html)) {
+  /*COLOR INHERITANCE  (don't use native css shorthands: border, text-decoration)*/
+  /*border-color: inherit; /*does this work with inherit*/
+  border-top-color: inherit;
+  border-right-color: inherit;
+  border-bottom-color: inherit;
+  border-left-color: inherit;
+  text-decoration-color: inherit;
+  --dark-mode: 1;
+}  
+:where(:dark-mode) {
+  --dark-mode: -1;
+}
+/*container 0*/
+/*$palette-material*/
+
+
+:where(.\$palette-material) {
+  --palette-material-red: red;
+  --palette-material-pink: #E91E63;
+  --palette-material-purple: #9C27B0;
+  --palette-material-deep-purple: #673AB7;
+  --palette-material-indigo: #3F51B5;
+  --palette-material-blue: #2196F3;
+  --palette-material-light-blue: #03A9F4;
+  --palette-material-cyan: #00BCD4;
+  --palette-material-teal: #009688;
+  --palette-material-green: #4CAF50;
+  --palette-material-light-green: #8BC34A;
+  --palette-material-lime: #CDDC39;
+  --palette-material-yellow: #FFEB3B;
+  --palette-material-amber: #FFC107;
+  --palette-material-orange: #FF9800;
+  --palette-material-deep-orange: #FF5722;
+  --palette-material-brown: #795548;
+  --palette-material-grey: #9E9E9E;
+  --palette-material-blue-grey: #607D8B;
+}/*container 0*/
+/*$color-material_deep-orange200_[blue10,blue300]_[red500,green900,blue300,grey100]*/
+
+
+:where(.\$color-material_deep-orange200_\[blue10\,blue300\]_\[red500\,green900\,blue300\,grey100\]) {
+  --color: oklab(from var(--palette-material-deep-orange) l a b));
+  --background-color: oklab(from var(--palette-material-blue) l a b));
+  --background-color-2: oklab(from var(--palette-material-blue) l a b));
+  border-top-color: oklab(from var(--palette-material-red) l a b));
+  border-right-color: oklab(from var(--palette-material-green) l a b));
+  border-bottom-color: oklab(from var(--palette-material-blue) l a b));
+  border-left-color: oklab(from var(--palette-material-grey) l a b));
+  color: var(--color);
+}/*container 0*/
+/*$border_dashed_2px*/
+
+
+:where(.\$border_dashed_2px) {
+  border-style: dashed;
+  border-width: 2px;
+}
+</style>
+<style>
+  html{
+    --palette-material-red: red;
+  }
+
+  h1 {
+    color: oklab(from var(--palette-material-red) l a b);
+  }
+  h2 {
+    color: oklab(from var(--palette-material-red) calc(l + .2 * -1) a b);
+  }
+</style>
+
+<h1>hello</h1>
+<h2>sunshine</h2>

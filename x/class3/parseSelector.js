@@ -160,7 +160,7 @@ export function* toCssText(shortName, dict) {
   [sel, specificity] = sel.split(/\$\$(\d+$)/);
   const conSel = `:where(${sel.replaceAll("%", cssName)})`;
   rule = ruleToString(conSel, props);
-  yield `/*container ${specificity}*/\n/*${shortName}*/\n${rule}`;
+  yield `\n\n/*container ${specificity}*/\n/*${shortName}*/\n${rule}`;
   //items
   for ([sel, props] of Object.entries(dict)) {
     if (!sel.startsWith("|"))

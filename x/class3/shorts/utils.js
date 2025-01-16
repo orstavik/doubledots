@@ -5,7 +5,7 @@
 export const spaceJoin = (a) => a.join(" ");
 
 function twoIsThree(a, b, c) {
-  return b == c;
+  return b == c || undefined;
 }
 
 function funcOutRegex(func) {
@@ -37,7 +37,7 @@ export class PrefixTable {
     const res = {};
     top: for (let [i, { prefix, args }] of topArgs.entries()) {
       type: for (let [type, matcher, func, func2, j] of this.#rules)
-        if (matcher(prefix, i, j)) {
+        if (matcher(prefix, i, j) != undefined) {
           const a = processTop(args, func);
           if (a == null)
             continue type;
