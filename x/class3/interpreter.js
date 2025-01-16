@@ -1,6 +1,6 @@
 import { border, _border } from "./shorts/Border.js";
 import { flex, _flex } from "./shorts/Flex.js";
-import { paletteMaterial, colorMaterial } from "./shorts/PaletteMaterial.js";
+import { paletteMaterial, colorMaterial } from "./shorts/ColorMaterialWeb.js";
 
 import { parse$Expression, parse$SuperShorts, toCssText } from "./parser.js";
 
