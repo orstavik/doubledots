@@ -12,8 +12,8 @@ class ShortsResolver {
 
   addSuperShorts(shortTxt) {
     const parsed = parse$SuperShorts(shortTxt);
-    for (let [k, v] of Object.entries(parsed))
-      this.superShorts[k] = interpret$Expression(v, this);
+    for (let k in parsed)
+      this.superShorts[k] = interpret$Expression(parsed[v], this);
   }
 
   interpret(res, selector, { name, camel, args }, item) {
@@ -40,7 +40,6 @@ function interpret$Expression(segs, shortResolver) {
   return res;
 }
 
-// Color, Palette
 const shorts = new ShortsResolver([border, _border, flex, _flex, paletteMaterial, colorMaterial]);
 
 function init(shortTxt) {
@@ -82,11 +81,15 @@ function add$Classes(classList, shortsToCss) {
 }
 
 const defaultCss = `
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+* { 
+  margin: 0; 
+  padding: 0; 
+  box-sizing: border-box; 
+  --dark-mode: 0;
 }
+@media(prefers-color-scheme:dark) { * {
+  --dark-mode: -1; 
+} }
 :where(:not(html)) {
   /*COLOR INHERITANCE  (don't use native css shorthands: border, text-decoration)*/
   /*border-color: inherit; /*does this work with inherit*/
@@ -96,11 +99,6 @@ const defaultCss = `
   border-left-color: inherit;
   text-decoration-color: inherit;
   --dark-mode: 1;
-}
-@media(prefers-color-scheme:dark){
-  * {
-    --dark-mode: -1;
-  }
 }
 `;
 
@@ -119,14 +117,6 @@ export function run(style) {
 
 //1. $border-one=border_[2px,4px]_dashed
 //2. $border-one_solid
-//=>
-//run separately, and then assign custom over existing.
-//   Object.assign( $border_[2px,4px]_dashed , $border_solid )
-//so what with the children? would the child selector overwrite the entire previous child selector? or would the previous child selectors remain? So, here, we would assign the childSelectorCss over the shortshort default childSelectorCss.
-
-//alt. run as a single unit. merge the $short texts.
-//   $border_[2px,4px]_dashed_solid_dashed_dashed_overflow
-//but this is problematic.. what when the sequence of the arguments matter? what if the presence of one argument influence the interpretation of another argument? how to adjust for that?
 
 //border-image, border,
 //$border-image-x=border-image_20px|
