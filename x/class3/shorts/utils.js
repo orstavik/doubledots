@@ -4,34 +4,42 @@
 
 export const spaceJoin = (a) => a.join(" ");
 
-export class PrefixTable {
-  constructor(dict) {
-    for (let [type, [matcher, func, func2]] of Object.entries(dict)) {
-      matcher = new RegExp(`^(${matcher.source})$`);
-      if (func instanceof RegExp) {
-        const CHECK = new RegExp(`^(${func.source})$`);
-        func = word => (word.match?.(CHECK) ? word : undefined);
-      }
-      dict[type] = { matcher, func, func2 };
-    }
-    this.dict = Object.entries(dict);
-  }
+function twoIsThree(a, b, c) {
+  return b == c;
+}
 
-  #processTop(args, func) {
-    args = args.slice();
-    for (let i = 0; i < args.length; i++)
-      if ((args[i] = func(args[i])) === undefined)
-        return;
-    return args;
+function funcOutRegex(func) {
+  return func instanceof RegExp ?
+    str => str?.match?.(func)?.[0] == str ? str : undefined :
+    func;
+}
+function processTop(args, func) {
+  args = args.slice();
+  for (let i = 0; i < args.length; i++)
+    if ((args[i] = func(args[i])) == null)
+      return;
+  return args;
+}
+
+export class PrefixTable {
+  #rules;
+  constructor(dict) {
+    this.#rules = Object.entries(dict).map(([type, [matcher, func, func2]], i) => [
+      type,
+      funcOutRegex(matcher ?? twoIsThree),
+      funcOutRegex(func),
+      func2,
+      i
+    ]);
   }
 
   argsToDict(topArgs) {
     const res = {};
-    top: for (let { prefix, args } of topArgs) {
-      type: for (let [type, { matcher, func, func2 }] of this.dict)
-        if (prefix.match(matcher)) {
-          const a = this.#processTop(args, func);
-          if (a === undefined)
+    top: for (let [i, { prefix, args }] of topArgs.entries()) {
+      type: for (let [type, matcher, func, func2, j] of this.#rules)
+        if (matcher(prefix, i, j)) {
+          const a = processTop(args, func);
+          if (a == null)
             continue type;
           res[type] = func2?.(a) ?? a;
           continue top;
@@ -97,4 +105,5 @@ export function tryVariableFirst(val, prop) {
 export function isOnlyOne(args) {
   if (args.length > 1)
     throw new SyntaxError("too many arguments");
+  return args[0];
 }

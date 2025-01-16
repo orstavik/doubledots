@@ -1,5 +1,6 @@
 import { border, _border } from "./shorts/Border.js";
 import { flex, _flex } from "./shorts/Flex.js";
+import { paletteMaterial, colorMaterial } from "./shorts/PaletteMaterial.js";
 // import { color, _color } from "./shorts/Color.js";
 // import { Palette } from "./shorts/Palette.js";
 
@@ -42,7 +43,7 @@ function interpret$Expression(segs, shortResolver) {
 }
 
 // Color, Palette
-const shorts = new ShortsResolver([border, _border, flex, _flex]);
+const shorts = new ShortsResolver([border, _border, flex, _flex, paletteMaterial, colorMaterial]);
 
 function init(shortTxt) {
   shorts.addSuperShorts(shortTxt);
@@ -90,13 +91,17 @@ const defaultCss = `
 }
 :not(html) {
   /*COLOR INHERITANCE  (don't use native css shorthands: border, text-decoration)*/
-  border-color: inherit;
-  border-top-color: inherit;
+  border-color: inherit; /*does this work with inherit*/
+  /*border-top-color: inherit;
   border-right-color: inherit;
   border-bottom-color: inherit;
-  border-left-color: inherit;
+  border-left-color: inherit;*/
   text-decoration-color: inherit;
+  --dark-mode: 1;
 }  
+:dark-mode {
+  --dark-mode: -1;
+}
 `;
 
 export function run(style) {
