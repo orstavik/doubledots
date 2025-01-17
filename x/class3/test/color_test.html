@@ -65,7 +65,7 @@
   </script>
 
   <script>
-    const TAILWIND = {
+    const TAILWIND_GREYS = {
       slate: {
         50: '#f8fafc',
         100: '#f1f5f9',
@@ -79,7 +79,6 @@
         900: '#0f172a',
         950: '#020617',
       },
-
       gray: {
         50: '#f9fafb',
         100: '#f3f4f6',
@@ -93,7 +92,6 @@
         900: '#111827',
         950: '#030712',
       },
-
       zinc: {
         50: '#fafafa',
         100: '#f4f4f5',
@@ -107,7 +105,6 @@
         900: '#18181b',
         950: '#09090b',
       },
-
       neutral: {
         50: '#fafafa',
         100: '#f5f5f5',
@@ -121,7 +118,6 @@
         900: '#171717',
         950: '#0a0a0a',
       },
-
       stone: {
         50: '#fafaf9',
         100: '#f5f5f4',
@@ -135,7 +131,8 @@
         900: '#1c1917',
         950: '#0c0a09',
       },
-
+    };
+    const TAILWIND = {
       red: {
         50: '#fef2f2',
         100: '#fee2e2',
@@ -375,6 +372,104 @@
       },
     };
 
+    const MATERIAL_ACCENT = {
+      redA: {
+        100: '#FF8A80',
+        200: '#FF5252',
+        400: '#FF1744',
+        700: '#D50000',
+      },
+      pinkA: {
+        100: '#FF80AB',
+        200: '#FF4081',
+        400: '#F50057',
+        700: '#C51162',
+      },
+      purpleA: {
+        100: '#EA80FC',
+        200: '#E040FB',
+        400: '#D500F9',
+        700: '#AA00FF',
+      },
+      deepPurpleA: {
+        100: '#B388FF',
+        200: '#7C4DFF',
+        400: '#651FFF',
+        700: '#6200EA',
+      },
+      indigoA: {
+        100: '#8C9EFF',
+        200: '#536DFE',
+        400: '#3D5AFE',
+        700: '#304FFE',
+      },
+      blueA: {
+        100: '#82B1FF',
+        200: '#448AFF',
+        400: '#2979FF',
+        700: '#2962FF',
+      },
+      ligthBlueA: {
+        100: '#80D8FF',
+        200: '#40C4FF',
+        400: '#00B0FF',
+        700: '#0091EA',
+      },
+      cyanA: {
+        100: '#84FFFF',
+        200: '#18FFFF',
+        400: '#00E5FF',
+        700: '#00B8D4',
+      },
+      tealA: {
+        100: '#A7FFEB',
+        200: '#64FFDA',
+        400: '#1DE9B6',
+        700: '#00BFA5',
+      },
+      greenA: {
+        100: '#B9F6CA',
+        200: '#69F0AE',
+        400: '#00E676',
+        700: '#00C853',
+      },
+      ligthGreenA: {
+        100: '#CCFF90',
+        200: '#B2FF59',
+        400: '#76FF03',
+        700: '#64DD17',
+      },
+      limeA: {
+        100: '#F4FF81',
+        200: '#EEFF41',
+        400: '#C6FF00',
+        700: '#AEEA00',
+      },
+      yellowA: {
+        100: '#FFFF8D',
+        200: '#FFFF00',
+        400: '#FFEA00',
+        700: '#FFD600',
+      },
+      amberA: {
+        100: '#FFE57F',
+        200: '#FFD740',
+        400: '#FFC400',
+        700: '#FFAB00',
+      },
+      orangeA: {
+        100: '#FFD180',
+        200: '#FFAB40',
+        400: '#FF9100',
+        700: '#FF6D00',
+      },
+      deepOrangeA: {
+        100: '#FF9E80',
+        200: '#FF6E40',
+        400: '#FF3D00',
+        700: '#DD2C00',
+      },
+    };
     const MATERIAL = {
       red: {
         50: '#FFEBEE',
@@ -387,10 +482,6 @@
         700: '#D32F2F',
         800: '#C62828',
         900: '#B71C1C',
-        A100: '#FF8A80',
-        A200: '#FF5252',
-        A400: '#FF1744',
-        A700: '#D50000',
       },
       pink: {
         50: '#FCE4EC',
@@ -403,10 +494,6 @@
         700: '#C2185B',
         800: '#AD1457',
         900: '#880E4F',
-        A100: '#FF80AB',
-        A200: '#FF4081',
-        A400: '#F50057',
-        A700: '#C51162',
       },
       purple: {
         50: '#F3E5F5',
@@ -419,10 +506,6 @@
         700: '#7B1FA2',
         800: '#6A1B9A',
         900: '#4A148C',
-        A100: '#EA80FC',
-        A200: '#E040FB',
-        A400: '#D500F9',
-        A700: '#AA00FF',
       },
       deepPurple: {
         50: '#EDE7F6',
@@ -435,10 +518,6 @@
         700: '#512DA8',
         800: '#4527A0',
         900: '#311B92',
-        A100: '#B388FF',
-        A200: '#7C4DFF',
-        A400: '#651FFF',
-        A700: '#6200EA',
       },
       indigo: {
         50: '#E8EAF6',
@@ -451,10 +530,6 @@
         700: '#303F9F',
         800: '#283593',
         900: '#1A237E',
-        A100: '#8C9EFF',
-        A200: '#536DFE',
-        A400: '#3D5AFE',
-        A700: '#304FFE',
       },
       blue: {
         50: '#E3F2FD',
@@ -467,10 +542,6 @@
         700: '#1976D2',
         800: '#1565C0',
         900: '#0D47A1',
-        A100: '#82B1FF',
-        A200: '#448AFF',
-        A400: '#2979FF',
-        A700: '#2962FF',
       },
       lightBlue: {
         50: '#E1F5FE',
@@ -483,10 +554,6 @@
         700: '#0288D1',
         800: '#0277BD',
         900: '#01579B',
-        A100: '#80D8FF',
-        A200: '#40C4FF',
-        A400: '#00B0FF',
-        A700: '#0091EA',
       },
       cyan: {
         50: '#E0F7FA',
@@ -499,10 +566,6 @@
         700: '#0097A7',
         800: '#00838F',
         900: '#006064',
-        A100: '#84FFFF',
-        A200: '#18FFFF',
-        A400: '#00E5FF',
-        A700: '#00B8D4',
       },
       teal: {
         50: '#E0F2F1',
@@ -515,10 +578,6 @@
         700: '#00796B',
         800: '#00695C',
         900: '#004D40',
-        A100: '#A7FFEB',
-        A200: '#64FFDA',
-        A400: '#1DE9B6',
-        A700: '#00BFA5',
       },
       green: {
         50: '#E8F5E9',
@@ -531,10 +590,6 @@
         700: '#388E3C',
         800: '#2E7D32',
         900: '#1B5E20',
-        A100: '#B9F6CA',
-        A200: '#69F0AE',
-        A400: '#00E676',
-        A700: '#00C853',
       },
       lightGreen: {
         50: '#F1F8E9',
@@ -547,10 +602,6 @@
         700: '#689F38',
         800: '#558B2F',
         900: '#33691E',
-        A100: '#CCFF90',
-        A200: '#B2FF59',
-        A400: '#76FF03',
-        A700: '#64DD17',
       },
       lime: {
         50: '#F9FBE7',
@@ -563,10 +614,6 @@
         700: '#AFB42B',
         800: '#9E9D24',
         900: '#827717',
-        A100: '#F4FF81',
-        A200: '#EEFF41',
-        A400: '#C6FF00',
-        A700: '#AEEA00',
       },
       yellow: {
         50: '#FFFDE7',
@@ -579,10 +626,6 @@
         700: '#FBC02D',
         800: '#F9A825',
         900: '#F57F17',
-        A100: '#FFFF8D',
-        A200: '#FFFF00',
-        A400: '#FFEA00',
-        A700: '#FFD600',
       },
       amber: {
         50: '#FFF8E1',
@@ -595,10 +638,6 @@
         700: '#FFA000',
         800: '#FF8F00',
         900: '#FF6F00',
-        A100: '#FFE57F',
-        A200: '#FFD740',
-        A400: '#FFC400',
-        A700: '#FFAB00',
       },
       orange: {
         50: '#FFF3E0',
@@ -611,10 +650,6 @@
         700: '#F57C00',
         800: '#EF6C00',
         900: '#E65100',
-        A100: '#FFD180',
-        A200: '#FFAB40',
-        A400: '#FF9100',
-        A700: '#FF6D00',
       },
       deepOrange: {
         50: '#FBE9E7',
@@ -627,11 +662,24 @@
         700: '#E64A19',
         800: '#D84315',
         900: '#BF360C',
-        A100: '#FF9E80',
-        A200: '#FF6E40',
-        A400: '#FF3D00',
-        A700: '#DD2C00',
       },
+    };
+    for (let [name, table] of Object.entries(MATERIAL_ACCENT)) {
+      if (Object.keys(table).length === 4) {
+        table[50] = table[100];
+        table[300] = table[200];
+        table[500] = table[400];
+        table[600] = table[400];
+        table[800] = table[700];
+        table[900] = table[700];
+        table[950] = table[700];
+      }
+    }
+    for (let [name, table] of Object.entries(MATERIAL)) 
+      if (Object.keys(table).length === 4) 
+        table[950] = table[900];
+
+    const MATERIAL_GREYS = {
       brown: {
         50: '#EFEBE9',
         100: '#D7CCC8',
@@ -700,20 +748,19 @@
     }
 
     function xyzToOKLab({ X, Y, Z }) {
-
-      const l = 0.2104542553 * X + 0.7936177850 * Y - 0.0040720468 * Z;
-      const m = 1.9779984951 * X - 2.4285922050 * Y + 0.4505937099 * Z;
-      const s = 0.0259040371 * X + 0.7827717662 * Y - 0.8086757660 * Z;
+      const l = 0.8189330101 * X + 0.3618667424 * Y - 0.1288597137 * Z;
+      const m = 0.0329845436 * X + 0.9293118715 * Y + 0.0361456387 * Z;
+      const s = 0.0482003018 * X + 0.2643662691 * Y + 0.6338517070 * Z;
 
       const lCube = Math.cbrt(l);
       const mCube = Math.cbrt(m);
       const sCube = Math.cbrt(s);
 
-      const L = 0.4122214708 * lCube + 0.5363325363 * mCube + 0.0514459929 * sCube;
-      const a = 0.2119034982 * lCube + 0.6806995451 * mCube + 0.1073969566 * sCube;
-      const bVal = 0.0883024619 * lCube + 0.2817188376 * mCube + 0.6299787005 * sCube;
+      const L = 0.2104542553 * lCube + 0.7936177850 * mCube - 0.0040720468 * sCube;
+      const a = 1.9779984951 * lCube - 2.4285922050 * mCube + 0.4505937099 * sCube;
+      const b = 0.0259040371 * lCube + 0.7827717662 * mCube - 0.8086757660 * sCube;
 
-      return { L, a, b: bVal };
+      return { L, a, b };
     }
 
     function oklabToOklch({ L, a, b }) {
@@ -786,7 +833,7 @@
       const palette = printColorPalette(colorMap);
       document.body.insertAdjacentHTML('beforeend', palette);
       const { res, resShades } = analyzeColors(colorMap);
-      const colorList = Object.entries(colorMap).map(([name, table]) => table[500]);
+      const colorList = Object.entries(colorMap).map(([name, table]) => table[400]);
       const shadeList = Object.keys(resShades);
       const colorNames = Object.keys(res);
       const greyScale = ["#eee", "#ddd", "#ccc", "#bbb", "#aaa", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"];
@@ -794,6 +841,9 @@
       printGraphs(resShades, colorNames, greyScale);
     }
 
+    // runColorMap({ ...MATERIAL_GREYS, ...TAILWIND_GREYS });
+    // runColorMap({ ...MATERIAL_ACCENT, ...MATERIAL });
+    // runColorMap({...MATERIAL, ...TAILWIND});
     runColorMap(MATERIAL);
     runColorMap(TAILWIND);
   </script>
