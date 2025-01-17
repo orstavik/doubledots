@@ -66,7 +66,7 @@
   </script>
 
   <script>
-    const TAILWIND_GREYS = {
+    const TG_TAILWIND_GREYS = {
       slate: {
         50: '#f8fafc',
         100: '#f1f5f9',
@@ -373,7 +373,7 @@
       },
     };
 
-    const MATERIAL_ACCENT = {
+    const ACCENT_MATERIAL = {
       redA: {
         100: '#FF8A80',
         200: '#FF5252',
@@ -665,21 +665,8 @@
         900: '#BF360C',
       },
     };
-    for (let [name, table] of Object.entries(MATERIAL_ACCENT)) {
-      if (Object.keys(table).length === 4) {
-        table[50] = table[100];
-        table[300] = table[200];
-        table[500] = table[400];
-        table[600] = table[400];
-        table[800] = table[700];
-        table[900] = table[700];
-        table[950] = table[700];
-      }
-    }
-    for (let [name, table] of Object.entries(MATERIAL))
-      table[950] = table[900];
 
-    const MATERIAL_GREYS = {
+    const MG_MATERIAL_GREYS = {
       brown: {
         50: '#EFEBE9',
         100: '#D7CCC8',
@@ -717,6 +704,21 @@
         900: '#263238',
       },
     };
+    for (let [name, table] of Object.entries(ACCENT_MATERIAL)) {
+      if (Object.keys(table).length === 4) {
+        table[50] = table[100];
+        table[300] = table[200];
+        table[500] = table[400];
+        table[600] = table[400];
+        table[800] = table[700];
+        table[900] = table[700];
+        table[950] = table[700];
+      }
+    }
+    for (let [name, table] of Object.entries(MATERIAL))
+      table[950] = table[900];
+    for (let [name, table] of Object.entries(MG_MATERIAL_GREYS))
+      table[950] = table[900];
 
     function hexToLinearRgb(hex) {
       hex = hex.slice(1);
@@ -798,8 +800,7 @@
       for (let name in colorMap)
         for (let [shade, hex] of Object.entries(colorMap[name]))
           res[name][shade] = analyzeHex(hex);
-      const inverse = innerKeyToArray(res);
-      return { res, inverse };
+      return res;
     }
 
     function printGraph(res, prop, colors) {
@@ -808,39 +809,37 @@
       createLineChart(prop, res, labels, prop, colors);
     }
 
-    function printColorPalette({res: colorMap}) {
+    function printColorPalette(colorMap) {
       let str = "";
       for (let [name, table] of Object.entries(colorMap)) {
         str += `<div style="float: left; clear: left; width:70px; border-top: solid 2px grey;">${name}</div>`;
-        for (let [shade, {hex: HEX}] of Object.entries(table))
+        for (let [shade, { hex: HEX }] of Object.entries(table))
           str += `<div style="float: left; background-color: ${HEX}; width: 50px; padding-top: 50px; vertical-align: bottom; color: grey;">${shade}</div>`;
-
       }
       return str;
     }
 
-    window.runColorMap = function (colorMaps, props) {
+    window.runColorMap = function (res, props) {
       const greyScale = ["#eee", "#ddd", "#ccc", "#bbb", "#aaa", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"];
+      const inverse = innerKeyToArray(res);
       for (let prop of props) {
-        for (let { res, inverse } of colorMaps) {
-          const colorNames = Object.entries(res).map(([name, table]) => table[400].hex);
-          printGraph(res, prop, colorNames);
-          printGraph(inverse, prop, greyScale);
-        }
+        const colorNames = Object.entries(res).map(([name, table]) => table[400].hex);
+        printGraph(res, prop, colorNames);
+        printGraph(inverse, prop, greyScale);
       }
-      const palette = colorMaps.map(printColorPalette).join("");
+      const palette = printColorPalette(res);
       document.body.insertAdjacentHTML('beforeend', palette);
     };
 
     window.tables = {
       MATERIAL,
-      MATERIAL_ACCENT,
-      MATERIAL_GREYS,
+      ACCENT_MATERIAL,
+      MG_MATERIAL_GREYS,
       TAILWIND,
-      TAILWIND_GREYS,
+      TG_TAILWIND_GREYS,
     };
     for (let key in tables)
-      tables[key] = analyzeColors(tables[key]); 
+      tables[key] = analyzeColors(tables[key]);
 
     const tailMat = {};
     for (let name in MATERIAL) {
@@ -866,12 +865,19 @@
       tablesEl.insertAdjacentHTML('beforeend', `<option>${table}</option>`);
     for (let prop of ["C", "H", "L", "a", "b"])
       propsEl.insertAdjacentHTML('beforeend', `<option>${prop}</option>`);
+
     formEl.onchange = e => {
       while (formEl.nextElementSibling)
         formEl.nextElementSibling.remove();
-      const ts = [...tablesEl.selectedOptions].map(o => tables[o.value]);
+      let table = {};
+      for (let { value } of tablesEl.selectedOptions)
+        for (let [colorName, dict] of Object.entries(tables[value]))
+          table[colorName + "_" + value.slice(0, 2)] = dict;
+      table = Object.fromEntries(Object.entries(table).sort(
+        ([, { "500": { H: a } }], [, { "500": { H: b } }]) => b - a
+      ));
       const ps = [...propsEl.selectedOptions].map(o => o.value);
-      runColorMap(ts, ps);
+      runColorMap(table, ps);
     };
   </script>
 </body>
