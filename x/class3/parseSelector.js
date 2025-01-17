@@ -88,6 +88,7 @@ const SHORT_ABBREVIATIONS = {
   ":lg": "@media(min-width:1024px)",
   ":xl": "@media(min-width:1280px)",
   ":2xl": "@media(min-width:1536px)",
+  ":dark": "@media(prefers-color-scheme:dark)",
   ":first": ":first-child",
   ":last": ":last-child",
   ":edge": ":is(:first-child,:last-child)",
