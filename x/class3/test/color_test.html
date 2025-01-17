@@ -1,6 +1,7 @@
 <body>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <script>
     function createLineChart(chartTitle, data, labels, yLabel, colorNames) {
       const datasets = Object.entries(data).map(([key, values], i) => ({
@@ -675,9 +676,8 @@
         table[950] = table[700];
       }
     }
-    for (let [name, table] of Object.entries(MATERIAL)) 
-      if (Object.keys(table).length === 4) 
-        table[950] = table[900];
+    for (let [name, table] of Object.entries(MATERIAL))
+      table[950] = table[900];
 
     const MATERIAL_GREYS = {
       brown: {
@@ -775,7 +775,7 @@
       const xyz = linearRgbToXyz(rgb);
       const lab = xyzToOKLab(xyz);
       const lch = oklabToOklch(lab);
-      return { hex, rgb, xyz, lab, lch };
+      return { hex, ...rgb, ...xyz, ...lab, ...lch };
     }
 
     function extractValue(colors, valueFunc) {
@@ -787,64 +787,91 @@
 
     function innerKeyToArray(grandpa) {
       const res = {};
-      for (let key in grandpa)
-        for (let innerKey in grandpa[key])
-          (res[innerKey] ??= []).push(grandpa[key][innerKey]);
+      for (let outer in grandpa)
+        for (let inner in grandpa[outer])
+          (res[inner] ??= {})[outer] = grandpa[outer][inner];
       return res;
     }
 
     function analyzeColors(colorMap, name) {
-      const res = {};
-      for (let [name, table] of Object.entries(colorMap)) {
-        res[name] = {};
-        for (let [shade, hex] of Object.entries(table)) {
-          const { rgb, xyz, lab: { L, a, b }, lch: { C, H } } = res[name][shade] = analyzeHex(hex);
-        }
-      }
-      const resShades = innerKeyToArray(res);
-      return { res, resShades };
+      const res = { ...colorMap };
+      for (let name in colorMap)
+        for (let [shade, hex] of Object.entries(colorMap[name]))
+          res[name][shade] = analyzeHex(hex);
+      const inverse = innerKeyToArray(res);
+      return { res, inverse };
     }
 
-    function printGraphs(res, labels, colors) {
-      const resC = extractValue(res, ({ lch: { C } }) => C);
-      const resH = extractValue(res, ({ lch: { H } }) => H);
-      const resA = extractValue(res, ({ lab: { a } }) => a);
-      const resB = extractValue(res, ({ lab: { b } }) => b);
-      const resL = extractValue(res, ({ lab: { L } }) => L);
-      createLineChart('Chroma Values by color', resC, labels, 'Chroma', colors);
-      createLineChart('Hue Values by color', resH, labels, 'Hue', colors);
-      createLineChart('A Values by color', resA, labels, 'A', colors);
-      createLineChart('B Values by color', resB, labels, 'B', colors);
-      createLineChart('L Values by color', resL, labels, 'L', colors);
+    function printGraph(res, prop, colors) {
+      const labels = Object.keys(Object.values(res)[0]);
+      res = extractValue(res, color => color[prop]);
+      createLineChart(prop, res, labels, prop, colors);
     }
 
-    function printColorPalette(colorMap) {
+    function printColorPalette({res: colorMap}) {
       let str = "";
       for (let [name, table] of Object.entries(colorMap)) {
         str += `<div style="float: left; clear: left; width:70px; border-top: solid 2px grey;">${name}</div>`;
-        for (let [shade, HEX] of Object.entries(table))
+        for (let [shade, {hex: HEX}] of Object.entries(table))
           str += `<div style="float: left; background-color: ${HEX}; width: 50px; padding-top: 50px; vertical-align: bottom; color: grey;">${shade}</div>`;
 
       }
       return str;
     }
 
-    function runColorMap(colorMap) {
-      const palette = printColorPalette(colorMap);
-      document.body.insertAdjacentHTML('beforeend', palette);
-      const { res, resShades } = analyzeColors(colorMap);
-      const colorList = Object.entries(colorMap).map(([name, table]) => table[400]);
-      const shadeList = Object.keys(resShades);
-      const colorNames = Object.keys(res);
+    window.runColorMap = function (colorMaps, props) {
       const greyScale = ["#eee", "#ddd", "#ccc", "#bbb", "#aaa", "#999", "#888", "#777", "#666", "#555", "#444", "#333", "#222", "#111", "#000"];
-      printGraphs(res, shadeList, colorList);
-      printGraphs(resShades, colorNames, greyScale);
-    }
+      for (let prop of props) {
+        for (let { res, inverse } of colorMaps) {
+          const colorNames = Object.entries(res).map(([name, table]) => table[400].hex);
+          printGraph(res, prop, colorNames);
+          printGraph(inverse, prop, greyScale);
+        }
+      }
+      const palette = colorMaps.map(printColorPalette).join("");
+      document.body.insertAdjacentHTML('beforeend', palette);
+    };
 
-    // runColorMap({ ...MATERIAL_GREYS, ...TAILWIND_GREYS });
-    // runColorMap({ ...MATERIAL_ACCENT, ...MATERIAL });
-    // runColorMap({...MATERIAL, ...TAILWIND});
-    runColorMap(MATERIAL);
-    runColorMap(TAILWIND);
+    window.tables = {
+      MATERIAL,
+      MATERIAL_ACCENT,
+      MATERIAL_GREYS,
+      TAILWIND,
+      TAILWIND_GREYS,
+    };
+    for (let key in tables)
+      tables[key] = analyzeColors(tables[key]); 
+
+    const tailMat = {};
+    for (let name in MATERIAL) {
+      tailMat[name] = MATERIAL[name];
+      if (name in TAILWIND)
+        tailMat[name + "_tw"] = TAILWIND[name];
+    }
+    for (let name in TAILWIND)
+      if (!(name in tailMat))
+        tailMat[name + "_tw"] = TAILWIND[name];
+    tables.MATERIAL_TAILWIND = tailMat;
+  </script>
+
+  <form action="">
+    <select id="colorMap" multiple size="10" style="width:100px"></select>
+    <select id="colorProp" multiple size="10" style="width:100px"></select>
+  </form>
+  <script>
+    const tablesEl = document.querySelector("#colorMap");
+    const propsEl = document.querySelector("#colorProp");
+    const formEl = document.querySelector("form");
+    for (let table in tables)
+      tablesEl.insertAdjacentHTML('beforeend', `<option>${table}</option>`);
+    for (let prop of ["C", "H", "L", "a", "b"])
+      propsEl.insertAdjacentHTML('beforeend', `<option>${prop}</option>`);
+    formEl.onchange = e => {
+      while (formEl.nextElementSibling)
+        formEl.nextElementSibling.remove();
+      const ts = [...tablesEl.selectedOptions].map(o => tables[o.value]);
+      const ps = [...propsEl.selectedOptions].map(o => o.value);
+      runColorMap(ts, ps);
+    };
   </script>
 </body>
