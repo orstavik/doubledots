@@ -1,18 +1,8 @@
-//todo the default values of colors and inheritance etc are not added yet.
-// color: /red|blue|green|rgb|hsl/,
-// inherit: /inherit/
-
 export const spaceJoin = (a) => a.join(" ");
 
-function twoIsThree(a, b, c) {
-  return b == c || undefined;
-}
+const twoIsThree = (a, b, c) => b == c || undefined;
+const wordMatch = (regex, str) => str.match(regex)?.[0] == str ? str : undefined;
 
-function funcOutRegex(func) {
-  return func instanceof RegExp ?
-    str => str?.match?.(func)?.[0] == str ? str : undefined :
-    func;
-}
 function processTop(args, func) {
   args = args.slice();
   for (let i = 0; i < args.length; i++)
@@ -24,10 +14,10 @@ function processTop(args, func) {
 export class PrefixTable {
   #rules;
   constructor(dict) {
-    this.#rules = Object.entries(dict).map(([type, [matcher, func, func2]], i) => [
+    this.#rules = Object.entries(dict).map(([type, [prefix, func, func2]], i) => [
       type,
-      funcOutRegex(matcher ?? twoIsThree),
-      funcOutRegex(func),
+      prefix instanceof RegExp ? wordMatch.bind(null, prefix) : prefix ?? twoIsThree,
+      func instanceof RegExp ? wordMatch.bind(null, func) : func,
       func2,
       i
     ]);
@@ -50,14 +40,11 @@ export class PrefixTable {
 }
 
 export function calcNum(defaultValue, defaultType, arg) {
-  let { N, n, /*fraction, frac,*/ num, unit, expr } = arg;
+  let { N, n, num, unit, expr } = arg;
   if (!N && !expr)
     throw new SyntaxError("not a number value");
   if (unit === "auto")
     throw new Error("implement this");
-  // debugger
-  // if(frac && !unit)
-  //   return `calc(${expr} ${defaultValue + defaultType})`;
   if (expr?.endsWith(/[-+/*]/))
     return `calc(${expr} ${defaultValue + defaultType})`;
   if (expr?.startsWith(/[-+/*]/))
