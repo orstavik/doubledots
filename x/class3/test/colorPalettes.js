@@ -22,9 +22,9 @@ class Color {
   }
 
   static linearRgbToXyz({ R, G, B }) {
-    const X = 0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B;
-    const Y = 0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B;
-    const Z = 0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B;
+    const X = 0.4124564 * R + 0.3575761 * G + 0.1804375 * B;
+    const Y = 0.2126729 * R + 0.7151522 * G + 0.0721750 * B;
+    const Z = 0.0193339 * R + 0.1191920 * G + 0.9503041 * B;
     return { X, Y, Z };
   }
 
@@ -101,13 +101,11 @@ class Color {
   }
 
   static analyzeLch(lch) {
-    const { L, C, H } = lch;
-    return {hex: `oklch(${L} ${C} ${H})`, ...lch};
-    // const lab = this.oklchToOklab(lch);
-    // const xyz = this.oklabToXyz(lab);
-    // const rgb = this.xyzToRgb(xyz);
-    // const hex = this.rgbToHex(rgb);
-    // return { ...lch, ...lab, ...xyz, ...rgb, hex };
+    const lab = this.oklchToOklab(lch);
+    const xyz = this.oklabToXyz(lab);
+    const rgb = this.xyzToRgb(xyz);
+    const hex = this.rgbToHex(rgb);
+    return { ...lch, ...lab, ...xyz, ...rgb, hex };
   }
 
   static analyzeColors(colorMap) {
