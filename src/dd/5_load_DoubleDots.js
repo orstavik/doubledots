@@ -58,8 +58,8 @@ for (let [path, superior] of Object.entries(Specializers))
     if (name.startsWith("override-"))
       throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
     //1. treat the normal normal
-    if (!name.includes(":"))
-      return setAttributeOG.call(this, name, value);
+    // if (!name.includes(":"))
+      // return setAttributeOG.call(this, name, value);
     //2. if the name is DoubleDots
     let at = getAttributeNodeOG.call(this, name);
     if (at) {

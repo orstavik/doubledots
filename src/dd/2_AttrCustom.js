@@ -59,7 +59,7 @@ class AttrCustom extends Attr {
 
   static upgradeElementRoot(el) {
     for (let at of el.attributes)
-      if (at.name.includes(":"))
+      // if (at.name.includes(":"))
         AttrCustom.upgrade(at);
     for (let c of el.children)
       this.upgradeElementRoot(c);
@@ -75,7 +75,7 @@ class AttrCustom extends Attr {
     //the single place to catch trigger errors.
     //when triggers error, we add the error in the dom, so that it is trace
     try {
-      Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
+      Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
       if (Def instanceof Promise) {
         Object.setPrototypeOf(at, AttrUnknown.prototype);
         Def.then(Def => AttrCustom.upgrade(at, Def))

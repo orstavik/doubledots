@@ -4,13 +4,14 @@ const DocfragAppendOG = DoubleDots.nativeMethods("DocumentFragment.prototype.app
 const CommentAfterOG = DoubleDots.nativeMethods("Comment.prototype.after");
 const cloneNodeOG = DoubleDots.nativeMethods("Node.prototype.cloneNode");
 const docCreateElOG = DoubleDots.nativeMethods("Document.prototype.createElement");
+const setAttributeOG = DoubleDots.nativeMethods("Element.prototype.setAttribute");
 
 function setAttributes(el, txt) {
   const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
   pieces.forEach((unit, i) => {
     if (i % 2 === 1) {
       const [_, name, value] = unit.match(/^([_a-zA-Z][a-zA-Z0-9.:_-]*)="([^"]*)"$/);
-      el.setAttribute(name, value);
+      setAttributeOG.call(el, name, value);
     } else if (unit.trim() !== "") {
       throw new SyntaxError(`<!--<template ${txt}>-->` + ' has an incorrect name="value"');
     }
@@ -35,6 +36,7 @@ function subsumeHtml(at) {
 function absorbNodes({ start, nodes, txt, end }) {
   const t = docCreateElOG.call(document, "template");
   setAttributes(t, txt);
+    //todo instead of doing this, we could just add the STR = `<template {txt}></template>` and add it and then check that the outerHTML of the element added === STR ??
   DocfragAppendOG.call(t.content, ...nodes);
   CommentAfterOG.call(start, t);
   start.remove(), end?.remove();

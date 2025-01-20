@@ -1,28 +1,22 @@
-import { init } from "./lib/interpreter.js";
+import { ShortsResolver } from "./lib/interpreter.js";
 
 let shorts;
 
 export class Csss extends AttrCustom {
-  upgrade(...args) {
-    console.log(...args);
-    debugger
-    shorts = init(this.ownerElement.value);
+  upgrade() {
+    shorts = ShortsResolver.init(this.ownerElement);
   }
 }
 
 export class Class extends AttrCustom {
-  previous = {};
-  upgrade(...args) {
-    console.log(...args);
-    debugger;//todo don't need this one?
+
+  set value(v) {
+    super.value = v;
+    for (let clz of this.ownerElement.classList)
+      shorts.addClass(clz);
   }
 
-  changeCallback(...args) {
-    debugger; //todo do need this one.
-    for (let clz of this.classList) {
-      if(shorts[clz])
-        continue;
-      shorts.addShort(clz);
-    }
+  get value() {
+    return super.value;
   }
 }

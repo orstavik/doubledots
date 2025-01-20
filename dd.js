@@ -260,14 +260,13 @@ var _AttrCustom = class extends Attr {
   }
   static upgradeElementRoot(el) {
     for (let at of el.attributes)
-      if (at.name.includes(":"))
-        _AttrCustom.upgrade(at);
+      _AttrCustom.upgrade(at);
     for (let c of el.children)
       this.upgradeElementRoot(c);
   }
   static upgrade(at, Def) {
     try {
-      Def ??= at.ownerElement.getRootNode().Triggers.get(at.name.split(":")[0], at);
+      Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
       if (Def instanceof Promise) {
         Object.setPrototypeOf(at, AttrUnknown.prototype);
         Def.then((Def2) => _AttrCustom.upgrade(at, Def2)).catch((err) => {
@@ -943,19 +942,17 @@ for (let [path, superior] of Object.entries(Specializers))
     const newRoots = Array.from(root.children).slice(index, index + addCount);
     AttrCustom.upgradeBranch(...newRoots);
   }
-  const setAttributeOG = Element_p.setAttribute;
+  const setAttributeOG2 = Element_p.setAttribute;
   const getAttributeNodeOG = Element_p.getAttributeNode;
   function setAttribute_DD(name, value) {
     if (name.startsWith("override-"))
       throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
-    if (!name.includes(":"))
-      return setAttributeOG.call(this, name, value);
     let at = getAttributeNodeOG.call(this, name);
     if (at) {
       at.value !== value && (at.value = value);
       return;
     }
-    setAttributeOG.call(this, name, value);
+    setAttributeOG2.call(this, name, value);
     at = getAttributeNodeOG.call(this, name);
     AttrCustom.upgrade(at);
   }
@@ -1094,12 +1091,13 @@ var DocfragAppendOG = DoubleDots.nativeMethods("DocumentFragment.prototype.appen
 var CommentAfterOG = DoubleDots.nativeMethods("Comment.prototype.after");
 var cloneNodeOG = DoubleDots.nativeMethods("Node.prototype.cloneNode");
 var docCreateElOG = DoubleDots.nativeMethods("Document.prototype.createElement");
+var setAttributeOG = DoubleDots.nativeMethods("Element.prototype.setAttribute");
 function setAttributes(el, txt) {
   const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
   pieces.forEach((unit, i) => {
     if (i % 2 === 1) {
       const [_, name, value] = unit.match(/^([_a-zA-Z][a-zA-Z0-9.:_-]*)="([^"]*)"$/);
-      el.setAttribute(name, value);
+      setAttributeOG.call(el, name, value);
     } else if (unit.trim() !== "") {
       throw new SyntaxError(`<!--<template ${txt}>--> has an incorrect name="value"`);
     }

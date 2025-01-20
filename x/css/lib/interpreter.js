@@ -4,16 +4,30 @@ import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
 
 import { parse$Expression, parse$SuperShorts, toCssText } from "./parser.js";
 
-class ShortsResolver {
-  constructor(funcs) {
+export class ShortsResolver {
+  constructor(funcs, styleEl) {
     this.functions = funcs.slice().sort((a, b) => b.name.length - a.name.length);
+    this.styleEl = new ShortStyleElement(styleEl);
     this.superShorts = {};
+    this.shortsToCss = {};
   }
 
-  addSuperShorts(shortTxt) {
-    const parsed = parse$SuperShorts(shortTxt);
+  static init(el) {
+    const csss = new ShortsResolver([border, _border, flex, _flex, paletteMaterial, colorMaterial], el);
+    const parsed = parse$SuperShorts(el.textContent);
     for (let k in parsed)
-      this.superShorts[k] = interpret$Expression(parsed[k], this);
+      csss.superShorts[k] ??= csss.interpret$Expression(parsed[k]);
+    return csss;
+  }
+
+  interpret$Expression(segs) {
+    let res = {};
+    for (let i = 0; i < segs.length; i++) {
+      const { selector, shorts } = segs[i];
+      for (let short of shorts)
+        res = this.interpret(res, selector, short, i);
+    }
+    return res;
   }
 
   interpret(res, selector, { name, camel, args }, item) {
@@ -28,92 +42,26 @@ class ShortsResolver {
     Object.assign(res[selector], func(res[selector], args));
     return res;
   }
-}
 
-function interpret$Expression(segs, shortResolver) {
-  let res = {};
-  for (let i = 0; i < segs.length; i++) {
-    const { selector, shorts } = segs[i];
-    for (let short of shorts)
-      res = shortResolver.interpret(res, selector, short, i);
-  }
-  return res;
-}
-
-const shorts = new ShortsResolver([border, _border, flex, _flex, paletteMaterial, colorMaterial]);
-
-export function init(shortTxt) {
-  shorts.addSuperShorts(shortTxt);
-}
-
-function analyzeRule(rule) {
-  const [, item, specificity] = rule.match(/\/\*(item|container) (\d+)\*\//);
-  return { item: item === "item", specificity: parseInt(specificity) };
-}
-
-const ITEM = /\/\*item (\d+)\*\//g;
-const CONTAINER = /\/\*container (\d+)\*\//g;
-function injectRule(shortName, short, res = "") {
-  for (let rule of toCssText(shortName, short)) {
-    const { item, specificity } = analyzeRule(rule);
-    if (item === "item") {
-      for (let m; m = ITEM.exec(res);)
-        if (parseInt(m[0]) > specificity)
-          return res.slice(0, m.index) + rule + res.slice(m.index);
-      if (m = CONTAINER.exec(res))
-        return res.slice(0, m.index) + rule + res.slice(m.index);
-    } else {
-      for (let m; m = CONTAINER.exec(res);)
-        if (parseInt(m[0]) > specificity)
-          return res.slice(0, m.index) + rule + res.slice(m.index);
-    }
-    return res + rule;
-  }
-}
-
-function add$Classes(classList, shortsToCss) {
-  let tmp;
-  for (let short of classList)
-    if (!(short in shortsToCss))
+  addClass(short) {
+    let tmp;
+    if (!(short in this.shortsToCss))
       if (tmp = parse$Expression(short))
-        if (tmp = interpret$Expression(tmp, shorts))
-          shortsToCss[short] = tmp;
+        if (tmp = this.interpret$Expression(tmp))
+          this.styleEl.injectRule(short, this.shortsToCss[short] = tmp);
+  }
 }
 
-const defaultCss = `
-* { 
-  margin: 0; 
-  padding: 0; 
-  box-sizing: border-box; 
-  --dark-mode: 0;
-}
-@media(prefers-color-scheme:dark) { * {
-  --dark-mode: -1; 
-} }
-:where(:not(html)) {
-  /*COLOR INHERITANCE  (don't use native css shorthands: border, text-decoration)*/
-  /*border-color: inherit; /*does this work with inherit*/
-  border-top-color: inherit;
-  border-right-color: inherit;
-  border-bottom-color: inherit;
-  border-left-color: inherit;
-  text-decoration-color: inherit;
-  --dark-mode: 1;
-}
-`;
-
-export function run(style) {
-  init(style.getAttribute("css-shorts"));
-  const shorts = {}; //this should be a global variable??
-  for (let el of document.querySelectorAll('[class*="$"]'))
-    add$Classes(el.classList, shorts);
-  style.discovered = shorts;
-  let mainTxt = "";
-  for (let shortName in shorts)
-    mainTxt = injectRule(shortName, shorts[shortName], mainTxt);
-  style.textContent += defaultCss + mainTxt;
-}
-
+//todo move this into ShortResolver class
+// function interpret$Expression(segs, shortResolver) {
+//   let res = {};
+//   for (let i = 0; i < segs.length; i++) {
+//     const { selector, shorts } = segs[i];
+//     for (let short of shorts)
+//       res = shortResolver.interpret(res, selector, short, i);
+//   }
+//   return res;
+// }
 
 //1. $border-one=border_[2px,4px]_dashed
 //2. $border-one_solid
@@ -155,3 +103,60 @@ superShorts = {  //bigResult with {name: {container, itemSelector1, itemSelector
   flex-navbar
 }
  */
+
+class ShortStyleElement {
+  constructor(styleEl) {
+    this.styleEl = styleEl;
+    styleEl.textContent = ShortStyleElement.defaultCss + styleEl.textContent + `/* dynamic content comes here! */`;
+  }
+
+  //todo add injectItemRule
+  //todo add injectContainerRule
+  //todo should i bunch these calls in a requestAnimationFrame call?
+  injectRule(shortName, short) {
+    const res = this.styleEl.textContent;
+    for (let rule of toCssText(shortName, short)) {
+      const { item, specificity } = ShortStyleElement.analyzeRule(rule);
+      if (item === "item") {
+        for (let m; m = ShortStyleElement.ITEM.exec(res);)
+          if (parseInt(m[0]) > specificity)
+            return this.styleEl.textContent = res.slice(0, m.index) + rule + res.slice(m.index);
+        if (m = ShortStyleElement.CONTAINER.exec(res))
+          return this.styleEl.textContent = res.slice(0, m.index) + rule + res.slice(m.index);
+      } else {
+        for (let m; m = ShortStyleElement.CONTAINER.exec(res);)
+          if (parseInt(m[0]) > specificity)
+            return this.styleEl.textContent = res.slice(0, m.index) + rule + res.slice(m.index);
+      }
+      return this.styleEl.textContent = res + rule;
+    }
+  }
+
+  static ITEM = /\/\*item (\d+)\*\//g;
+  static CONTAINER = /\/\*container (\d+)\*\//g;
+  static defaultCss = `
+  * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    --dark-mode: 0;
+  }
+  @media(prefers-color-scheme:dark) { * {
+    --dark-mode: -1; 
+  } }
+  :where(:not(html)) {
+    /*COLOR INHERITANCE  (don't use native css shorthands: border, text-decoration)*/
+    /*border-color: inherit; /*does this work with inherit*/
+    border-top-color: inherit;
+    border-right-color: inherit;
+    border-bottom-color: inherit;
+    border-left-color: inherit;
+    text-decoration-color: inherit;
+    --dark-mode: 1;
+  }
+  `;
+  static analyzeRule(rule) {
+    const [, item, specificity] = rule.match(/\/\*(item|container) (\d+)\*\//);
+    return { item: item === "item", specificity: parseInt(specificity) };
+  }
+}
