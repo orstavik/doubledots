@@ -1188,57 +1188,6 @@ function template() {
   return this.ownerElement.children[0];
 }
 
-// x/css/v1.js
-function* sameCssAttr(trigger, root) {
-  for (let el of root.querySelectorAll(`[${trigger}\\:]`))
-    yield el.getAttributeNode(trigger + ":");
-  for (let temp of root.querySelectorAll("template"))
-    yield* sameCssAttr(trigger, temp.content);
-}
-function parse2(name) {
-  const [type, ...args] = name.split("_");
-  if (type === "color") {
-    const [color, backgroundColor, borderColor] = args;
-    return { [name]: { color, backgroundColor, borderColor } };
-  }
-  return {};
-}
-function interpretSelector(name) {
-  return ["hover", "valid", "invalid"].includes(name) ? ":" + name : name;
-}
-function updateStyleSheet(name, values, selectors) {
-  const selector = selectors?.map(interpretSelector).join("") ?? "";
-  const style = document.querySelector("style#" + name) ?? (document.head.insertAdjacentHTML("beforeend", `<style id="${name}"></style>`), document.head.lastElementChild);
-  let txt = "";
-  for (let rule in values) {
-    const body = Object.entries(values[rule]).map(([k, v]) => {
-      k = DoubleDots.pascalToKebab(k);
-      return `  ${k}: var(--${k}, ${v});`;
-    }).join("\n");
-    txt += `.${name + rule}${selector} {
-${body}
-}
-
-`;
-  }
-  style.textContent = txt;
-}
-var Css = class extends AttrCustom {
-  upgrade() {
-    let [_, ...selectors] = this.trigger.split("_");
-    const attrs = [this, ...sameCssAttr(this.trigger, this.ownerElement)].filter((at) => at.value);
-    const parsed = attrs.reduce((acc, at) => Object.assign(acc, parse2(at.value)), {});
-    updateStyleSheet(this.trigger, parsed, selectors);
-    for (let at of attrs) {
-      at.ownerElement.classList.add(this.trigger + at.value);
-      at.ownerElement.removeAttribute(at.name);
-    }
-  }
-};
-function Css_(rule) {
-  return Css;
-}
-
 // x/wait/v1.js
 function wait_(rule) {
   const [_, ms] = rule.split("_");
@@ -1248,8 +1197,6 @@ function wait_(rule) {
 // src/dd/dd.js
 document.Triggers.define("template", Template);
 document.Reactions.define("template", template);
-document.Triggers.define("css", Css);
-document.Triggers.defineRule("css_", Css_);
 document.Reactions.define("define", define);
 document.Reactions.defineRule("wait_", wait_);
 loadDoubleDots(EventTarget.prototype.addEventListener);

@@ -5,6 +5,7 @@ let shorts;
 export class Class extends AttrCustom {
   previous = {};
   upgrade(...args) {
+    console.log(...args);
     debugger;//todo don't need this one?
   }
 
