@@ -815,6 +815,7 @@ class ColorPaletteGeneratorLCH {
       res[prop] = res[prop].reduce(((a, b) => a + b), 0) / res[prop].length;
     return res;
   }
+
   static make(OG) {
     const hues = this.singleProp(OG, "H");
     const chromas = this.singleProp(OG, "C");
@@ -830,9 +831,112 @@ class ColorPaletteGeneratorLCH {
       }
     return res;
   }
+
+  static make2(OG) {
+    const hues = this.isolateProperty(OG, 600, "H");
+    const chromas = this.averageProps(OG, "C");
+    console.log(JSON.stringify(hues, null, 2));
+    console.log(JSON.stringify(chromas, null, 2));
+    // const chromas = this.singleProp(OG, "C");
+    const lights = this.singleProp(OG, "L");
+
+    const res = {};
+    for (let [color, table] of Object.entries(OG)) {
+      const H = hues[color];
+      for (let [l1000, _] of Object.entries(table)) {
+        const C = chromas[l1000];
+        // const C = chromas[color][l1000];
+        let L = 1.05 - (l1000 / 1350);
+        L = lights[color][l1000];
+        (res[color] ??= {})[l1000] = Color.analyzeLch({ L, C, H });
+      }
+    }
+    return res;
+  }
+
+  static make3(OG) {
+    const hues = this.singleProp(OG, "H");
+    const chromas = this.singleProp(OG, "C");
+    const res = {};
+    for (let [color, table] of Object.entries(OG)) {
+      const tableH = hues[color];
+      const H = tableH[600];
+      const tableC = chromas[color];
+      const amus = this.approximateGaussianParams(tableC);
+      const { A, mu, sigma } = amus;
+      for (let [l1000, _] of Object.entries(table)) {
+        const C = this.gaussian(l1000, A, mu, sigma);
+        let L = 1.05 - (l1000 / 1350);
+        // if (color === "emerald") {
+        //   console.log(_.L, L);
+        //   console.log(_.C, C);
+        //   console.log(_.H, H);
+        //   // debugger
+        // }
+        (res[color] ??= {})[l1000] = { ...Color.analyzeLch({ L, C, H }), A, mu, sigma };
+      }
+    }
+    return res;
+  }
+
+  static approximateGaussianParams(dictXY) {
+
+    function parabolicPeak([x0, y0], [x1, y1], [x2, y2]) {
+      const denom = (x0 - x1) * (x0 - x2) * (x1 - x2);
+      if (Math.abs(denom) < 1e-12)
+        return [x1, y1];
+      const a = (x2 * (y1 - y0) + x1 * (y0 - y2) + x0 * (y2 - y1)) / denom;
+      const b = (x2 * x2 * (y0 - y1) + x1 * x1 * (y2 - y0) + x0 * x0 * (y1 - y2)) / denom;
+      const c = (x1 * x2 * (x1 - x2) * y0
+        + x2 * x0 * (x2 - x0) * y1
+        + x0 * x1 * (x0 - x1) * y2) / denom;
+      const xV = -b / (2 * a);
+      const yV = (a * xV * xV) + (b * xV) + c;
+      return [xV, yV];
+    }
+
+    function lineCrossesY(line, y) {
+      for (let i = 1; i < line.length; i++) {
+        const [x1, y1] = line[i - 1];
+        const [x2, y2] = line[i];
+        if ((y1 - y) * (y2 - y) <= 0)
+          return x1 + (y - y1) / (y2 - y1) * (x2 - x1);
+      }
+      return line.length / 2;
+    }
+
+    const XYs = Object.entries(dictXY)
+      .map(([k, v]) => [parseFloat(k), parseFloat(v)])
+      .sort(([a], [b]) => a - b);
+    let peak = 0;
+    for (let i = 1; i < XYs.length; i++)
+      if (XYs[peak][1] < XYs[i][1])
+        peak = i;
+    const [mu, A] = parabolicPeak(XYs[peak - 1], XYs[peak], XYs[peak + 1]);
+
+    const half = (A - XYs[0][1]) / 2;
+    const leftCross = lineCrossesY(XYs.slice(0, peak), half);
+    const rightCross = lineCrossesY(XYs.slice(peak), half);
+    const sigma = (rightCross - leftCross) / 2.35482;
+    return { A, mu, sigma };
+  }
+  static gaussian(x, A, mu, sigma) {
+    return A * Math.exp(-Math.pow(x - mu, 2) / (2 * sigma ** 2));
+  }
+}
+Palettes.LM_LCH_MATERIAL = ColorPaletteGeneratorLCH.make2(Palettes.MATERIAL);
+for (let color in Palettes.TAILWIND) {
+  const c50 = Palettes.TAILWIND[color][50].C;
+  const c950 = Palettes.TAILWIND[color][950].C;
+  const step = (c950 - c50) / 900;
+  for (let shade in Palettes.TAILWIND[color]) {
+    const { C, a, b } = Palettes.TAILWIND[color][shade];
+    // normalized c curve. Once it is normalized, it forms almost a straight line.
+    // const c = c50 + step * (parseInt(shade) - 50);
+    // Palettes.TAILWIND[color][shade].C -= c;
+    Palettes.TAILWIND[color][shade].ab = Math.abs(a) + Math.abs(b);
+  }
 }
 
-Palettes.LM_LCH_MATERIAL = ColorPaletteGeneratorLCH.make(Palettes.MATERIAL);
-Palettes.LT_LCH_TAILWIND = ColorPaletteGeneratorLCH.make(Palettes.TAILWIND);
-
-
+Palettes.LT_LCH_TAILWIND = ColorPaletteGeneratorLCH.make2(Palettes.TAILWIND);
+// Palettes.LT_LCH_TAILWIND = ColorPaletteGeneratorLCH.make3(Palettes.TAILWIND);

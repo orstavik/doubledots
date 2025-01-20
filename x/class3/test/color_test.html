@@ -66,66 +66,6 @@
   </script>
 
   <script>
-    function hexToLinearRgb(hex) {
-      hex = hex.slice(1);
-      let bigint;
-      if (hex.length === 3) {
-        bigint = parseInt(hex.split('').map(char => char + char).join(''), 16);
-      } else if (hex.length === 6) {
-        bigint = parseInt(hex, 16);
-      } else {
-        throw new Error('Invalid HEX color.');
-      }
-      const r = ((bigint >> 16) & 255) / 255;
-      const g = ((bigint >> 8) & 255) / 255;
-      const b = (bigint & 255) / 255;
-
-      const linearize = c => c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-      return {
-        R: linearize(r),
-        G: linearize(g),
-        B: linearize(b)
-      };
-    }
-
-    function linearRgbToXyz({ R, G, B }) {
-      const X = 0.4122214708 * R + 0.5363325363 * G + 0.0514459929 * B;
-      const Y = 0.2119034982 * R + 0.6806995451 * G + 0.1073969566 * B;
-      const Z = 0.0883024619 * R + 0.2817188376 * G + 0.6299787005 * B;
-      return { X, Y, Z };
-    }
-
-    function xyzToOKLab({ X, Y, Z }) {
-      const l = 0.8189330101 * X + 0.3618667424 * Y - 0.1288597137 * Z;
-      const m = 0.0329845436 * X + 0.9293118715 * Y + 0.0361456387 * Z;
-      const s = 0.0482003018 * X + 0.2643662691 * Y + 0.6338517070 * Z;
-
-      const lCube = Math.cbrt(l);
-      const mCube = Math.cbrt(m);
-      const sCube = Math.cbrt(s);
-
-      const L = 0.2104542553 * lCube + 0.7936177850 * mCube - 0.0040720468 * sCube;
-      const a = 1.9779984951 * lCube - 2.4285922050 * mCube + 0.4505937099 * sCube;
-      const b = 0.0259040371 * lCube + 0.7827717662 * mCube - 0.8086757660 * sCube;
-
-      return { L, a, b };
-    }
-
-    function oklabToOklch({ L, a, b }) {
-      const C = Math.sqrt(a * a + b * b);
-      let H = Math.atan2(b, a) * (180 / Math.PI);
-      if (H < 0) H += 360;
-      return { L, C, H };
-    }
-
-    function analyzeHex(hex) {
-      const rgb = hexToLinearRgb(hex);
-      const xyz = linearRgbToXyz(rgb);
-      const lab = xyzToOKLab(xyz);
-      const lch = oklabToOklch(lab);
-      return { hex, ...rgb, ...xyz, ...lab, ...lch };
-    }
-
     function extractValue(colors, valueFunc) {
       const res = {};
       for (let [name, table] of Object.entries(colors))
@@ -141,14 +81,6 @@
       return res;
     }
 
-    function analyzeColors(colorMap, name) {
-      const res = { ...colorMap };
-      for (let name in colorMap)
-        for (let [shade, hex] of Object.entries(colorMap[name]))
-          res[name][shade] = analyzeHex(hex);
-      return res;
-    }
-
     function printGraph(res, prop, colors) {
       const labels = Object.keys(Object.values(res)[0]);
       res = extractValue(res, color => color[prop]);
@@ -158,7 +90,7 @@
     function printColorPalette(colorMap) {
       let str = "";
       for (let [name, table] of Object.entries(colorMap)) {
-        str += `<div style="float: left; clear: left; width:7vw; border-top: solid 2px grey;">${name}</div>`;
+        str += `<div style="white-space: pre; float: left; clear: left; width: 7vw; border-top: solid 2px grey;">${name}</div>`;
         for (let [shade, { hex: HEX }] of Object.entries(table))
           str += `<div style="float: left; background-color: ${HEX}; width: 7vw; height: 7vw; vertical-align: bottom; color: grey;">${shade}</div>`;
         str += `<div style="float: left; background-color: black; width:7vw; height: 7vw;">1000</div>`;
@@ -172,7 +104,7 @@
       for (let prop of props) {
         const colorNames = Object.entries(res).map(([name, table]) => table[400].hex);
         printGraph(res, prop, colorNames);
-        printGraph(inverse, prop, greyScale);
+        // printGraph(inverse, prop, greyScale);
       }
       const palette = printColorPalette(res);
       document.body.insertAdjacentHTML('beforeend', palette);
@@ -197,7 +129,7 @@
     const formEl = document.querySelector("form");
     for (let table in Palettes)
       tablesEl.insertAdjacentHTML('beforeend', `<option>${table}</option>`);
-    for (let prop of ["C", "H", "L", "a", "b"])
+    for (let prop of ["C", "H", "L", "a", "b", "ab"])
       propsEl.insertAdjacentHTML('beforeend', `<option>${prop}</option>`);
 
     formEl.onchange = e => {
@@ -205,8 +137,13 @@
         formEl.nextElementSibling.remove();
       let table = {};
       for (let { value } of tablesEl.selectedOptions)
-        for (let [colorName, dict] of Object.entries(Palettes[value]))
-          table[colorName + "_" + value.slice(0, 2)] = dict;
+        for (let [colorName, dict] of Object.entries(Palettes[value])){
+          let tail = value.slice(0,2);
+          if(dict[500].A){
+            tail+=`\n${dict[500].A}`// ${dict[500].mu} ${dict[500].sigma}`;
+          }
+          table[colorName + "_" +  tail] = dict;
+        }
       table = Object.fromEntries(Object.entries(table).sort(
         ([, { "500": { H: a } }], [, { "500": { H: b } }]) => b - a
       ));
