@@ -54,11 +54,11 @@ function countSpecificity(tokens, res, depth = 0, isHas = false) {
     if (divider)
       (res[1] += res[0]), (res[0] = 0);
     else if (el)
-      specificity[isHas ? 1 : 0]++;
+      res[isHas ? 1 : 0]++;
     else if (win)
-      specificity[2]++;
+      res[2]++;
     else if (dom)
-      specificity[3]++;
+      res[3]++;
     else if (not)
       countSpecificity(tokens, res, depth + 1, isHas);
     else if (has)

@@ -1,23 +1,14 @@
-<html>
-<head>
-  <script></script>
-  <style css-shorts="
-    $border-one {
-        $border_[*2,-002px,4e12px]_dashed
-      |:hover 
-        $border_4px
-    }  
-  ">
-    
-  </style>
-</head>
+<script src="/dd.js"></script>
+<script type="module" src="v1.js?cssShorts" _:define></script>
 
-<div>
+<style _:css-shorts="
+$border-one {
+    $border_[*2,-002px,4e12px]_dashed
+  |:hover 
+    $border_4px
+}  
+">
+</style>
+<div class="$border-one">
   hello sunshine
 </div>
-
-<script type="module">
-  import { run } from "../interpreter.js";
-  
-  run(document.querySelector("style[css-shorts]"));
-</script>

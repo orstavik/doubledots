@@ -13,7 +13,7 @@ class ShortsResolver {
   addSuperShorts(shortTxt) {
     const parsed = parse$SuperShorts(shortTxt);
     for (let k in parsed)
-      this.superShorts[k] = interpret$Expression(parsed[v], this);
+      this.superShorts[k] = interpret$Expression(parsed[k], this);
   }
 
   interpret(res, selector, { name, camel, args }, item) {
@@ -42,7 +42,7 @@ function interpret$Expression(segs, shortResolver) {
 
 const shorts = new ShortsResolver([border, _border, flex, _flex, paletteMaterial, colorMaterial]);
 
-function init(shortTxt) {
+export function init(shortTxt) {
   shorts.addSuperShorts(shortTxt);
 }
 

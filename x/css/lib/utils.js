@@ -1,7 +1,7 @@
 export const spaceJoin = (a) => a.join(" ");
 
 const twoIsThree = (a, b, c) => b == c || undefined;
-const wordMatch = (regex, str) => str.match(regex)?.[0] == str ? str : undefined;
+const wordMatch = (regex, str) => typeof str == "string" && (str.match(regex)?.[0] == str ? str : undefined);
 
 function processTop(args, func) {
   args = args.slice();
