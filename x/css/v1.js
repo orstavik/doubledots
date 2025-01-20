@@ -2,6 +2,14 @@ import { init } from "./lib/interpreter.js";
 
 let shorts;
 
+export class Csss extends AttrCustom {
+  upgrade(...args) {
+    console.log(...args);
+    debugger
+    shorts = init(this.ownerElement.value);
+  }
+}
+
 export class Class extends AttrCustom {
   previous = {};
   upgrade(...args) {
@@ -17,9 +25,4 @@ export class Class extends AttrCustom {
       shorts.addShort(clz);
     }
   }
-}
-
-export function cssShorts() {
-  shorts = init(this.value);
-  document.Triggers.define("class", Class);
 }
