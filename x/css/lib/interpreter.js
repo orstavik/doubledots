@@ -1,13 +1,15 @@
 import { border, _border } from "./Border.js";
 import { flex, _flex } from "./Flex.js";
-import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
+import { color, color as _color } from "./ColorWeb.js";
+// import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
 import { w, h, h as _h, w as _w, wMin, wMax, hMin, hMax } from "./WidthHeight.js";
 import { ellipsis, clip, scroll, scrollInline, _scroll, hidden } from "./Overflow.js";
 
 const SHORTS = {
   border, _border,
   flex, _flex,
-  paletteMaterial, colorMaterial,
+  color, _color,
+  // paletteMaterial, colorMaterial,
   h, _h, w, _w, wMin, wMax, hMin, hMax,
   ellipsis, clip, scroll, scrollInline, _scroll, hidden
 };
@@ -123,7 +125,7 @@ class ShortStyleElement {
     styleEl.textContent = ShortStyleElement.defaultCss + styleEl.textContent + `/* dynamic content comes here! */`;
   }
 
-  static injectStringProp(obj, prop, index, value){
+  static injectStringProp(obj, prop, index, value) {
     obj[prop] = obj[prop].slice(0, index) + value + obj[prop].slice(index);
   }
   //todo add injectItemRule
