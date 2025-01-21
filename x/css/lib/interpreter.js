@@ -1,6 +1,8 @@
 import { border, _border } from "./Border.js";
 import { flex, _flex } from "./Flex.js";
 import { color, color as _color } from "./ColorWeb.js";
+import { cursor, cursor as _cursor } from "./Cursor.js";
+import { transform, transform as t } from "./Transform.js";
 // import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
 import { w, h, h as _h, w as _w, wMin, wMax, hMin, hMax } from "./WidthHeight.js";
 import { ellipsis, clip, scroll, scrollInline, _scroll, hidden } from "./Overflow.js";
@@ -11,7 +13,9 @@ const SHORTS = {
   color, _color,
   // paletteMaterial, colorMaterial,
   h, _h, w, _w, wMin, wMax, hMin, hMax,
-  ellipsis, clip, scroll, scrollInline, _scroll, hidden
+  ellipsis, clip, scroll, scrollInline, _scroll, hidden,
+  transform, t,
+  cursor, _cursor,
 };
 
 import { parse$Expression, parse$SuperShorts, toCssText } from "./parser.js";

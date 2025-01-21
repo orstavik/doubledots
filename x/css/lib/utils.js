@@ -1,5 +1,16 @@
 export const spaceJoin = (a) => a.join(" ");
 
+export function join(sep = " ", min = 1, max = min) {
+  const count = clamp(min, max);
+  return a => count(a)?.join(sep);
+}
+export function clamp(min, max) {
+  return a => a.length >= min && a.length <= max ? a : undefined;
+}
+export function fillArrayWithDefault(fallback, max) {
+  return a => a.length <= 2 ? a.map(a => a ?? fallback) : undefined;
+}
+
 const twoIsThree = (a, b, c) => b == c || undefined;
 
 function wordMatch(regex) {
@@ -44,6 +55,8 @@ export class PrefixTable {
 }
 
 export function calcNum(defaultValue, defaultType, arg) {
+  if (!arg)
+    return arg;
   let { N, n, num, unit, expr } = arg;
   if (!N && !expr)
     throw new SyntaxError("not a number value");

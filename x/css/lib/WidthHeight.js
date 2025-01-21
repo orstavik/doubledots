@@ -2,7 +2,6 @@ import { isOnlyOne } from "./utils.js";
 
 function calcLength(arg) {
   const { n, unit = "rem" } = arg;
-  debugger;
   return n + unit;
 }
 
