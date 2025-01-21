@@ -1,7 +1,8 @@
 import { isOnlyOne } from "./utils.js";
 
-function calcLength({ n, unit = "rem" }) {
-  debugger
+function calcLength(arg) {
+  const { n, unit = "rem" } = arg;
+  debugger;
   return n + unit;
 }
 
@@ -11,7 +12,7 @@ function calcLength({ n, unit = "rem" }) {
 //$w_10px_70%_ => [min, normal]
 function normalMinMax(prefix) {
   return function lengthShort(start, args) {
-    args = args;//.map(calcLength).map(isOnlyOne);
+    args = args.map(({ args }) => args.map(calcLength)).map(isOnlyOne);
     let min, normal, max;
     if (args.length === 3)
       [min, normal, max] = args;
@@ -21,8 +22,8 @@ function normalMinMax(prefix) {
       [normal] = args;
     const res = {};
     if (min) res["min-" + prefix] = min;
-    if (normal) res[prefix] = min;
-    if (max) res["max-" + prefix] = min;
+    if (normal) res[prefix] = normal;
+    if (max) res["max-" + prefix] = max;
     return res;
   };
 }
@@ -31,3 +32,9 @@ const w = normalMinMax("width");
 const h = normalMinMax("height");
 
 export { w, h, w as width, h as height };
+
+export function wMin(start, args) { return { "min-width": calcLength(args[0]) }; }
+export function wMax(start, args) { return { "max-width": calcLength(args[0]) }; }
+
+export function hMin(start, args) { return { "min-height": calcLength(args[0]) }; }
+export function hMax(start, args) { return { "max-height": calcLength(args[0]) }; }

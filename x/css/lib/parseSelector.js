@@ -166,7 +166,7 @@ export function* toCssText(shortName, dict) {
   for ([sel, props] of Object.entries(dict)) {
     if (!sel.startsWith("|"))
       continue;
-    [, sel, specificity] = sel.match(/|(.)*\$\$(\d+)$/);
+    [, sel, specificity] = sel.match(/\|(.)*\$\$(\d+)$/);
     sel = `${conSel} >\n:where(${sel})`;
     rule = ruleToString(sel, props);
     yield `/*item ${specificity}*/\n/*${shortName}*/\n${rule}`;

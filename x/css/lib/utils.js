@@ -1,7 +1,11 @@
 export const spaceJoin = (a) => a.join(" ");
 
 const twoIsThree = (a, b, c) => b == c || undefined;
-const wordMatch = (regex, str) => typeof str == "string" && (str.match(regex)?.[0] == str ? str : undefined);
+
+function wordMatch(regex) {
+  regex = new RegExp(`^(${regex.source})$`);
+  return str => typeof str == "string" && str.match(regex) ? str : undefined;
+}
 
 function processTop(args, func) {
   args = args.slice();
@@ -16,8 +20,8 @@ export class PrefixTable {
   constructor(dict) {
     this.#rules = Object.entries(dict).map(([type, [prefix, func, func2]], i) => [
       type,
-      prefix instanceof RegExp ? wordMatch.bind(null, prefix) : prefix ?? twoIsThree,
-      func instanceof RegExp ? wordMatch.bind(null, func) : func,
+      prefix instanceof RegExp ? wordMatch(prefix) : prefix ?? twoIsThree,
+      func instanceof RegExp ? wordMatch(func) : func,
       func2,
       i
     ]);

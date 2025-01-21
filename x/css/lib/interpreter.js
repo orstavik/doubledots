@@ -1,14 +1,14 @@
 import { border, _border } from "./Border.js";
 import { flex, _flex } from "./Flex.js";
 import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
-import { w, h, h as _h, w as _w } from "./WidthHeight.js";
+import { w, h, h as _h, w as _w, wMin, wMax, hMin, hMax } from "./WidthHeight.js";
 import { ellipsis, clip, scroll, scrollInline, _scroll, hidden } from "./Overflow.js";
 
 const SHORTS = {
   border, _border,
   flex, _flex,
   paletteMaterial, colorMaterial,
-  h, _h, w, _w,
+  h, _h, w, _w, wMin, wMax, hMin, hMax,
   ellipsis, clip, scroll, scrollInline, _scroll, hidden
 };
 
@@ -123,25 +123,33 @@ class ShortStyleElement {
     styleEl.textContent = ShortStyleElement.defaultCss + styleEl.textContent + `/* dynamic content comes here! */`;
   }
 
+  static injectStringProp(obj, prop, index, value){
+    obj[prop] = obj[prop].slice(0, index) + value + obj[prop].slice(index);
+  }
   //todo add injectItemRule
   //todo add injectContainerRule
   //todo should i bunch these calls in a requestAnimationFrame call?
   injectRule(shortName, short) {
-    const res = this.styleEl.textContent;
-    for (let rule of toCssText(shortName, short)) {
+    main: for (let rule of toCssText(shortName, short)) {
       const { item, specificity } = ShortStyleElement.analyzeRule(rule);
       if (item === "item") {
-        for (let m; m = ShortStyleElement.ITEM.exec(res);)
-          if (parseInt(m[0]) > specificity)
-            return this.styleEl.textContent = res.slice(0, m.index) + rule + res.slice(m.index);
-        if (m = ShortStyleElement.CONTAINER.exec(res))
-          return this.styleEl.textContent = res.slice(0, m.index) + rule + res.slice(m.index);
+        for (let m; m = ShortStyleElement.ITEM.exec(this.styleEl.textContent);)
+          if (parseInt(m[0]) > specificity) {
+            ShortStyleElement.injectStringProp(this.styleEl, "textContent", m.index, rule);
+            continue main;
+          }
+        if (m = ShortStyleElement.CONTAINER.exec(this.styleEl.textContent)) {
+          ShortStyleElement.injectStringProp(this.styleEl, "textContent", m.index, rule);
+          continue main;
+        }
       } else {
-        for (let m; m = ShortStyleElement.CONTAINER.exec(res);)
-          if (parseInt(m[0]) > specificity)
-            return this.styleEl.textContent = res.slice(0, m.index) + rule + res.slice(m.index);
+        for (let m; m = ShortStyleElement.CONTAINER.exec(this.styleEl.textContent);)
+          if (parseInt(m[0]) > specificity) {
+            ShortStyleElement.injectStringProp(this.styleEl, "textContent", m.index, rule);
+            continue main;
+          }
       }
-      return this.styleEl.textContent = res + rule;
+      this.styleEl.textContent += rule;
     }
   }
 
