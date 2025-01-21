@@ -1,19 +1,31 @@
 import { border, _border } from "./Border.js";
 import { flex, _flex } from "./Flex.js";
 import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
+import { w, h, h as _h, w as _w } from "./WidthHeight.js";
+import { ellipsis, clip, scroll, scrollInline, _scroll, hidden } from "./Overflow.js";
+
+const SHORTS = {
+  border, _border,
+  flex, _flex,
+  paletteMaterial, colorMaterial,
+  h, _h, w, _w,
+  ellipsis, clip, scroll, scrollInline, _scroll, hidden
+};
 
 import { parse$Expression, parse$SuperShorts, toCssText } from "./parser.js";
 
 export class ShortsResolver {
   constructor(funcs, styleEl) {
-    this.functions = funcs.slice().sort((a, b) => b.name.length - a.name.length);
+    this.functions = funcs;
+    const camelsLongestFirst = Object.keys(funcs).sort((a, b) => b.length - a.length).join("|");
+    this.funcFinder = new RegExp(`^(${camelsLongestFirst})`);
     this.styleEl = new ShortStyleElement(styleEl);
     this.superShorts = {};
     this.shortsToCss = {};
   }
 
   static init(el) {
-    const csss = new ShortsResolver([border, _border, flex, _flex, paletteMaterial, colorMaterial], el);
+    const csss = new ShortsResolver(SHORTS, el);
     const parsed = parse$SuperShorts(el.textContent);
     for (let k in parsed)
       csss.superShorts[k] ??= csss.interpret$Expression(parsed[k]);
@@ -35,9 +47,10 @@ export class ShortsResolver {
       if (name in this.superShorts)
         for (let key in this.superShorts[name])
           res[key] = Object.assign(res[key] || {}, this.superShorts[name][key]);
-    const func = this.functions.find(func => camel.startsWith(func.name));
-    if (!func)
+    const matchingFunc = camel.match(this.funcFinder)?.[1];
+    if (!matchingFunc)
       throw new SyntaxError(`The $short "${name}" with lookup "${camel}" doesn't match any $short function.`);
+    const func = this.functions[matchingFunc];
     res[selector] ??= {};
     Object.assign(res[selector], func(res[selector], args));
     return res;
@@ -139,6 +152,7 @@ class ShortStyleElement {
     margin: 0; 
     padding: 0; 
     box-sizing: border-box; 
+    scroll-behavior: smooth;
     --dark-mode: 0;
   }
   @media(prefers-color-scheme:dark) { * {

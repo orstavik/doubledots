@@ -1,26 +1,19 @@
-<html>
+<script src="/dd.js"></script>
+<script type="module" src="v1.js?Csss&Class" _:define></script>
 
-<head>
-  <script></script>
-  <style css-shorts="
-    $border-one {
-      $border_[*2,-002px,4e12px]_dashed
-    }  
-    $border-two {
-      $border-one_4px_r[20%,50%]_rr[10%,20%]
-    }
-  ">
-  </style>
-</head>
+<style csss>
+  /*
+$flex-carousel {
+    $flex_gap[1rem]_items[center]
+    $w_[100%]
+    $scroll-inline_mandatory
+  |*$flex_shrink[0]
+}
 
-<div class="
-  :hover$border-one_[02px,.3px]_r[20%,50%]_rr[10%,20%]
-">
-  hello sunshine
+  */
+</style>
+
+<div class="$flex-carousel">
+  <div>hello</div>
+  <div>sunshine</div>
 </div>
-
-<script type="module">
-  import { run } from "../interpreter.js";
-
-  run(document.querySelector("style[css-shorts]"));
-</script>
