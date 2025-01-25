@@ -4,9 +4,9 @@
   <script></script>
   <style css-shorts="
     $flex-one { 
-        $flex_col_wrap_gap[10px]_justify[start]_content[center]_items[center]
+        $flex_column_wrap_gap[10px]_justify[start]_content[center]_items[center]
       |*
-        $flex_g[1]_s[1]_b[100%]_order[1]_align[center]
+        $flex_[,1]_center_order[1]
     }
     
   ">
@@ -17,9 +17,3 @@
   <div>hello</div>
   <div>sunshine</div>
 </div>
-
-<script type="module">
-  import { run } from "../interpreter.js";
-
-  run(document.querySelector("style[css-shorts]"));
-</script>

@@ -1,4 +1,4 @@
-import { PrefixTable, tailToVariables, isOnlyOne, trbl } from "./utils.js";
+import { PrefixTable, tailToVariables, SINGULAR, trbl } from "./utils.js";
 
 
 const MATERIAL_COLORS = {
@@ -61,10 +61,10 @@ function computeMaterialColor(arg) {
 
 function colorTable(computeColor) {
   return new PrefixTable({
-    "--color": [, computeColor, isOnlyOne],
+    "--color": [, computeColor, SINGULAR],
     "--background-color": [, computeColor,],
     "border-color": [, computeColor],
-    "text-decoration-color": [, computeColor, isOnlyOne],
+    "text-decoration-color": [, computeColor, SINGULAR],
   });
 }
 

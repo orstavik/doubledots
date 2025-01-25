@@ -1,13 +1,10 @@
 import { parse$ContainerSelector, parse$ItemSelector } from "./parseSelector.js";
-export {toCssText} from "./parseSelector.js";
+export { toCssText } from "./parseSelector.js";
 
-const ZERO = /(-|)0([0-9]+)/.source; //neg, zeroInt
-const FLOAT = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
+const NUM = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const UNIT = /[a-z]+|%/.source;
 //prefix shorts
-const NUMBER = `(${ZERO}|${FLOAT})(${UNIT}|)`; //num, neg, zeroInt, unit
-// const FRAC = /[0-9]+\/[0-9]+/.source;
-// const FRACTION = new RegExp(`(${FRAC})(${UNIT}|)`).source;
+const NUMBER = `(${NUM})(\\/${NUM})?(${UNIT})?`; //num, int, unit
 const HEX = /#[0-9a-f]{3,6}/.source;
 const START = /([a-z]*)\[/.source;
 //non-prefix shorts
@@ -18,15 +15,19 @@ const BRACKETS_COMMA = /(\,)|(\])/.source;
 const TOKENS =                                    //|(${FRACTION})
   new RegExp(`${BRACKETS_COMMA}|${START}|(${HEX})|(${NUMBER})|(${WORD})|(${QUOTE})|(${CALC_EXPR})`, "g");
 
-function processToken([, c, end, prefix, hex,/* fraction, frac, fracunit,*/ N, num, neg, zInt, unit, word, quote, expr]) {
-  // if (frac)
-  //   return { N: fraction, num: frac, n: frac.split("/").reduce((_, [a, b]) => a / b), unit: fracunit };
-  if (num)
-    return { N, num, n: Number(zInt ? neg + "." + zInt : num), unit };
+function processToken([, c, end, prefix, hex, N, num, frac, unit, word, quote, expr]) {
+  if (N) {
+    if(unit === "args" || unit === "prefix")
+      throw new SyntaxError("the unit of numbers cannot be 'args' nor 'prefix'.");
+    num = Number(num);
+    if (frac)
+      num /= Number(frac.slice(1));
+    unit ||= (!frac && Number.isInteger(num)) ? "int" : "float";
+    return { [unit]: num };
+  }
   if (prefix != null)
     return { prefix, args: [] };
-  return c ? "" : end ? end : word ? word :
-    { hex, quote, expr };
+  return c ? "" : end ? end : word ? { word } : hex ? { hex } : quote ? { quote } : { expr };
 }
 
 function nestBrackets(active, tokens) {
@@ -45,6 +46,8 @@ function nestBrackets(active, tokens) {
 }
 
 function parse$arg(arg) {
+  if(!arg)
+    return {prefix: "", args: []};
   const tokens = [];
   for (let m; m = TOKENS.exec(arg);)
     tokens.push(processToken(m));

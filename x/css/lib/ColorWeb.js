@@ -1,13 +1,13 @@
-import { isOnlyOne, PrefixTable, trbl } from "./utils.js";
+import { SINGULAR, PrefixTable2, trbl, clamp } from "./utils.js";
 
 function webColor(arg) {
   return arg?.hex ?? arg;
 }
 
-const colorTable = new PrefixTable({
-  "color": [, webColor, isOnlyOne],
-  "--background-color": [, webColor, isOnlyOne],
-  "border-color": [, webColor, args => args.length < 5 && args],
+const colorTable = new PrefixTable2({
+  "color": [, webColor, SINGULAR],
+  "--background-color": [, webColor, SINGULAR],
+  "border-color": [, webColor, clamp(1, 4)],
 });
 
 export function color(start, topArgs) {

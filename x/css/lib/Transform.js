@@ -34,7 +34,7 @@ const transformTable = new PrefixTable({
   "origin": [/o|origin/, origin, args => args.join(" ")],
   //"rotate3d": [/rotate3d/, ...todo],
   // "matrix": [/|m|matrix/, bracketSquare(3, 4), args => args.join("\n")],
-  // "perspective": [/perspective/, positiveDistance, isOnlyOne],
+  // "perspective": [/perspective/, positiveDistance, SINGULAR],
 });
 
 export function transform(start, args) {
