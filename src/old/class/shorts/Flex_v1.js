@@ -1,4 +1,4 @@
-import { PrefixTable2, isOnlyOne, INT, NUMBER_POS, LAYOUT_CONTAINER, LAYOUT_MARGIN, LENGTH_ANY, PERCENT } from "../../../../x/css/lib/utils.js";
+import { PrefixTable2, isOnlyOne, INT, NUMBER_POS, LAYOUT, LAYOUT_MARGIN, LENGTH_ANY, PERCENT } from "../../../../x/css/lib/utils.js";
 
 //CONTAINER
 const FLEX_DIR = /row|row-reverse|column|column-reverse/;
@@ -7,7 +7,7 @@ const FLEX_WRAPS = /wrap|nowrap|wrap-reverse/;
 const FLEX_CONTAINER = new PrefixTable2({
   "flex-direction": [/()/, FLEX_DIR, isOnlyOne],
   "flex-wrap": [/()/, FLEX_WRAPS, isOnlyOne],
-  ...LAYOUT_CONTAINER
+  ...LAYOUT
 });
 
 export function flex(start, args) {
