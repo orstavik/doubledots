@@ -1,19 +1,21 @@
-import { border, border as _border } from "./Border.js";
-import { flex, _flex } from "./Flex.js";
-import { color, color as _color } from "./ColorWeb.js";
-import { cursor, cursor as _cursor } from "./Cursor.js";
-import { transform, transform as t } from "./Transform.js";
-// import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
-import { w, h, h as _h, w as _w, wMin, wMax, hMin, hMax } from "./WidthHeight.js";
+// import { border, border as _border } from "./Border.js";
+// import { flex, _flex } from "./Flex.js";
+// import { color, color as _color } from "./ColorWeb.js";
+// import { transform, transform as t } from "./Transform.js";
+// // import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
+// import { w, h, h as _h, w as _w, wMin, wMax, hMin, hMax } from "./WidthHeight.js";
 
+import { cursor } from "./Cursor.js";
+import { border } from "./Border2.js";
+import { color2 as color } from "./ColorWeb3.js";
 const SHORTS = {
-  border, _border,
-  flex, _flex,
-  color, _color,
+  border, 
+  color,
+  // flex, _flex,
   // paletteMaterial, colorMaterial,
-  h, _h, w, _w, wMin, wMax, hMin, hMax,
-  transform, t,
-  cursor, _cursor,
+  // h, _h, w, _w, wMin, wMax, hMin, hMax,
+  // transform, t,
+  cursor,
 };
 
 import { parse$Expression, parse$SuperShorts, toCssText } from "./parser.js";

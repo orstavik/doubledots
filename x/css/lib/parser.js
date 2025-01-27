@@ -17,7 +17,7 @@ const TOKENS =                                    //|(${FRACTION})
 
 function processToken([, c, end, prefix, hex, N, num, frac, unit, word, quote, expr]) {
   if (N) {
-    if(unit === "args" || unit === "prefix")
+    if (unit === "args" || unit === "prefix") //todo replace prefix and args with symbol
       throw new SyntaxError("the unit of numbers cannot be 'args' nor 'prefix'.");
     num = Number(num);
     if (frac)
@@ -34,7 +34,7 @@ function nestBrackets(active, tokens) {
   let prev;
   for (let t of tokens) {
     if (t === "]")
-      return active;
+      return !active.prefix ? active.args : {[active.prefix]: active.args};
     if (t.args)
       prev = nestBrackets(t, tokens);
     else if (t || !prev) //add somethings and commas after commas.
@@ -46,16 +46,15 @@ function nestBrackets(active, tokens) {
 }
 
 function parse$arg(arg) {
-  if(!arg)
-    return {prefix: "", args: []};
+  if (!arg)
+    return "";
   const tokens = [];
   for (let m; m = TOKENS.exec(arg);)
     tokens.push(processToken(m));
   const iter = tokens[Symbol.iterator]();
-  const first = iter.next().value;
-  return first.args ?
-    nestBrackets(first, iter, true) :
-    { prefix: "", args: [first] };
+  let first = iter.next().value;
+  if (first.args) first = nestBrackets(first, iter);
+  return first instanceof Array  ? first : [first];//|| "prefix" in first)
 }
 
 function parse$Short(short, item) {

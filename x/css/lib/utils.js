@@ -6,11 +6,11 @@ const UNITLESS = a => a;
 const UNITLESS_POS = a => a >= 0 ? a : undefined;
 
 export const LENGTH_ANY = Object.fromEntries(LENGTH_UNITS.map(unit => [unit, ANY]));
-export const LENGTH_POSITIVE = Object.fromEntries(LENGTH_UNITS.map(unit => [unit, POS]));
+export const LENGTH_POS = Object.fromEntries(LENGTH_UNITS.map(unit => [unit, POS]));
 export const PERCENT = { "%": ANY };
 export const PERCENT_POS = { "%": POS };
 export const LENGTH_PERCENT = { ...LENGTH_ANY, ...PERCENT };
-export const LENGTH_PERCENT_POS = { ...LENGTH_POSITIVE, ...PERCENT_POS };
+export const LENGTH_PERCENT_POS = { ...LENGTH_POS, ...PERCENT_POS };
 export const INT = { int: UNITLESS };
 export const INT_POS = { int: UNITLESS_POS };
 export const NUMBER = { float: UNITLESS, int: UNITLESS };
@@ -223,7 +223,7 @@ export class LAYOUT {
       a => SINGULAR(a) && "always"
     ],
   };
-  static GAP = { "gap": [/g|gap/, LENGTH_POSITIVE, spaceJoin2] };
+  static GAP = { "gap": [/g|gap/, LENGTH_POS, spaceJoin2] };
   static PADDING = { "padding": [/p|padding/, LENGTH_PERCENT_POS, spaceJoin4] };
   static MARGIN = { "margin": [/m|margin/, LENGTH_PERCENT, spaceJoin4] };
   static ALIGN = [/^$/, /start|center|end|around|between|evenly/,

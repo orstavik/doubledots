@@ -1,9 +1,9 @@
-import { PrefixTable2, join, LENGTH_POSITIVE } from "./utils.js";
+import { PrefixTable2, join, LENGTH_POS } from "./utils.js";
 
 const BORDER_STYLE = /solid|dashed|dotted|double|groove|ridge|inset|outset|none/;
 
 const BORDER_WIDTH = {
-  ...LENGTH_POSITIVE,
+  ...LENGTH_POS,
   word: /thin|medium|thick/
 };
 const BORDER_RADIUS = {
