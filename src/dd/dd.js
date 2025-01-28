@@ -15,3 +15,4 @@ document.Reactions.define("prevent-default",
   i => (eventLoop.event.preventDefault(), i));
 
 loadDoubleDots(EventTarget.prototype.addEventListener);
+
