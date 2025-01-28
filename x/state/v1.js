@@ -13,7 +13,7 @@ class StateAttrIterator {
       const branches = at.constructor.branches;
       for (let observedBranch of branches)
         if (observedBranch.every((b, i) => b === this.branchChanged[i])) {
-          this.event.state = branches.length > 1 ?
+          this.event[Event.data] = branches.length > 1 ?
             this.state :
             observedBranch.reduce((o, p) => o?.[p], this.state);
           return { value: at, done: false };
@@ -57,7 +57,7 @@ export function state(value) {
 }
 
 export function State_(rule) {
-  let [name, ...branches] = rule.split("_");
+  let [, ...branches] = rule.split("_");
   branches = branches.map(b => b.split("."));
   return class State extends AttrCustom {
     upgrade() { attrs.add(this); }
