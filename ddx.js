@@ -22,8 +22,11 @@ var StateAttrIterator = class {
     return this;
   }
 };
-var attrs = new DoubleDots.AttrWeakSet();
-var stateObj = {};
+var attrs = {};
+function addAttr(at, name) {
+  (attrs[name] ??= new DoubleDots.AttrWeakSet()).add(at);
+}
+var states = {};
 function setInObjectCreatePaths(obj, path, key, value) {
   for (let p of path)
     obj = obj[p] ??= {};
@@ -38,26 +41,26 @@ function setInObjectIfDifferent(obj, path, key, value) {
 }
 var State = class extends AttrCustom {
   upgrade() {
-    attrs.add(this);
+    addAttr(this, this.trigger);
   }
   static get branches() {
     return [[]];
   }
 };
 function state(value) {
-  if (JSON.stringify(state) === JSON.stringify(value))
+  const name = eventLoop.reaction;
+  if (JSON.stringify(states[name]) === JSON.stringify(value))
     return;
-  state = value;
   const e = new Event("state");
-  const it = new StateAttrIterator(e, attrs, [], state);
+  const it = new StateAttrIterator(e, attrs[name], [], states[name] = value);
   eventLoop.dispatchBatch(e, it);
 }
 function State_(rule) {
-  let [, ...branches] = rule.split("_");
+  let [name, ...branches] = rule.split("_");
   branches = branches.map((b) => b.split("."));
   return class State extends AttrCustom {
     upgrade() {
-      attrs.add(this);
+      addAttr(this, name);
     }
     static get branches() {
       return branches;
@@ -70,11 +73,11 @@ function state_(rule) {
   const key = branch[branch.length - 1];
   const path = branch.slice(0, -1);
   return function(value) {
-    const change = setInObjectIfDifferent(stateObj, path, key, value);
+    const change = setInObjectIfDifferent(states[name] ??= {}, path, key, value);
     if (!change)
       return;
     const e = new Event(name);
-    const it = new StateAttrIterator(e, attrs, branch, stateObj);
+    const it = new StateAttrIterator(e, attrs[name], branch, states[name]);
     eventLoop.dispatchBatch(e, it);
   };
 }

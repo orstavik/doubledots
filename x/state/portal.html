@@ -1,0 +1,13 @@
+<script src="/dd.js"></script>
+<script type="module" src="v1.js?Portal=State&portal=state" _:define></script>
+
+<script>
+  document.Reactions.define("log", e => console.log(e));
+  document.Reactions.define("hello", _ => "sunshine");
+</script>
+
+<body _::hello:portal>
+  <div portal:log>
+    hello hello
+  </div>
+</body>
