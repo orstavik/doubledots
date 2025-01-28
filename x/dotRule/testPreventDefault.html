@@ -1,0 +1,12 @@
+<script src="/dd.js"></script>
+<script type="module" src="/ddx.js?Submit" _:define></script>
+<!-- todo fix the bug when empty script -->
+<script type="module" src="dot.js?e.~" _:define></script>
+
+<script>
+  document.Reactions.define("log", e => console.log(e.defaultPrevented));
+</script>
+
+<form action="https://bbc.com" submit:prevent-default:log>
+  <input type="text" name="fname" value="press enter here">
+</form>

@@ -1197,6 +1197,10 @@ document.Triggers.define("template", Template);
 document.Reactions.define("template", template);
 document.Reactions.define("define", define);
 document.Reactions.defineRule("wait_", wait_);
+document.Reactions.define(
+  "prevent-default",
+  (i) => (eventLoop.event.preventDefault(), i)
+);
 loadDoubleDots(EventTarget.prototype.addEventListener);
 
 // src/dd/7_logging.js
