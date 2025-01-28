@@ -1,18 +1,19 @@
 // import { border, border as _border } from "./Border.js";
-// import { flex, _flex } from "./Flex.js";
+import { flex, _flex } from "./Flex3.js";
 // import { color, color as _color } from "./ColorWeb.js";
 // import { transform, transform as t } from "./Transform.js";
 // // import { paletteMaterial, colorMaterial } from "./ColorMaterialWeb.js";
-// import { w, h, h as _h, w as _w, wMin, wMax, hMin, hMax } from "./WidthHeight.js";
+import { w, h } from "./WidthHeight2.js";// , wMin, wMax, hMin, hMax
 
-import { cursor } from "./Cursor.js";
-import { border } from "./Border2.js";
+import { cursor } from "./Cursor3.js";
+import { border } from "./Border3.js";
 import { color2 as color } from "./ColorWeb3.js";
 const SHORTS = {
-  border, 
+  border,
   color,
-  // flex, _flex,
+  flex, _flex,
   // paletteMaterial, colorMaterial,
+  w, h,
   // h, _h, w, _w, wMin, wMax, hMin, hMax,
   // transform, t,
   cursor,
