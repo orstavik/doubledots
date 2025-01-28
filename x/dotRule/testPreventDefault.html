@@ -10,3 +10,5 @@
 <form action="https://bbc.com" submit:prevent-default:log>
   <input type="text" name="fname" value="press enter here">
 </form>
+
+comment: onsubmit="event.preventDefault()" and similar is also possible to block event native action quickly. But it doesn't fit with the flow in doubleDots, so we don't use it.
