@@ -184,25 +184,29 @@ var LoopCube = class {
 };
 
 // x/embrace/Tokenizer.js
-var loophole = /\b(?:JSON.stringify)\b/;
-var ignore = /\b(?:break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|instanceof|interface|let|new|null|package|private|protected|public|return|static|switch|throw|true|try|typeof|var|void|while|with|yield|async|await)\b/;
-var dotWords = /\.\s*[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]*)*/u;
-var words = /#?[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]*)*/u;
+var loophole = /\b(?:JSON.stringify|(?:instanceof\s+(?:[\p{L}\p{N}_$]+)))\b/;
+var ignore = /\b(?:break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|interface|let|new|null|package|private|protected|public|return|static|switch|throw|true|try|typeof|var|void|while|with|yield|async|await|\s+)\b/;
+var dotWords = /\.\s*[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]+)*/u;
+var words = /#?[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]+)*/u;
 var quote1 = /'([^'\\]*(\\.[^'\\]*)*)'/;
 var quote2 = /"([^"\\]*(\\.[^"\\]*)*)"/;
 var number = /0[xX][0-9a-fA-F]+|\d*\.?\d+(?:[eE][+-]?\d+)?/;
 var regex = /\/[^/\\]*(?:\\.[^/\\]*)*\/[gimyu]*/;
 var linecomment = /\/\/[^\n]*/;
 var starcomment = /\/\*[^]*?\*\//;
-var tokens = [ignore, loophole, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
+var tokens = [loophole, ignore, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
 var tokenizer = new RegExp(tokens.map((r) => `(${r.source})`).join("|"), "gu");
 function extractArgs(txt) {
-  return txt.replaceAll(tokenizer, (o, i, l, p) => p ? `args("${p.replace(/\s+/g, "")}")` : o);
+  return txt.replaceAll(tokenizer, (o, l, i, p) => p ? `args("${p.replace(/\s+/g, "")}")` : o);
 }
 function interpretTemplateString(txt) {
   return `\`${txt.split(/{{([^}]+)}}/).map((str, i) => i % 2 ? `\${(v = ${extractArgs(str)}) === false || v === undefined ? "": v}` : str.replaceAll("`", "\\`")).join("")}\``;
 }
 var tsts = [
+  [
+    `series instanceof Array`,
+    `args("series") instanceof Array`
+  ],
   [
     `//the word are all references. They will *all* be replaced with arg[i]
   const word = / #something.else */u;

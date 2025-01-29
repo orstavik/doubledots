@@ -1,7 +1,7 @@
-const loophole = /\b(?:JSON.stringify)\b/
-const ignore = /\b(?:break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|instanceof|interface|let|new|null|package|private|protected|public|return|static|switch|throw|true|try|typeof|var|void|while|with|yield|async|await)\b/;
-const dotWords = /\.\s*[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]*)*/u;
-const words = /#?[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]*)*/u;
+const loophole = /\b(?:JSON.stringify|(?:instanceof\s+(?:[\p{L}\p{N}_$]+)))\b/;
+const ignore = /\b(?:break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|interface|let|new|null|package|private|protected|public|return|static|switch|throw|true|try|typeof|var|void|while|with|yield|async|await|\s+)\b/; //space are ignored
+const dotWords = /\.\s*[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]+)*/u;
+const words = /#?[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]+)*/u;
 const quote1 = /'([^'\\]*(\\.[^'\\]*)*)'/;
 const quote2 = /"([^"\\]*(\\.[^"\\]*)*)"/;
 const number = /0[xX][0-9a-fA-F]+|\d*\.?\d+(?:[eE][+-]?\d+)?/;
@@ -18,11 +18,11 @@ const starcomment = /\/\*[^]*?\*\//;
 // const dangerous = /super|window|this|document|globalThis|arguments|Function|eval/;
 // These dangerous words are captured, replaced with args[1], and attempted gotten from the context. Thus, they are safe.
 
-const tokens = [ignore, loophole, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
+const tokens = [loophole, ignore, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
 const tokenizer = new RegExp(tokens.map(r => `(${r.source})`).join("|"), "gu");
 
 export function extractArgs(txt) {
-  return txt.replaceAll(tokenizer, (o, i, l, p) =>
+  return txt.replaceAll(tokenizer, (o, l, i, p) =>
     p ? `args("${p.replace(/\s+/g, "")}")` : o);
 }
 
@@ -34,6 +34,9 @@ export function interpretTemplateString(txt) {
 }
 
 const tsts = [[
+  `series instanceof Array`,
+  `args("series") instanceof Array`
+], [
   `//the word are all references. They will *all* be replaced with arg[i]
   const word = / #something.else */u;
   const quote = / name /;
@@ -53,8 +56,8 @@ const tsts = [[
 ], [
   `name.hello["bob"].sunshine  . bob`,
   `args("name.hello")["bob"].sunshine  . bob`
-] 
-//todo this last test.. it should actually turn this into args("name.hello.bob.sunshine.bob"), right? We should disallow property names with space in them? " "
+],
+  //todo this last test.. it should actually turn this into args("name.hello.bob.sunshine.bob"), right? We should disallow property names with space in them? " "
 
 ];
 
