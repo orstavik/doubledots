@@ -495,27 +495,8 @@ var ER = class {
     return res;
   }
 };
-var triggers2 = new DoubleDots.AttrWeakSet();
-var Er = class extends AttrCustom {
-  upgrade() {
-    triggers2.add(this);
-  }
-};
-var ErEvent = class extends Event {
-  constructor(type, er2) {
-    super(type);
-    this.er = new ER(er2);
-  }
-  get [Event.data]() {
-    return this.er;
-  }
-};
-var lastPosts = {};
 function er(posts) {
-  eventLoop.dispatchBatch(new ErEvent("er", lastPosts = posts), triggers2);
-}
-function erGet() {
-  return new ER(lastPosts);
+  return new ER(posts);
 }
 
 // x/fetch/v1.js
@@ -599,7 +580,6 @@ function formdata_(rule) {
 export {
   DCLTrigger,
   DocumentTrigger,
-  Er,
   Nav,
   PostPropTrigger,
   PrePropTrigger,
@@ -610,7 +590,6 @@ export {
   dynamicDots as dynamicsDots,
   embrace,
   er,
-  erGet,
   fetch_json,
   fetch_text,
   formdata_,

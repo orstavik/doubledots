@@ -1,25 +1,21 @@
 <head>
-<script src="/dd.js"></script>
+  <script src="/dd.js"></script>
   <script type="module" src="/x/fetch/v1.js?fetch_json" _:define></script>
-  <script type="module" src="v1.js?Er&er" _:define></script>
+  <script type="module" src="v1.js?er" _:define></script>
 </head>
 
 <script>
   function friendEmployeeCompany(er) {
-    const $friend = "person/jensen";
-    const $employee = er.parent($friend, "person", "friends");
-    const $company = er.parent($employee, "company", "employees");
-    return er.resolve($company, { $friend, $employee, $company });
-  }
-
-  function log(i) {
-    console.log(JSON.stringify(i, null, 2));
+    const friend = "person/jensen";
+    const employee = er.parent(friend, "person", "friends");
+    const company = er.parent(employee, "company", "employees");
+    return er.resolve(company, { friend, employee, company });
   }
 
   document.Reactions.define("friend-employee-company", friendEmployeeCompany);
-  document.Reactions.define("log", log);
+  document.Reactions.define("log", i => console.log(i));
 </script>
 
-<div _::fetch_json:er="companies.json">
-  <h1 er:friend-employee-company:log>hello sunshine</h1>
+<div _::fetch_json:er:friend-employee-company:log="companies.json">
+  hello sunshine
 </div>

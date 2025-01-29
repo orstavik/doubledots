@@ -1,23 +1,15 @@
 <script src="/dd.js"></script>
 <script type="module" src="/ddx.js?STATE~~&NAV&fetch_json&embrace&oi.~" _:define></script>
-<script type="module" src="v1.js?ER" _:define></script>
+<script type="module" src="v1.js?er" _:define></script>
 <script>
   document.Reactions.define("log", e => (console.log(e), e));
-  document.Reactions.define("make-page", ({state}) => {
-    console.log(state);
-    return state.er && state.nav ?
-      state.er.resolve("company/1") :
-      EventLoop.Break;
-  });
+  document.Reactions.define("make-page", ({ er, nav }) =>
+    er && nav ? er.resolve("company/1") : EventLoop.Break);
 </script>
 </head>
 
-<body 
-  _::fetch_json:er="companies.json" 
-  nav:oi.pathname:state_nav 
-  er:state_er
-  >
-  <div template: state_nav_er:make-page:embrace>
+<body _::fetch_json:er:state_er="companies.json" nav:oi.pathname:state_nav>
+  <div template: state_nav_er:log:make-page:embrace>
     Company: {{name}} Number of employee: {{employees.length}}
   </div>
 </body>

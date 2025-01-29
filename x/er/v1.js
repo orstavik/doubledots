@@ -34,29 +34,6 @@ class ER {
   }
 }
 
-let triggers = new DoubleDots.AttrWeakSet();
-
-export class Er extends AttrCustom {
-  upgrade() {
-    triggers.add(this);
-  }
-}
-
-class ErEvent extends Event {
-  constructor(type, er) {
-    super(type);
-    this.er = new ER(er);
-  }
-  get [Event.data]() {
-    return this.er;
-  }
-}
-
-let lastPosts = {};
 export function er(posts) {
-  eventLoop.dispatchBatch(new ErEvent("er", lastPosts = posts), triggers);
-}
-
-export function erGet(){
-  return new ER(lastPosts);
+  return new ER(posts);
 }

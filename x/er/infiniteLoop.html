@@ -1,5 +1,6 @@
 <script src="/dd_dev.js"></script>
-<script type="module" src="/ddx.js?fetch_json&ER" _:define></script>
+<script type="module" src="/ddx.js?fetch_json" _:define></script>
+<script type="module" src="./v1.js?er" _:define></script>
 
 <script>
   document.Reactions.define("make-page", er => {
@@ -11,4 +12,4 @@
   });
 </script>
 
-<div template: _::fetch_json:er="companiesCyclical.json" er:make-page:log></div>
+<div template: _::fetch_json:er:make-page:log="companiesCyclical.json"></div>
