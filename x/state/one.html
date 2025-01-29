@@ -3,7 +3,7 @@
 <script type="module" src="v1.js?STATE~~" _:define></script>
 
 <script>
-  document.Reactions.define("log", e => console.log(e));
+  document.Reactions.define("log", function (e) { console.log(this.name, e); });
   document.Reactions.define("hello", _ => "sunshine");
   document.Reactions.define("goodbye", _ => "darkness");
 </script>
@@ -16,4 +16,6 @@
     goodbye goodbye
   </div>
   <span state:log>more sunshine and darkness</span>
+  <span state_hello_goodbye:log>runs only at the end when it has both</span>
+  <span state_hello_goodbye_never:log>will not run as it is missing some props</span>
 </body>

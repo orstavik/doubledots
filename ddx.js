@@ -1,27 +1,34 @@
 // x/state/v1.js
-var StateAttrIterator = class {
-  constructor(event, attrs2, dotPath, state2) {
-    this.event = event;
-    this.it = attrs2[Symbol.iterator]();
-    this.branchChanged = dotPath;
-    this.state = state2;
-  }
-  next() {
-    for (let n = this.it.next(); !n.done; n = this.it.next()) {
-      const at = n.value;
-      const branches = at.constructor.branches;
-      for (let observedBranch of branches)
-        if (observedBranch.every((b, i) => b === this.branchChanged[i])) {
-          this.event[Event.data] = branches.length > 1 ? this.state : observedBranch.reduce((o, p) => o?.[p], this.state);
-          return { value: at, done: false };
-        }
+function matchesPath(observedPaths, path) {
+  for (let observedPath of observedPaths)
+    if (path.startsWith(observedPath))
+      return true;
+}
+function pathsAllSet(observedPaths, state2) {
+  for (let path of observedPaths) {
+    let obj = state2;
+    for (let p of path) {
+      if (!(p in obj))
+        return false;
+      obj = obj[p];
     }
-    return { done: true };
   }
-  [Symbol.iterator]() {
-    return this;
+  return true;
+}
+function makeIterator(attrs2, state2, pathString) {
+  if (!pathString)
+    return attrs2[Symbol.iterator]();
+  const matches = [];
+  for (let at of attrs2) {
+    if (!at.constructor.paths)
+      matches.push(at);
+    else if (matchesPath(at.constructor.branches, pathString)) {
+      if (pathsAllSet(at.constructor.paths, state2))
+        matches.push(at);
+    }
   }
-};
+  return matches[Symbol.iterator]();
+}
 var attrs = {};
 function addAttr(at, name) {
   (attrs[name] ??= new DoubleDots.AttrWeakSet()).add(at);
@@ -43,21 +50,19 @@ var State = class extends AttrCustom {
   upgrade() {
     addAttr(this, this.trigger);
   }
-  static get branches() {
-    return [[]];
-  }
 };
 function state(value) {
   const name = eventLoop.reaction;
   if (JSON.stringify(states[name]) === JSON.stringify(value))
     return;
   const e = new Event("state");
-  const it = new StateAttrIterator(e, attrs[name], [], states[name] = value);
+  e[Event.data] = states[name] = value;
+  const it = makeIterator(attrs[name], states[name]);
   eventLoop.dispatchBatch(e, it);
 }
 function State_(rule) {
-  let [name, ...branches] = rule.split("_");
-  branches = branches.map((b) => b.split("."));
+  const [name, ...branches] = rule.split("_");
+  const paths = branches.map((b) => b.split("."));
   return class State extends AttrCustom {
     upgrade() {
       addAttr(this, name);
@@ -65,19 +70,22 @@ function State_(rule) {
     static get branches() {
       return branches;
     }
+    static get paths() {
+      return paths;
+    }
   };
 }
 function state_(rule) {
   let [name, branch] = rule.split("_");
-  branch = branch.split(".");
-  const key = branch[branch.length - 1];
-  const path = branch.slice(0, -1);
+  const path = branch.split(".");
+  const key = path.pop();
   return function(value) {
     const change = setInObjectIfDifferent(states[name] ??= {}, path, key, value);
     if (!change)
       return;
     const e = new Event(name);
-    const it = new StateAttrIterator(e, attrs[name], branch, states[name]);
+    e[Event.data] = states[name];
+    const it = makeIterator(attrs[name], states[name], branch);
     eventLoop.dispatchBatch(e, it);
   };
 }
