@@ -80,7 +80,7 @@
     "slug": "clark-kent",
     "name": "Clark Kent",
     "role": "Manager",
-    "phone": "555-0001",
+    "phone": "5550001",
     "email": "clark.kent@globex.com",
     "associates": [
       "employee/diana-prince",
@@ -92,7 +92,7 @@
       "slug": "diana-prince",
       "name": "Diana Prince",
       "role": "Strategist",
-      "phone": "555-0002",
+      "phone": "5550002",
       "email": "diana.prince@globex.com"
   },
   "employee/bruce-wayne": {
@@ -100,7 +100,7 @@
     "slug": "bruce-wayne",
     "name": "Bruce Wayne",
     "role": "Analyst",
-    "phone": "555-0003",
+    "phone": "5550003",
     "email": "bruce.wayne@globex.com"
   },
   "page/directory": {

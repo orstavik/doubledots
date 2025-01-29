@@ -12,37 +12,31 @@
   "person/bob": {
     "type": "person",
     "fullname": "Bobby Jones",
-    "phone": "12345",
-    "friends": ["person/alice", "person/jensen"]
+    "phone": "12345"
   },
   "person/alice": {
     "type": "person",
     "fullname": "Alice Smith",
-    "phone": "67890",
-    "friends": []
+    "phone": "67890"
   },
   "person/jensen": {
     "type": "person",
     "fullname": "Jensen Lee",
-    "phone": "54321",
-    "friends": []
+    "phone": "54321"
   },
   "person/clark": {
     "type": "person",
     "fullname": "Clark Kent",
-    "phone": "5550001",
-    "friends": ["person/diana", "person/bruce"]
+    "phone": "5550001"
   },
   "person/diana": {
     "type": "person",
     "fullname": "Diana Prince",
-    "phone": "5550002",
-    "friends": ["person/clark"]
+    "phone": "5550002"
   },
   "person/bruce": {
     "type": "person",
     "fullname": "Bruce Wayne",
-    "phone": "5550003",
-    "friends": ["person/clark"]
+    "phone": "5550003"
   }
 }
