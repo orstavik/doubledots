@@ -1,4 +1,4 @@
-class ER {
+export class ER {
   constructor(posts) {
     this.posts = posts;
   }
@@ -34,8 +34,7 @@ class ER {
   }
 }
 
-
-class ErTyped extends ER {
+export class ErAnalysis extends ER {
 
   //step 1
   static entitiesToTypeValue(posts) {
@@ -54,7 +53,7 @@ class ErTyped extends ER {
 
   //step 2
   static extractTypeList(list) {
-    const types = [...new Set(list.map(ErTyped.extractType))].sort();
+    const types = [...new Set(list.map(ErAnalysis.extractType))].sort();
     if (types.includes("text") && types.includes("textmd"))
       types.splice(types.indexOf("text"), 1);
     if (types.includes("int") && types.includes("float"))
@@ -101,7 +100,7 @@ class ErTyped extends ER {
       return "color";
     if (Number(value) + "" === value)
       return "number";
-    return ErTyped.isMarkDown(value) ?? "text";
+    return ErAnalysis.isMarkDown(value) ?? "text";
   }
 
   static valuesToTypes(typeValueSchema) {
@@ -110,7 +109,7 @@ class ErTyped extends ER {
       const entityType = res[type] = {};
       const propValues = typeValueSchema[type];
       for (let prop in propValues)
-        entityType[prop] = ErTyped.extractTypeList(propValues[prop]);
+        entityType[prop] = ErAnalysis.extractTypeList(propValues[prop]);
     }
     return res;
   }
@@ -149,15 +148,20 @@ class ErTyped extends ER {
     return res;
   }
 
-  get schemas() {
-    const schemaTypeValues = ErTyped.entitiesToTypeValue(this.posts);
-    const schemaTypedUnsorted = ErTyped.valuesToTypes(schemaTypeValues);
-    const relationsUp = ErTyped.bottomUpRelations(schemaTypedUnsorted);
-    const entitySequence = ErTyped.topologicalSort(schemaTypedUnsorted, relationsUp);
+  static analyze(posts) {
+    const schemaTypeValues = ErAnalysis.entitiesToTypeValue(posts);
+    const schemaTypedUnsorted = ErAnalysis.valuesToTypes(schemaTypeValues);
+    const relationsUp = ErAnalysis.bottomUpRelations(schemaTypedUnsorted);
+    const entitySequence = ErAnalysis.topologicalSort(schemaTypedUnsorted, relationsUp);
     return entitySequence.map(type => [type, schemaTypedUnsorted[type]]);
   }
-}
 
-export function er(posts) {
-  return new ErTyped(posts);
+  #schema;
+  #schemaSorted;
+  get schema() {
+    return this.#schema ??= Object.fromEntries(this.schemaSorted);
+  }
+  get schemaSorted() {
+    return this.#schemaSorted ??= ErAnalysis.analyze(this.posts);
+  }
 }

@@ -1,13 +1,16 @@
 <head>
   <script src="/dd.js"></script>
   <script type="module" src="/ddx.js?oi.~&fetch_json" _:define></script>
-  <script type="module" src="v1.js?er" _:define></script>
+  <script type="module">
+    import { ErAnalysis } from "./ErAnalysis.js";
+    document.Reactions.define("er", i => new ErAnalysis(i));
+  </script>
 </head>
 
 <script>
   document.Reactions.define("log", i => console.log(i));
 </script>
 
-<div _::fetch_json:er:oi.schemas:log="companiesSmall.json">
+<div _::fetch_json:er:oi.schema:log="companiesSmall.json">
   hello sunshine
 </div>

@@ -1201,5 +1201,14 @@ document.Reactions.define(
   "prevent-default",
   (i) => (eventLoop.event.preventDefault(), i)
 );
+document.Reactions.define("log", function(...i) {
+  console.log(this, ...i);
+  return i[0];
+});
+document.Reactions.define("debugger", function(...i) {
+  console.log(this, ...i);
+  debugger;
+  return i[0];
+});
 loadDoubleDots(EventTarget.prototype.addEventListener);
 //# sourceMappingURL=dd.js.map

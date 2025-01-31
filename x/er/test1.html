@@ -1,7 +1,10 @@
 <head>
   <script src="/dd.js"></script>
   <script type="module" src="/x/fetch/v1.js?fetch_json" _:define></script>
-  <script type="module" src="v1.js?er" _:define></script>
+  <script type="module">
+    import { ER} from "./ErAnalysis.js";
+    document.Reactions.define("er", i => new ER(i));
+  </script>
 </head>
 
 <script>

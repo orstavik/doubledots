@@ -93,14 +93,7 @@ function state_(rule) {
 // x/nav/v1.js
 var triggers = new DoubleDots.AttrWeakSet();
 var active;
-var LocationEvent = class extends Event {
-  constructor() {
-    super("location");
-  }
-  get [Event.data]() {
-    return location;
-  }
-};
+var LocationEvent = (_) => Object.assign(new Event("location"), { [Event.data]: new URL(location) });
 var Nav = class extends AttrCustom {
   upgrade() {
     if (!active) {
@@ -109,7 +102,7 @@ var Nav = class extends AttrCustom {
       active = true;
     }
     triggers.add(this);
-    this.dispatchEvent(new LocationEvent());
+    this.dispatchEvent(LocationEvent());
   }
   remove() {
     triggers.delete(this);
@@ -119,7 +112,7 @@ function nav(e) {
   if (typeof e === "string") {
     const url = new URL(e, location.href);
     history.pushState(null, null, url.href);
-    return eventLoop.dispatchBatch(new LocationEvent(), triggers);
+    return eventLoop.dispatchBatch(LocationEvent(), triggers);
   }
   if (!triggers.size) {
     for (let e2 of ["click", "popstate", "hashchange"])
@@ -141,7 +134,7 @@ function nav(e) {
     history.pushState(null, null, link);
     e.preventDefault();
   }
-  eventLoop.dispatchBatch(new LocationEvent(), triggers);
+  eventLoop.dispatchBatch(LocationEvent(), triggers);
 }
 
 // x/embrace/LoopCube.js
@@ -469,7 +462,7 @@ for (let prefix in scopes)
 dynamicDots["x."] = BreakOnFalseReactionRule;
 dynamicDots["y."] = BreakOnTrueReactionRule;
 
-// x/er/v1.js
+// x/er/ErAnalysis.js
 var ER = class {
   constructor(posts) {
     this.posts = posts;
@@ -503,7 +496,7 @@ var ER = class {
     return res;
   }
 };
-var ErTyped = class extends ER {
+var ErAnalysis = class extends ER {
   //step 1
   static entitiesToTypeValue(posts) {
     const res = {};
@@ -520,7 +513,7 @@ var ErTyped = class extends ER {
   }
   //step 2
   static extractTypeList(list) {
-    const types = [...new Set(list.map(ErTyped.extractType))].sort();
+    const types = [...new Set(list.map(ErAnalysis.extractType))].sort();
     if (types.includes("text") && types.includes("textmd"))
       types.splice(types.indexOf("text"), 1);
     if (types.includes("int") && types.includes("float"))
@@ -571,7 +564,7 @@ var ErTyped = class extends ER {
       return "color";
     if (Number(value) + "" === value)
       return "number";
-    return ErTyped.isMarkDown(value) ?? "text";
+    return ErAnalysis.isMarkDown(value) ?? "text";
   }
   static valuesToTypes(typeValueSchema) {
     const res = {};
@@ -579,7 +572,7 @@ var ErTyped = class extends ER {
       const entityType = res[type] = {};
       const propValues = typeValueSchema[type];
       for (let prop in propValues)
-        entityType[prop] = ErTyped.extractTypeList(propValues[prop]);
+        entityType[prop] = ErAnalysis.extractTypeList(propValues[prop]);
     }
     return res;
   }
@@ -614,17 +607,22 @@ var ErTyped = class extends ER {
             (res[referred] ??= /* @__PURE__ */ new Set()).add(type);
     return res;
   }
-  get schemas() {
-    const schemaTypeValues = ErTyped.entitiesToTypeValue(this.posts);
-    const schemaTypedUnsorted = ErTyped.valuesToTypes(schemaTypeValues);
-    const relationsUp = ErTyped.bottomUpRelations(schemaTypedUnsorted);
-    const entitySequence = ErTyped.topologicalSort(schemaTypedUnsorted, relationsUp);
+  static analyze(posts) {
+    const schemaTypeValues = ErAnalysis.entitiesToTypeValue(posts);
+    const schemaTypedUnsorted = ErAnalysis.valuesToTypes(schemaTypeValues);
+    const relationsUp = ErAnalysis.bottomUpRelations(schemaTypedUnsorted);
+    const entitySequence = ErAnalysis.topologicalSort(schemaTypedUnsorted, relationsUp);
     return entitySequence.map((type) => [type, schemaTypedUnsorted[type]]);
   }
+  #schema;
+  #schemaSorted;
+  get schema() {
+    return this.#schema ??= Object.fromEntries(this.schemaSorted);
+  }
+  get schemaSorted() {
+    return this.#schemaSorted ??= ErAnalysis.analyze(this.posts);
+  }
 };
-function er(posts) {
-  return new ErTyped(posts);
-}
 
 // x/fetch/v1.js
 async function fetch_json() {
@@ -707,6 +705,8 @@ function formdata_(rule) {
 export {
   DCLTrigger,
   DocumentTrigger,
+  ER,
+  ErAnalysis,
   Nav,
   PostPropTrigger,
   PrePropTrigger,
@@ -716,7 +716,6 @@ export {
   dynamicSimpleProp,
   dynamicDots as dynamicsDots,
   embrace,
-  er,
   fetch_json,
   fetch_text,
   formdata_,

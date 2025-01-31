@@ -1,6 +1,9 @@
 <script src="/dd.js"></script>
 <script type="module" src="/ddx.js?STATE~~&NAV&fetch_json&embrace&oi.~" _:define></script>
-<script type="module" src="v1.js?er" _:define></script>
+<script type="module">
+  import { ER} from "./ErAnalysis.js";
+  document.Reactions.define("er", i => new ER(i));
+</script>
 <script>
   document.Reactions.define("log", e => (console.log(e), e));
   document.Reactions.define("make-page", ({ er, nav }) =>
