@@ -28,7 +28,20 @@
   border-bottom-style: solid;
   border-block-end-style: solid;
   border-inline-end-style: dashed;
-}`
+}`,
+"$size(1px,2px)":
+`/*container 0*/
+/*$size(1px,2px)*/
+:where(.\\$size\\(1px\\,2px\\)) {
+  block-size: 1px;
+  inline-size: 2px;
+}`,
+"$size(,2px)":
+`/*container 0*/
+/*$size(,2px)*/
+:where(.\\$size\\(\\,2px\\)) {
+  inline-size: 2px;
+}`,
   };
   for (let [expr, expect] of Object.entries(units)) {
     const res = toCss(expr);

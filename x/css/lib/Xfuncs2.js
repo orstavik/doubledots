@@ -3,25 +3,27 @@ const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.source;
 const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
 
+function DoWord(prop, RX, func, x) {
+  const m = x.match(RX);
+  if (!m) throw new SyntaxError(`Invalid argument: ${x} => ${RX.source}.`);
+  const res = func ? func(...m) : x;
+  // if(res == null) dunno if this is needed
+  return prop ? { [prop]: res } : res;
+}
+
 export function Word(words, func) {
-  const RX = new RegExp(`^(${words})$`);
-  return func ?
-    x => ((x = x.match(RX)) && func(...x)) :
-    x => (x.match(RX) && x);
+  return DoWord.bind(null, null, new RegExp(`^(${words})$`), func);
 }
 
 export function PWord(prop, words, func) {
-  const RX = new RegExp(`^(${words})$`);
-  return func ?
-    x => ((x = x.match(RX)) && { [prop]: func(...x) }) :
-    x => (x.match(RX) && { [prop]: x });
+  return DoWord.bind(null, prop, new RegExp(`^(${words})$`), func);
 }
 
 export function NumberUnit(units, valueCheck) {
-  units = new RegExp(`^(${NUM})(${units})$`);
+  const RX = new RegExp(`^(${NUM})(${units})$`);
   return valueCheck ?
-    x => (x = x.match(units)) && valueCheck(x[1]) && x[0] :
-    x => x.matchmatch(units) && x;
+    x => (x = x.match(RX)) && valueCheck(x[1]) && x[0] :
+    x => x.matchmatch(RX) && x;
 }
 
 export function Unit(units, func) {
@@ -62,24 +64,13 @@ export function LogicalFour(PROP_ALIASES, ArgHandler) {
   };
 }
 
-export function Props(PROP_ALIASES, PROPS, FUNCS) {
+export function Sequence(PROP_ALIASES, PROPS, FUNCS) {
   if (FUNCS instanceof Function) FUNCS = [FUNCS];
   for (let i = 0; i < PROPS.length; i++)
     FUNCS[i] ??= FUNCS[0];
-
-  PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
+  const NAME = PROP_ALIASES && new RegExp(`^(${PROP_ALIASES})$`);
   return function ({ name, args }) {
-    if (!args?.length || args.length > PROPS.length || !name.match(PROP_ALIASES))
-      return;
-    return Object.fromEntries(args.map((a, i) => [PROPS[i], NullOk(a, FUNCS[i])]));
-  };
-}
-export function Sequence(PROPS, FUNCS) {
-  if (FUNCS instanceof Function) FUNCS = [FUNCS];
-  for (let i = 0; i < PROPS.length; i++)
-    FUNCS[i] ??= FUNCS[0];
-  return function ({ name, args }) {
-    if (!args.length || args.length > PROPS.length)
+    if (!args.length || args.length > PROPS.length || (NAME && !name.match(NAME)))
       throw new SyntaxError(
         `${name}() accepts upto ${PROPS.length} arguments, not ${args.length}`);
     return Object.fromEntries(args.map((a, i) => [PROPS[i], NullOk(a, FUNCS[i])]));

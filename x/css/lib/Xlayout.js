@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, PWord, Dictionary, Props, LogicalFour, Unit, Display } from "./Xfuncs2.js";
+import { PositiveLengthPercent, Word, PWord, Dictionary, Sequence, LogicalFour, Unit, Display } from "./Xfuncs2.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
@@ -35,7 +35,7 @@ export const _block = Dictionary(
 );
 
 //GRID
-const Gap = Props("gap|g", ["gap-column", "gap-row"], PositiveLengthPercent);
+const Gap = Sequence("gap|g", ["gap-column", "gap-row"], PositiveLengthPercent);
 const AlignAliases = {
   a: "start",
   b: "end",
@@ -66,8 +66,8 @@ function doAlignSelf(_, b, i) {
 
 export const grid = Display("grid", Dictionary(
   // PWord("grid-template-areas", "none"), //todo how do we want to write this in csss?
-  Props("column|c", "grid-auto-columns", PositiveLengthPercent),
-  Props("row|r", "grid-auto-rows", PositiveLengthPercent),
+  Sequence("column|c", "grid-auto-columns", PositiveLengthPercent),
+  Sequence("row|r", "grid-auto-rows", PositiveLengthPercent),
   PWord("grid-auto-flow", "(dense)-?(column)", (_, d, c = "row") => `${d} ${c}`),
   Word(GRID_ALIGN, doAlign),
   Gap,
@@ -97,6 +97,6 @@ export const _flex = Dictionary(
   Unit("grow", (_, n) => ({ "flex-grow": n })),
   Unit("shrink", (_, n) => ({ "flex-shrink": n })),
   Unit("order", (_, n) => ({ "order": n })),
-  Props("basis", "flex-basis", PositiveLengthPercent),
+  Sequence("basis", "flex-basis", PositiveLengthPercent),
   ..._LAYOUT
 );
