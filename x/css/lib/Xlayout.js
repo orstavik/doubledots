@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, PWord, Dictionary, Sequence, LogicalFour, Unit, Display } from "./Xfuncs2.js";
+import { PositiveLengthPercent, Word, PWord, Dictionary, Sequence, LogicalFour, Unit } from "./Xfuncs2.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
@@ -25,6 +25,10 @@ const _LAYOUT = [
   LogicalFour("margin|m", PositiveLengthPercent),
   LogicalFour("scroll-margin", PositiveLengthPercent)
 ];
+
+function Display(display, func) {
+  return exp => ({ display, ...func(exp) });
+}
 
 export const block = Display("block", Dictionary(
   PWord("float", "float-(start|end)", (_, s) => "inline-" + s),

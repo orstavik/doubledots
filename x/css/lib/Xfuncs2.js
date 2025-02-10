@@ -26,10 +26,6 @@ export function Unit(units, func) {
 export const PositiveLengthPercent =
   Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? str : null));
 
-export function Display(display, func) {
-  return exp => ({ display, ...func(exp) });
-}
-
 export function LogicalFour(PROP_ALIASES, ArgHandler) {
   const PROP = PROP_ALIASES.split("|")[0];
   PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
