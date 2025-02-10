@@ -44,12 +44,8 @@ export function Unit(units, func) {
 
 export const PositiveLengthPercent = NumberUnit(LENGTHS_PER, v => Number(v) >= 0);
 
-export function Display(value, func) {
-  return function display(exp) {
-    const res = func(exp);
-    res.display = value;
-    return res;
-  };
+export function Display(display, func) {
+  return exp => ({ display, ...func(exp) });
 }
 
 export function LogicalFour(PROP_ALIASES, ArgHandler) {

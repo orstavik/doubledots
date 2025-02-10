@@ -40,7 +40,7 @@ function LogicalEight(PROP_ALIASES, PositiveLengthPercent) {
 }
 
 export const border = Sequence(  //border-colors controlled by $color
-  BorderSwitch(LogicalFour("width", PositiveLengthPercent)),
+  BorderSwitch(LogicalFour("width|w", PositiveLengthPercent)),
   BorderSwitch(LogicalFour("style|s", Word("solid|dotted|dashed|double"))),
   BorderSwitch(LogicalFour("radius|r", PositiveLengthPercent)),
   BorderSwitch(LogicalEight("radius|r|logical-radius", PositiveLengthPercent))

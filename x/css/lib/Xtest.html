@@ -1,12 +1,12 @@
 <script type="module">
-  import { interpretClass } from "./Xinterpreter.js";
-  import { toCssText } from "./Xparser.js";
+  import { interpretClass, toCssText } from "./Xengine.js";
 
   const units = {
     "$flex(row-reverse, p(1%,,3%), gap(,3rem))":
 `/*container 0*/
 /*$flex(row-reverse, p(1%,,3%), gap(,3rem))*/
 :where(.\\$flex\\(row-reverse\\,\\ p\\(1\\%\\,\\,3\\%\\)\\,\\ gap\\(\\,3rem\\)\\)) {
+  display: flex;
   flex-direction: row-reverse;
   padding-top: 1%;
   padding-bottom: 3%;
@@ -38,7 +38,7 @@
       console.log("------------------------");
       console.log(JSON.stringify(resTxt));
       console.log("------------------------");
-      console.log(expect);
+      console.log(JSON.stringify(expect));
     } else {
       console.log("OK", expr);
     }
