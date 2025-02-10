@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, Sequence, LogicalFour } from "./Xfuncs2.js";
+import { PositiveLengthPercent, Word, Dictionary, LogicalFour } from "./Xfuncs2.js";
 
 function BorderSwitch(func) {
   return function (exp) {
@@ -39,7 +39,7 @@ function LogicalEight(PROP_ALIASES, PositiveLengthPercent) {
   };
 }
 
-export const border = Sequence(  //border-colors controlled by $color
+export const border = Dictionary(  //border-colors controlled by $color
   BorderSwitch(LogicalFour("width|w", PositiveLengthPercent)),
   BorderSwitch(LogicalFour("style|s", Word("solid|dotted|dashed|double"))),
   BorderSwitch(LogicalFour("radius|r", PositiveLengthPercent)),

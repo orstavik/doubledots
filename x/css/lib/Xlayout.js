@@ -91,6 +91,7 @@ export const flex = Display("flex", Dictionary(
   ...LAYOUT
 ));
 
+//todo safe
 export const _flex = Dictionary(
   Word(_FLEX_ALIGN, doAlignSelf),
   Unit("grow", (_, n) => ({ "flex-grow": n })),

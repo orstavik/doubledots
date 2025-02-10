@@ -2,8 +2,9 @@ import { parse$ContainerSelector, parse$ItemSelector } from "./parseSelector.js"
 import { toCssText } from "./parseSelector.js";
 import { flex, _flex } from "./Xlayout.js";
 import { border } from "./Xborder.js";
+import { size } from "./Xsize.js";
 
-const shortFuncs = { flex, _flex, border, };
+const shortFuncs = { flex, _flex, border, size };
 
 export const toCss = txt => [...toCssText(txt, interpretClass(txt))].join("\n");
 
@@ -129,4 +130,3 @@ export function* parseSuperShorts(txt) {
 export function cssClassName(shortName) {
   return "." + shortName.replaceAll(/[^a-z0-9_-]/g, "\\$&");;
 }
-

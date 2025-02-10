@@ -3,43 +3,30 @@ const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.source;
 const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
 
-function Undefined(func) {
-  return function (exp) {
-    if (exp == undefined) return exp;
-    const res = func(exp);
-    if (!res) throw new SyntaxError(`Invalid argument: ${exp}`);
-    return res;
-  };
-}
-
 export function Word(words, func) {
   const RX = new RegExp(`^(${words})$`);
-  const Func = func ?
+  return func ?
     x => ((x = x.match?.(RX)) && func(...x)) :
     x => (x.match?.(RX) && x);
-  return Undefined(Func);
 }
 
 export function PWord(prop, words, func) {
   const RX = new RegExp(`^(${words})$`);
-  const Func = func ?
+  return func ?
     x => ((x = x.match?.(RX)) && { [prop]: func(...x) }) :
     x => (x.match?.(RX) && { [prop]: x });
-  return Undefined(Func);
 }
 
 export function NumberUnit(units, valueCheck) {
   units = new RegExp(`^(${NUM})(${units})$`);
-  const Func = valueCheck ?
+  return valueCheck ?
     x => (x = x.match?.(units)) && valueCheck(x[1]) && x[0] :
     x => x.match?.match(units) && x;
-  return Undefined(Func);
 }
 
 export function Unit(units, func) {
   const RX = new RegExp(`^(${NUM})(${units})$`);
-  const Func = x => (x = x.match?.(RX)) && func(...x);
-  return Undefined(Func);
+  return x => (x = x.match?.(RX)) && func(...x);
 }
 
 export const PositiveLengthPercent = NumberUnit(LENGTHS_PER, v => Number(v) >= 0);
@@ -48,13 +35,17 @@ export function Display(display, func) {
   return exp => ({ display, ...func(exp) });
 }
 
+const NullOk = (x, func) => x == undefined ? x : func(x);
+
+
+
 export function LogicalFour(PROP_ALIASES, ArgHandler) {
   const PROP = PROP_ALIASES.split("|")[0];
   PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
   return function ({ name, args }) {
     if (!args?.length || args.length > 4 || !name.match(PROP_ALIASES))
       return;
-    let [bs, is, be, ie] = args.map(ArgHandler);
+    let [bs, is, be, ie] = args.map(a => NullOk(a, ArgHandler));
     if (args.length === 1) is = be = ie = bs;
     if (args.length === 2) be = bs, ie = is;
     if (args.length === 3) ie = is;
@@ -71,28 +62,27 @@ export function LogicalFour(PROP_ALIASES, ArgHandler) {
   };
 }
 
-function Space(PROP_ALIASES, max, func, auto = "auto") {
-  const PROP = PROP_ALIASES.split("|")[0];
+export function Props(PROP_ALIASES, PROPS, FUNCS) {
+  if (FUNCS instanceof Function) FUNCS = [FUNCS];
+  for (let i = 0; i < PROPS.length; i++)
+    FUNCS[i] ??= FUNCS[0];
+
   PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
   return function ({ name, args }) {
-    if (!args?.length || args.length > max || !name.match(PROP_ALIASES))
+    if (!args?.length || args.length > PROPS.length || !name.match(PROP_ALIASES))
       return;
-    return { [PROP]: args.map(func).map(v => v ?? auto).join(" ") };
+    return Object.fromEntries(args.map((a, i) => [PROPS[i], NullOk(a, FUNCS[i])]));
   };
 }
-
-export function Props(PROP_ALIASES, propList, func) {
-  PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
+export function Sequence(PROPS, FUNCS) {
+  if (FUNCS instanceof Function) FUNCS = [FUNCS];
+  for (let i = 0; i < PROPS.length; i++)
+    FUNCS[i] ??= FUNCS[0];
   return function ({ name, args }) {
-    if (!args?.length || args.length > propList.length || !name.match(PROP_ALIASES))
-      return;
-    const res = {};
-    for (let i = 0; i < args.length; i++) {
-      let value = func(args[i]);
-      if (value != null)
-        res[propList[i]] = value;
-    }
-    return res;
+    if (!args.length || args.length > PROPS.length)
+      throw new SyntaxError(
+        `${name}() accepts upto ${PROPS.length} arguments, not ${args.length}`);
+    return Object.fromEntries(args.map((a, i) => [PROPS[i], NullOk(a, FUNCS[i])]));
   };
 }
 
@@ -112,25 +102,6 @@ export function Dictionary(...funcs) {
         }
       }
       throw new SyntaxError(`Invalid argument: ${name}(...${arg.toString()}...)`);
-    }
-    return res;
-  };
-}
-
-export function Sequence(...funcs) {
-  return function ({ name, args }) {
-    if (args.length > funcs.length)
-      throw new SyntaxError(
-        `${name}() accepts upto ${funcs.length} arguments, not ${args.length}`);
-    const res = {};
-    for (let i = 0; i < args.length; i++) {
-      const a = args[i];
-      const func = funcs[i];
-      const obj = a != null ? func(a) : a;
-      if (!obj)
-        throw new SyntaxError(
-          `Invalid argument: ${name}(${",".repeat(i)}${a.toString()})`);
-      Object.assign(res, obj);
     }
     return res;
   };
