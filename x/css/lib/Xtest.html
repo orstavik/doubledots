@@ -1,5 +1,5 @@
 <script type="module">
-  import { interpretClass, toCssText } from "./Xengine.js";
+  import {  toCss } from "./Xengine.js";
 
   const units = {
     "$flex(row-reverse, p(1%,,3%), gap(,3rem))":
@@ -31,12 +31,11 @@
 }`
   };
   for (let [expr, expect] of Object.entries(units)) {
-    const res = interpretClass(expr);
-    const resTxt = [...toCssText(expr, res)].join("\n");
-    if (resTxt != expect) {
+    const res = toCss(expr);
+    if (res != expect) {
       console.log(res);
       console.log("------------------------");
-      console.log(JSON.stringify(resTxt));
+      console.log(JSON.stringify(res));
       console.log("------------------------");
       console.log(JSON.stringify(expect));
     } else {

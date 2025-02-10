@@ -1,9 +1,11 @@
 import { parse$ContainerSelector, parse$ItemSelector } from "./parseSelector.js";
-export { toCssText } from "./parseSelector.js";
+import { toCssText } from "./parseSelector.js";
 import { flex, _flex } from "./Xlayout.js";
 import { border } from "./Xborder.js";
 
 const shortFuncs = { flex, _flex, border, };
+
+export const toCss = txt => [...toCssText(txt, interpretClass(txt))].join("\n");
 
 function interpret(exp) {
   const obj = shortFuncs[exp.name](exp);
