@@ -6,27 +6,27 @@ const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
 export function Word(words, func) {
   const RX = new RegExp(`^(${words})$`);
   return func ?
-    x => ((x = x.match?.(RX)) && func(...x)) :
-    x => (x.match?.(RX) && x);
+    x => ((x = x.match(RX)) && func(...x)) :
+    x => (x.match(RX) && x);
 }
 
 export function PWord(prop, words, func) {
   const RX = new RegExp(`^(${words})$`);
   return func ?
-    x => ((x = x.match?.(RX)) && { [prop]: func(...x) }) :
-    x => (x.match?.(RX) && { [prop]: x });
+    x => ((x = x.match(RX)) && { [prop]: func(...x) }) :
+    x => (x.match(RX) && { [prop]: x });
 }
 
 export function NumberUnit(units, valueCheck) {
   units = new RegExp(`^(${NUM})(${units})$`);
   return valueCheck ?
-    x => (x = x.match?.(units)) && valueCheck(x[1]) && x[0] :
-    x => x.match?.match(units) && x;
+    x => (x = x.match(units)) && valueCheck(x[1]) && x[0] :
+    x => x.matchmatch(units) && x;
 }
 
 export function Unit(units, func) {
   const RX = new RegExp(`^(${NUM})(${units})$`);
-  return x => (x = x.match?.(RX)) && func(...x);
+  return x => (x = x.match(RX)) && func(...x);
 }
 
 export const PositiveLengthPercent = NumberUnit(LENGTHS_PER, v => Number(v) >= 0);
