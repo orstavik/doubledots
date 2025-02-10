@@ -19,27 +19,16 @@ export function PWord(prop, words, func) {
   return DoWord.bind(null, prop, new RegExp(`^(${words})$`), func);
 }
 
-export function NumberUnit(units, valueCheck) {
-  const RX = new RegExp(`^(${NUM})(${units})$`);
-  return valueCheck ?
-    x => (x = x.match(RX)) && valueCheck(x[1]) && x[0] :
-    x => x.matchmatch(RX) && x;
-}
-
 export function Unit(units, func) {
-  const RX = new RegExp(`^(${NUM})(${units})$`);
-  return x => (x = x.match(RX)) && func(...x);
+  return DoWord.bind(null, null, new RegExp(`^(${NUM})(${units})$`), func);
 }
 
-export const PositiveLengthPercent = NumberUnit(LENGTHS_PER, v => Number(v) >= 0);
+export const PositiveLengthPercent =
+  Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? str : null));
 
 export function Display(display, func) {
   return exp => ({ display, ...func(exp) });
 }
-
-const NullOk = (x, func) => x == undefined ? x : func(x);
-
-
 
 export function LogicalFour(PROP_ALIASES, ArgHandler) {
   const PROP = PROP_ALIASES.split("|")[0];
@@ -47,7 +36,7 @@ export function LogicalFour(PROP_ALIASES, ArgHandler) {
   return function ({ name, args }) {
     if (!args?.length || args.length > 4 || !name.match(PROP_ALIASES))
       return;
-    let [bs, is, be, ie] = args.map(a => NullOk(a, ArgHandler));
+    let [bs, is, be, ie] = args.map(a => a == null ? a : ArgHandler(a));
     if (args.length === 1) is = be = ie = bs;
     if (args.length === 2) be = bs, ie = is;
     if (args.length === 3) ie = is;
@@ -73,7 +62,8 @@ export function Sequence(PROP_ALIASES, PROPS, FUNCS) {
     if (!args.length || args.length > PROPS.length || (NAME && !name.match(NAME)))
       throw new SyntaxError(
         `${name}() accepts upto ${PROPS.length} arguments, not ${args.length}`);
-    return Object.fromEntries(args.map((a, i) => [PROPS[i], NullOk(a, FUNCS[i])]));
+    return Object.fromEntries(args.map((a, i) =>
+      [PROPS[i], a == null ? a : FUNCS[i](a)]));
   };
 }
 
