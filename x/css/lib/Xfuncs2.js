@@ -3,7 +3,7 @@ const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.source;
 const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
 
-function DoWord(prop, RX, func, x) {
+function DoRegEx(prop, RX, func, x) {
   const m = x.match(RX);
   if (!m) throw new SyntaxError(`Invalid argument: ${x} => ${RX.source}.`);
   const res = func ? func(...m) : x;
@@ -12,15 +12,15 @@ function DoWord(prop, RX, func, x) {
 }
 
 export function Word(words, func) {
-  return DoWord.bind(null, null, new RegExp(`^(${words})$`), func);
+  return DoRegEx.bind(null, null, new RegExp(`^(${words})$`), func);
 }
 
 export function PWord(prop, words, func) {
-  return DoWord.bind(null, prop, new RegExp(`^(${words})$`), func);
+  return DoRegEx.bind(null, prop, new RegExp(`^(${words})$`), func);
 }
 
 export function Unit(units, func) {
-  return DoWord.bind(null, null, new RegExp(`^(${NUM})(${units})$`), func);
+  return DoRegEx.bind(null, null, new RegExp(`^(${NUM})(${units})$`), func);
 }
 
 export const PositiveLengthPercent =
@@ -67,17 +67,14 @@ export function Sequence(PROP_ALIASES, PROPS, FUNCS) {
   };
 }
 
-export function Dictionary(...funcs) {
+export function Dictionary(...FUNCS) {
   return function ({ name, args }) {
     const res = {};
     main: for (let arg of args) {
-      for (let func of funcs) {
+      for (let func of FUNCS) {
         try {
-          const obj = func(arg);
-          if (obj) {
-            Object.assign(res, obj);
-            continue main;
-          }
+          Object.assign(res, func(arg));
+          continue main;
         } catch (e) {
           console.debug(e);
         }
