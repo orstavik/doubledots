@@ -1,0 +1,101 @@
+import { PositiveLengthPercent, Word, PWord, Dictionary, Props, LogicalFour, Unit, Display } from "./Xfuncs2.js";
+
+//wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
+const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
+const doOverflow = (...args) => {
+  let [, t, b = "hidden", i = b] = args; //ellipsis/clip => hidden, //single setting means both
+  return {
+    "overflow-x": i,
+    "overflow-inline": i,
+    "overflow-y": b,
+    "overflow-block": b,
+    "text-overflow": t,
+    "white-space": t ? "nowrap" : undefined
+  };
+};
+
+const LAYOUT = [
+  LogicalFour("padding|p", PositiveLengthPercent),
+  Word(OVERFLOW, doOverflow),
+  LogicalFour("scroll-padding", PositiveLengthPercent),
+  PWord("scroll-snap-type", "snap(?:-(block|inline))?(?:-(mandatory))?",
+    (_, b = "both", m = "proximity") => `${b} ${m}`)
+];
+const _LAYOUT = [
+  LogicalFour("margin|m", PositiveLengthPercent),
+  LogicalFour("scroll-margin", PositiveLengthPercent)
+];
+
+export const block = Display("block", Dictionary(
+  PWord("float", "float-(start|end)", (_, s) => "inline-" + s),
+  ...LAYOUT,
+));
+export const _block = Dictionary(
+  ..._LAYOUT
+);
+
+//GRID
+const Gap = Props("gap|g", ["gap-column", "gap-row"], PositiveLengthPercent);
+const AlignAliases = {
+  a: "start",
+  b: "end",
+  c: "center",
+  s: "stretch",
+  u: "space-around", //narrow stretch
+  v: "space-evenly", //medium stretch
+  w: "space-between",//wide stretch
+  _: "baseline",     //todo what about "(first|last) baseline"
+  ".": undefined,
+};
+const GRID_ALIGN = /([abcsuvw.])([abcsuvw.])([abcs_.])([abcs])/;
+const _GRID_ALIGN = /([abcs_.])([abcs])/;
+function doAlign(_, b, i, b2, i2) {
+  return {
+    "align-content": AlignAliases[b],
+    "justify-content": AlignAliases[i],
+    "align-items": AlignAliases[b2],
+    "justify-items": AlignAliases[i2],
+  };
+}
+function doAlignSelf(_, b, i) {
+  return {
+    "align-self": AlignAliases[b],
+    "justify-self": AlignAliases[i],
+  };
+}
+
+export const grid = Display("grid", Dictionary(
+  // PWord("grid-template-areas", "none"), //todo how do we want to write this in csss?
+  Props("column|c", "grid-auto-columns", PositiveLengthPercent),
+  Props("row|r", "grid-auto-rows", PositiveLengthPercent),
+  PWord("grid-auto-flow", "(dense)-?(column)", (_, d, c = "row") => `${d} ${c}`),
+  Word(GRID_ALIGN, doAlign),
+  Gap,
+  ...LAYOUT
+));
+
+export const _grid = Dictionary(
+  Word(_GRID_ALIGN, doAlignSelf),
+  ..._LAYOUT
+);
+
+//FLEX
+const FLEX_ALIGN = /([abcsuvw.])([abcsuvw.])([abcs_])/;
+const _FLEX_ALIGN = /([abcs_])/;
+
+export const flex = Display("flex", Dictionary(
+  PWord("flex-direction", "column|column-reverse|row-reverse"),
+  PWord("flex-wrap", "wrap|wrap-reverse"),
+  Word(FLEX_ALIGN, doAlign),
+  Gap,
+  ...LAYOUT
+));
+
+export const _flex = Dictionary(
+  Word(_FLEX_ALIGN, doAlignSelf),
+  Unit("grow", (_, n) => ({ "flex-grow": n })),
+  Unit("shrink", (_, n) => ({ "flex-shrink": n })),
+  Unit("order", (_, n) => ({ "order": n })),
+  Props("basis", "flex-basis", PositiveLengthPercent),
+  ..._LAYOUT
+);

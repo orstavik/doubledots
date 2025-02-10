@@ -8,8 +8,6 @@ export class Expression {
     const ALIASES = {
       p: "padding",
       m: "margin",
-      w: "width",
-      h: "height",
       snap: "scrollSnapType",
     };
     this.name = ALIASES[name] ?? name;
