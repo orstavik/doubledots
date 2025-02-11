@@ -34,14 +34,32 @@ export function LogicalFour(PROP_ALIASES, ArgHandler) {
       throw new SyntaxError(
         `${name}/1-4 doesn't match ${name}/${args.length}.`);
     let [bs, is, be, ie] = args.map(a => a == null ? a : ArgHandler(a));
-    if (args.length === 1) return { [PROP]: bs };
-    if (args.length === 2) be = bs, ie = is;
-    if (args.length === 3) ie = is;
+    if (args.length === 1)
+      return { [PROP]: bs };
+    if (args.length === 2)
+      return {
+        [PROP + "-top"]: bs,
+        [PROP + "-right"]: is,
+        [PROP + "-bottom"]: bs,
+        [PROP + "-left"]: is,
+        [PROP + "-block"]: bs,
+        [PROP + "-inline"]: is,
+      };
+    if (args.length === 3)
+      return {
+        [PROP + "-top"]: bs,
+        [PROP + "-right"]: is,
+        [PROP + "-bottom"]: be,
+        [PROP + "-left"]: is,
+        [PROP + "-block-start"]: bs,
+        [PROP + "-block-end"]: be,
+        [PROP + "-inline"]: is,
+      };
     return {
       [PROP + "-top"]: bs,
-      [PROP + "-right"]: ie,
+      [PROP + "-right"]: is,
       [PROP + "-bottom"]: be,
-      [PROP + "-left"]: is,
+      [PROP + "-left"]: ie,
       [PROP + "-block-start"]: bs,
       [PROP + "-block-end"]: be,
       [PROP + "-inline-start"]: is,
@@ -115,7 +133,7 @@ function LogicalEight(PROP_ALIASES, FUNC, DEFAULT = "0") {
   return function ({ name, args }) {
     if (!args?.length || args.length > 8 || !name.match(PROP_ALIASES))
       throw new SyntaxError(
-        `${name}/1-8 doesn't match ${name}/${args.length}.`);
+        `${name}/1-8   !=   ${name}/${args.length}.`);
 
     let [bss, iss, bes, ies, bse, ise, bee, iee] = args.map(FUNC);
     if (args.length === 1) return { [PROP]: bss };
