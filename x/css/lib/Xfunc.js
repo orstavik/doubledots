@@ -31,9 +31,10 @@ export function LogicalFour(PROP_ALIASES, ArgHandler) {
   PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
   return function ({ name, args }) {
     if (!args?.length || args.length > 4 || !name.match(PROP_ALIASES))
-      return;
+      throw new SyntaxError(
+        `${name}/1-4 doesn't match ${name}/${args.length}.`);
     let [bs, is, be, ie] = args.map(a => a == null ? a : ArgHandler(a));
-    if (args.length === 1) is = be = ie = bs;
+    if (args.length === 1) return { [PROP]: bs };
     if (args.length === 2) be = bs, ie = is;
     if (args.length === 3) ie = is;
     return {
@@ -104,32 +105,33 @@ export function Dictionary(...FUNCS) {
 //     throw new SyntaxError(`Invalid argument: ${exp}`);
 //   };
 // }
-
-function LogicalEight(PROP_ALIASES, PositiveLengthPercent) {
+//todo there are different ways to do the logic here..
+//todo length == 2, I think that we could have top/bottom too
+//todo length == 3, then the third becomes all the inline ones
+//todo length === 4, then forth is the inline on the end side
+function LogicalEight(PROP_ALIASES, FUNC, DEFAULT = "0") {
   const PROP = PROP_ALIASES.split("|")[0];
   PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
   return function ({ name, args }) {
     if (!args?.length || args.length > 8 || !name.match(PROP_ALIASES))
-      return;
+      throw new SyntaxError(
+        `${name}/1-8 doesn't match ${name}/${args.length}.`);
 
-    let [bss, iss, bes, ies, bse, ise, bee, iee] = args.map(PositiveLengthPercent);
-    if (args.length === 1) iss = bes = ies = bse = ise = bee = iee = bss;
+    let [bss, iss, bes, ies, bse, ise, bee, iee] = args.map(FUNC);
+    if (args.length === 1) return { [PROP]: bss };
+    // if (args.length === 1) iss = bes = ies = bse = ise = bee = iee = bss;
     if (args.length === 2) ise = ies = iee = iss, bse = bes = bee = bss;
     if (args.length === 3) ise = ies = iee = iss, bse = bss, bee = bes;
     if (args.length === 4) ise = iss, iee = ies, bse = bss, bee = bes;
     if (args.length === 5) ise = iss, iee = ies, bee = bes;
     if (args.length === 6) iee = ies, bee = bes;
     if (args.length === 7) iee = ies;
-    return {
-      [PROP + "-top-start"]: bss,
-      [PROP + "-top-end"]: bse,
-      [PROP + "-bottom-start"]: bes,
-      [PROP + "-bottom-end"]: bee,
-      [PROP + "-start-start"]: iss,
-      [PROP + "-end-start"]: ies,
-      [PROP + "-start-end"]: ise,
-      [PROP + "-end-end"]: iee,
-    };
+    const res = {};
+    if (bss || iss) res[PROP + "-top-left"] = `${bss ?? DEFAULT} ${iss ?? DEFAULT}`;
+    if (bse || ies) res[PROP + "-top-right"] = `${bse ?? DEFAULT} ${ies ?? DEFAULT}`;
+    if (bes || ise) res[PROP + "-bottom-left"] = `${bes ?? DEFAULT} ${ise ?? DEFAULT}`;
+    if (bee || iee) res[PROP + "-bottom-right"] = `${bee ?? DEFAULT} ${iee ?? DEFAULT}`;
+    return res;
   };
 }
 
@@ -140,7 +142,7 @@ function LogicalEight(PROP_ALIASES, PositiveLengthPercent) {
 function MinNormalMax(PROP, cb) {
   const MIN = "min-" + PROP, MAX = "max-" + PROP;
   return function mnm(exp) {
-    if(!exp) return;
+    if (!exp) return;
     const { name, args } = exp;
     if (name === "min" && args.length === 1)
       return { [MIN]: cb(args[0]) };
@@ -155,7 +157,7 @@ function MinNormalMax(PROP, cb) {
 }
 function BorderSwitch(func) {
   return function (exp) {
-    const res = func(exp);  //style  and width are 5 char long
+    const res = func(exp);
     return Object.fromEntries(Object.entries(res).map(([k, v]) => {
       const [wsr, ...dirs] = k.split("-");
       k = ["border", ...dirs, wsr].join("-");
@@ -164,17 +166,19 @@ function BorderSwitch(func) {
   };
 }
 
-export const border = Dictionary(  //border-colors controlled by $color
-  BorderSwitch(LogicalFour("width|w", PositiveLengthPercent)),
-  BorderSwitch(LogicalFour("style|s", Word("solid|dotted|dashed|double"))),
-  // BorderSwitch(LogicalFour("old-radius|or", PositiveLengthPercent)),
-  BorderSwitch(LogicalEight("radius|r|logical-radius", PositiveLengthPercent)),
-  PWord("border-style", "solid|dotted|dashed|double"),
-  PWord("border-width", "thin|medium|thick"),
-  Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? { "border-width": str } : null))
-);
+//todo Dictionary should check that none of the properties coming out are already set.
+export const border = BorderSwitch(Dictionary(  //border-colors controlled by $color
+  LogicalFour("width|w", PositiveLengthPercent),
+  LogicalFour("style|s", Word("solid|dotted|dashed|double")),
+  // LogicalFour("old-radius|or", PositiveLengthPercent),
+  LogicalEight("radius|r", PositiveLengthPercent),
+  //todo these shorthands are complicated..
+  PWord("style", "solid|dotted|dashed|double"),
+  PWord("width", "thin|medium|thick"),
+  Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? { "width": str } : null))
+));
 
-export const size = MergeSequence(undefined, 
-  MinNormalMax("block-size", PositiveLengthPercent), 
+export const size = MergeSequence(undefined,
+  MinNormalMax("block-size", PositiveLengthPercent),
   MinNormalMax("inline-size", PositiveLengthPercent)
 );

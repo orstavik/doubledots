@@ -1,5 +1,5 @@
 <script type="module">
-  import {  toCss } from "./Xengine.js";
+  import { toCss } from "./Xengine.js";
 
   const units = {
     "$flex(row-reverse, p(1%,,3%), gap(,3rem))":
@@ -14,20 +14,13 @@
   padding-block-end: 3%;
   gap-row: 3rem;
 }`,
-"$border(radius(1rem))": 
+    "$border(radius(1rem))":
 /*css*/`/*container 0*/
 /*$border(radius(1rem))*/
 :where(.\\$border\\(radius\\(1rem\\)\\)) {
-  border-top-start-radius: 1rem;
-  border-top-end-radius: 1rem;
-  border-bottom-start-radius: 1rem;
-  border-bottom-end-radius: 1rem;
-  border-start-start-radius: 1rem;
-  border-end-start-radius: 1rem;
-  border-start-end-radius: 1rem;
-  border-end-end-radius: 1rem;
+  border-radius: 1rem;
 }`,
-"$border(w(,1px,2px), s(,,solid,dashed))":
+    "$border(w(,1px,2px), s(,,solid,dashed))":
 /*css*/`/*container 0*/
 /*$border(w(,1px,2px), s(,,solid,dashed))*/
 :where(.\\$border\\(w\\(\\,1px\\,2px\\)\\,\\ s\\(\\,\\,solid\\,dashed\\)\\)) {
@@ -42,21 +35,21 @@
   border-block-end-style: solid;
   border-inline-end-style: dashed;
 }`,
-"$size(1px,2px)":
+    "$size(1px,2px)":
 /*css*/`/*container 0*/
 /*$size(1px,2px)*/
 :where(.\\$size\\(1px\\,2px\\)) {
   block-size: 1px;
   inline-size: 2px;
 }`,
-"$size(,2px)":
+    "$size(,2px)":
 /*css*/`/*container 0*/
 /*$size(,2px)*/
 :where(.\\$size\\(\\,2px\\)) {
   inline-size: 2px;
 }`,
-"$size(fit(2px))":
-`/*container 0*/
+    "$size(fit(2px))":
+      `/*container 0*/
 /*$size(fit(2px))*/
 :where(.\\$size\\(fit\\(2px\\)\\)) {
   min-block-size: min-content;
@@ -64,7 +57,7 @@
   max-block-size: max-content;
 }`,
 
-"$border(solid,2px)|.new$border(solid,4px,radius(1rem))|.sale$border(dashed,3px,radius(0.5rem))|*$border(double,2px,radius(0.25rem))": 
+    "$border(solid,2px)|.new$border(solid,4px,radius(1rem))|.sale$border(dashed,3px,radius(0.5rem))|*$border(double,2px,radius(0.25rem))":
 /*css*/`/*container 0*/
 /*$border(solid,2px)|.new$border(solid,4px,radius(1rem))|.sale$border(dashed,3px,radius(0.5rem))|*$border(double,2px,radius(0.25rem))*/\n:where(.\\$border\\(solid\\,2px\\)\\|\\.new\\$border\\(solid\\,4px\\,radius\\(1rem\\)\\)\\|\\.sale\\$border\\(dashed\\,3px\\,radius\\(0\\.5rem\\)\\)\\|\\*\\$border\\(double\\,2px\\,radius\\(0\\.25rem\\)\\)) {
   border-style: solid;
@@ -76,14 +69,7 @@
 :where(.new) {
   border-style: solid;
   border-width: 4px;
-  border-top-start-radius: 1rem;
-  border-top-end-radius: 1rem;
-  border-bottom-start-radius: 1rem;
-  border-bottom-end-radius: 1rem;
-  border-start-start-radius: 1rem;
-  border-end-start-radius: 1rem;
-  border-start-end-radius: 1rem;
-  border-end-end-radius: 1rem;
+  border-radius: 1rem;
 }
 /*item 1*/
 /*$border(solid,2px)|.new$border(solid,4px,radius(1rem))|.sale$border(dashed,3px,radius(0.5rem))|*$border(double,2px,radius(0.25rem))*/
@@ -91,14 +77,7 @@
 :where(.sale) {
   border-style: dashed;
   border-width: 3px;
-  border-top-start-radius: 0.5rem;
-  border-top-end-radius: 0.5rem;
-  border-bottom-start-radius: 0.5rem;
-  border-bottom-end-radius: 0.5rem;
-  border-start-start-radius: 0.5rem;
-  border-end-start-radius: 0.5rem;
-  border-start-end-radius: 0.5rem;
-  border-end-end-radius: 0.5rem;
+  border-radius: 0.5rem;
 }
 /*item 0*/
 /*$border(solid,2px)|.new$border(solid,4px,radius(1rem))|.sale$border(dashed,3px,radius(0.5rem))|*$border(double,2px,radius(0.25rem))*/
@@ -106,25 +85,21 @@
 :where(*) {
   border-style: double;
   border-width: 2px;
-  border-top-start-radius: 0.25rem;
-  border-top-end-radius: 0.25rem;
-  border-bottom-start-radius: 0.25rem;
-  border-bottom-end-radius: 0.25rem;
-  border-start-start-radius: 0.25rem;
-  border-end-start-radius: 0.25rem;
-  border-start-end-radius: 0.25rem;
-  border-end-end-radius: 0.25rem;
+  border-radius: 0.25rem;
 }`
 
   };
   for (let [expr, expect] of Object.entries(units)) {
     const res = toCss(expr);
     if (res != expect) {
-      console.log(res);
+      let i = -1;
+      while (i++ < res.length)
+        if (res[i] != expect[i])
+          break;
+      console.log("FAIL", expr);
+      console.log(JSON.stringify(res.substring(i, i + 40)));
+      console.log(JSON.stringify(expect.substring(i, i + 40)));
       console.log("------------------------");
-      console.log(JSON.stringify(res));
-      console.log("------------------------");
-      console.log(JSON.stringify(expect));
     } else {
       console.log("OK", expr);
     }
