@@ -106,7 +106,7 @@ export function Dictionary(...FUNCS) {
 // }
 
 function LogicalEight(PROP_ALIASES, PositiveLengthPercent) {
-  const [PROP] = PROP_ALIASES.split("|")[0];
+  const PROP = PROP_ALIASES.split("|")[0];
   PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
   return function ({ name, args }) {
     if (!args?.length || args.length > 8 || !name.match(PROP_ALIASES))
@@ -167,7 +167,7 @@ function BorderSwitch(func) {
 export const border = Dictionary(  //border-colors controlled by $color
   BorderSwitch(LogicalFour("width|w", PositiveLengthPercent)),
   BorderSwitch(LogicalFour("style|s", Word("solid|dotted|dashed|double"))),
-  BorderSwitch(LogicalFour("old-radius|or", PositiveLengthPercent)),
+  // BorderSwitch(LogicalFour("old-radius|or", PositiveLengthPercent)),
   BorderSwitch(LogicalEight("radius|r|logical-radius", PositiveLengthPercent)),
   PWord("border-style", "solid|dotted|dashed|double"),
   PWord("border-width", "thin|medium|thick"),
