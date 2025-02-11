@@ -1,7 +1,7 @@
 import { flex, _flex } from "./Xlayout.js";
-import { border, size } from "./Xfunc.js";
+import { border, size, color } from "./Xfunc.js";
 
-const shortFuncs = { flex, _flex, border, size };
+const shortFuncs = { flex, _flex, border, size, color };
 
 export const toCss = txt => [...toCssText(txt, interpretClass(txt))].join("\n");
 

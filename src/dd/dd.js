@@ -19,4 +19,4 @@ document.Reactions.define("log", function (...i) { console.log(this, ...i); retu
 document.Reactions.define("debugger", function (...i) { console.log(this, ...i); debugger; return i[0]; });
 
 loadDoubleDots(EventTarget.prototype.addEventListener);
-//Upgrade
+//adding colors

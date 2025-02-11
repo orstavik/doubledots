@@ -1,4 +1,5 @@
 export const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.source;
+export const WEB_COLORS = /azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/;
 
 const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
@@ -199,4 +200,40 @@ export const border = BorderSwitch(Dictionary(  //border-colors controlled by $c
 export const size = MergeSequence(undefined,
   MinNormalMax("block-size", PositiveLengthPercent),
   MinNormalMax("inline-size", PositiveLengthPercent)
+);
+
+function Color(exp) {
+  if (exp.match(/#[0-9a-f]{3,6}/i))
+    return exp;
+  if (exp.match(WEB_COLORS))
+    return exp;
+}
+
+function ToCssVar(PROP_ALIASES, FUNC) {
+  const PROP = PROP_ALIASES.split("|")[0];
+  return function (exp) {
+    if (!exp) return;
+    if (typeof exp == "string")
+      return { [`--${PROP}`]: FUNC(exp) };
+    const { name, args } = exp;
+    if (!args.length || !name.match(PROP_ALIASES))
+      throw new SyntaxError(`${name}/${args.length}   !=   ${PROP}/1+.`);
+    args = args.map(FUNC);
+    const res = { [`--${PROP}`]: args[0] };
+    for (let i = 1; i < args.length; i++)
+      if (args[i] != null)
+        res[`--${PROP}-${i}`] = args[i];
+    return res;
+  };
+}
+
+//todo implement this structure in the PWord ?? and other places?
+function WrapProp(PROP, FUNC) {
+  return x => x == null ? x : { [PROP]: FUNC(x) };
+}
+
+export const color = MergeSequence(undefined,
+  WrapProp("color", Color),
+  ToCssVar("background-color|bg", Color),
+  BorderSwitch(LogicalFour("color|border|b", Color)),
 );

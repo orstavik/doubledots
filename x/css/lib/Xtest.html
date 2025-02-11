@@ -85,10 +85,17 @@
   border-style: double;
   border-width: 2px;
   border-radius: 0.25rem;
-}`
-
+}`,
+    "$color(black, #123456, b(red))":
+/*css*/`/*container 0*/
+/*$color(black, #123456, b(red))*/
+:where(.\\$color\\(black\\,\\ \\#123456\\,\\ b\\(red\\)\\)) {
+  color: black;
+  --background-color: #123456;
+  border-color: red;
+}`,
   };
-  for (let [expr, expect] of Object.entries(units)) {
+  for (let [expr, expect] of Object.entries(units).reverse()) {
     const res = toCss(expr);
     if (res != expect) {
       let i = -1;
