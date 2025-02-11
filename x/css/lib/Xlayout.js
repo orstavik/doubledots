@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, PWord, Dictionary, Sequence, LogicalFour, Unit } from "./Xfuncs2.js";
+import { PositiveLengthPercent, Word, PWord, Dictionary, Sequence, LogicalFour, Unit } from "./Xfunc.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;

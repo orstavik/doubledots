@@ -42,6 +42,14 @@
 :where(.\\$size\\(\\,2px\\)) {
   inline-size: 2px;
 }`,
+"$size(fit(2px))":
+`/*container 0*/
+/*$size(fit(2px))*/
+:where(.\\$size\\(fit\\(2px\\)\\)) {
+  min-block-size: min-content;
+  block-size: 2px;
+  max-block-size: max-content;
+}`,
   };
   for (let [expr, expect] of Object.entries(units)) {
     const res = toCss(expr);
