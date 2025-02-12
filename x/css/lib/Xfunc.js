@@ -5,11 +5,11 @@ function hitMe(FUNCS, x) {
 
 export function Word(rx, func) {
   const RX = new RegExp(`^(?:${rx.source})$`);
-  return function DoRegEx(x) {
-    const m = x.match(RX);
-    if (!m)
-      throw new SyntaxError(`Invalid argument: ${x} => ${rx.source}.`);
-    return func ? func(...m) : x;
+  return function word(x) {
+    const m = x.match?.(RX);
+    if (m)
+      return func ? func(...m) : x;
+    throw new SyntaxError(`Invalid argument: ${x} => ${rx.source}.`);
   };
 }
 
@@ -55,7 +55,7 @@ export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
 
 
 export function P(PROP, FUNC) {
-  return function (x) {
+  return function p(x) {
     let res = FUNC(x);
     if (res instanceof Array)
       res = res.join(" ");
@@ -64,7 +64,7 @@ export function P(PROP, FUNC) {
 }
 
 function CssVarList(PROP, FUNC) {
-  return function (exp) {
+  return function cssVarList(exp) {
     const args = FUNC(exp);
     return !(args instanceof Array) ? { [`--${PROP}`]: args } :
       Object.fromEntries(args.map((a, i) =>
@@ -89,48 +89,36 @@ function SignatureChecker(ALIASES, MAX = Infinity) {
   return { NAME, checkSignature };
 }
 
-export function LogicalFour(ALIASES, FUNC) {
-  const { NAME, checkSignature } = SignatureChecker(ALIASES, 4);
-  return function (exp) {
-    const { args } = checkSignature(exp);
-    let [bs, is, be, ie] = args.map(a => a == null ? a : FUNC(a));
+export function LogicalFour(NAME, FUNC) {
+  return function logicalFour(exp) {
+    let args = FUNC(exp);
+    if (!(args instanceof Array))
+      return { [NAME]: args };
     if (args.length === 1)
-      return { [NAME]: bs };
+      return { [NAME]: args[0] };
     if (args.length === 2)
       return {
-        [NAME + "-top"]: bs,
-        [NAME + "-right"]: is,
-        [NAME + "-bottom"]: bs,
-        [NAME + "-left"]: is,
-        [NAME + "-block"]: bs,
-        [NAME + "-inline"]: is,
+        [NAME + "-block"]: args[0],
+        [NAME + "-inline"]: args[1],
       };
     if (args.length === 3)
       return {
-        [NAME + "-top"]: bs,
-        [NAME + "-right"]: is,
-        [NAME + "-bottom"]: be,
-        [NAME + "-left"]: is,
-        [NAME + "-block-start"]: bs,
-        [NAME + "-block-end"]: be,
-        [NAME + "-inline"]: is,
+        [NAME + "-block-start"]: args[0],
+        [NAME + "-inline"]: args[1],
+        [NAME + "-block-end"]: args[2],
       };
     return {
-      [NAME + "-top"]: bs,
-      [NAME + "-right"]: ie,
-      [NAME + "-bottom"]: be,
-      [NAME + "-left"]: is,
-      [NAME + "-block-start"]: bs,
-      [NAME + "-block-end"]: be,
-      [NAME + "-inline-start"]: is,
-      [NAME + "-inline-end"]: ie
+      [NAME + "-block-start"]: args[0],
+      [NAME + "-inline-start"]: args[1],
+      [NAME + "-block-end"]: args[2],
+      [NAME + "-inline-end"]: args[3]
     };
   };
 }
 
 export function CssTextFunction(ALIASES, FUNCS) {
   const { NAME, checkSignature } = SignatureChecker(ALIASES, FUNCS.length);
-  return function (exp) {
+  return function cssTextFunction(exp) {
     let { args } = checkSignature(exp);
     args = args.map((a, i) => FUNCS[i](a));
     return `${NAME}(${args.join()})`;
@@ -139,7 +127,7 @@ export function CssTextFunction(ALIASES, FUNCS) {
 
 
 function Either(...FUNCS) {
-  return function (exp) {
+  return function either(exp) {
     const res = hitMe(FUNCS, exp);
     if (res == undefined)
       throw new SyntaxError(`No match in Either: ${exp}`);
@@ -149,8 +137,12 @@ function Either(...FUNCS) {
 
 export function Merge(cb) {
   return function (exp) {
+    const ar = cb(exp);
     const res = {};
-    for (let res2 of cb(exp)) {
+    for (let res2 of ar) {
+      for (let k in res2)
+        if (res2[k] == null)
+          delete res2[k];
       for (let k in res)
         for (let k2 in res2)
           if (k === k2 || k.startsWith(k2 + "-") || k2.startsWith(k + "-"))
@@ -237,16 +229,18 @@ function BorderSwitch(func) {
 //todo Dictionary should check that none of the properties coming out are already set.
 //border-colors controlled by $color
 export const border = BorderSwitch(Merge(Dictionary(
-  LogicalFour("width|w", PositiveLengthPercent),
-  LogicalFour("style|s", Word(/solid|dotted|dashed|double/)),
-  LogicalEight("radius|r", PositiveLengthPercent),
-  // LogicalFour("old-radius|or", PositiveLengthPercent),
-  P("style", Word(/solid|dotted|dashed|double/)),
-  //todo this should be added to the 
-  P("width", Either(
+  LogicalFour("style", Either(
+    ListOfSame("style|s", Word(/solid|dotted|dashed|double/)),
+    Word(/solid|dotted|dashed|double/)
+  )),
+  LogicalFour("width", Either(
+    ListOfSame("width|w", PositiveLengthPercent),
     Word(/thin|medium|thick/),
     CheckNum(LENGTHS_PER, 0)
-  ))
+  )),
+  LogicalEight("radius|r", PositiveLengthPercent),
+  LogicalFour("radius", ListOfSame("r2|radius-og", PositiveLengthPercent))
+  //needs to be NativeEight
 )));
 
 const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
@@ -294,7 +288,7 @@ export const color = Merge(ListOf(null,
   P("color", Color),
   CssVarList("background-color",
     Either(Color, ListOfSame("background-color|bg", Color))),
-  BorderSwitch(LogicalFour("color|border|b", Color)),
+  BorderSwitch(LogicalFour("color", ListOfSame("border|b", Color))),
 ));
 
 export const cursor = P("cursor", Word(/default|none|context-menu|help|pointer|progress|wait|cell|crosshair|text|vertical-text|alias|copy|move|no-drop|not-allowed|grab|grabbing|col-resize|row-resize|n-resize|s-resize|e-resize|w-resize|ne-resize|nw-resize|se-resize|sw-resize|ew-resize|ns-resize|nesw-resize|nwse-resize|zoom-in|zoom-out/));//auto is excluded

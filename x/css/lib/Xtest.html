@@ -8,8 +8,6 @@
 :where(.\\$flex\\(row-reverse\\,\\ p\\(1\\%\\,\\,3\\%\\)\\,\\ gap\\(\\,3rem\\)\\)) {
   display: flex;
   flex-direction: row-reverse;
-  padding-top: 1%;
-  padding-bottom: 3%;
   padding-block-start: 1%;
   padding-block-end: 3%;
   gap-row: 3rem;
@@ -24,13 +22,8 @@
 /*css*/`/*container 0*/
 /*$border(w(,1px,2px), s(,,solid,dashed))*/
 :where(.\\$border\\(w\\(\\,1px\\,2px\\)\\,\\ s\\(\\,\\,solid\\,dashed\\)\\)) {
-  border-right-width: 1px;
-  border-bottom-width: 2px;
-  border-left-width: 1px;
-  border-block-end-width: 2px;
   border-inline-width: 1px;
-  border-right-style: dashed;
-  border-bottom-style: solid;
+  border-block-end-width: 2px;
   border-block-end-style: solid;
   border-inline-end-style: dashed;
 }`,
@@ -48,7 +41,7 @@
   inline-size: 2px;
 }`,
     "$size(fit(2px))":
-      `/*container 0*/
+/*css*/`/*container 0*/
 /*$size(fit(2px))*/
 :where(.\\$size\\(fit\\(2px\\)\\)) {
   min-block-size: min-content;
@@ -94,20 +87,20 @@
   --background-color: #123456;
   border-color: red;
 }`,
-    "$border(thin)":
-/*css*/`/*container 0*/
-/*$border(thin)*/
-:where(.\\$border\\(thin\\)) {
-  border-width: thin;
-}`,
     "$border(thin,2px)": `Property crash: width vs width`,
-    "$border(2px,w(,,3px))": `Property crash: width vs width-top`,
-    "$border(s(,dashed), solid)": `Property crash: style-top vs style`,
+    "$border(2px,w(,,3px))": `Property crash: width vs width-block-end`,
+    "$border(s(,dashed), solid)": `Property crash: style-inline vs style`,
     "$color(rgb(0,12,255))":
 /*css*/`/*container 0*/
 /*$color(rgb(0,12,255))*/
 :where(.\\$color\\(rgb\\(0\\,12\\,255\\)\\)) {
   color: rgb(0,12,255);
+}`,
+    "$border(thin)":
+/*css*/`/*container 0*/
+/*$border(thin)*/
+:where(.\\$border\\(thin\\)) {
+  border-width: thin;
 }`,
   };
   for (let [expr, expect] of Object.entries(units).reverse()) {

@@ -15,16 +15,16 @@ function doOverflow(_, t, b = "hidden", i = b) {
 };
 
 const LAYOUT = [
-  LogicalFour("padding|p", PositiveLengthPercent),
+  LogicalFour("padding", ListOfSame("padding|p", PositiveLengthPercent)),
   Word(OVERFLOW, doOverflow),
-  LogicalFour("scroll-padding", PositiveLengthPercent),
+  LogicalFour("scroll-padding", ListOfSame("scroll-padding", PositiveLengthPercent)),
   P("scroll-snap-type", Word(
     /snap(?:-(block|inline))?(?:-(mandatory))?/,
     (_, b = "both", m = "proximity") => `${b} ${m}`))
 ];
 const _LAYOUT = [
-  LogicalFour("margin|m", PositiveLengthPercent),
-  LogicalFour("scroll-margin", PositiveLengthPercent)
+  LogicalFour("margin", ListOfSame("margin|m", PositiveLengthPercent)),
+  LogicalFour("scroll-margin", ListOfSame("scroll-margin", PositiveLengthPercent))
 ];
 
 function Display(display, func) {
