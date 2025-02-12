@@ -58,22 +58,26 @@ export function P(prop, FUNC) {
   return x => ({ [prop]: FUNC(x) });
 }
 
-function MakeChecker(ALIASES, MAX) {
+function SignatureChecker(ALIASES, MAX) {
+  if (!ALIASES)
+    return { checkSignature: x => x };
   const NAME = ALIASES.split("|")[0];
   const RX = new RegExp(`^(${ALIASES})$`);
-  function CHECKER({ name, args }) {
+  function checkSignature(exp) {
+    if (!exp || typeof exp == "string")
+      throw `Invalid argument: ${exp}, must be an expression.`;
+    const { name, args } = exp;
     if (!args.length || args.length > MAX || !name.match(RX))
-      throw new SyntaxError(
-        `Signature mismatch: ${name}/${args.length} vs (${ALIASES})/1-${MAX}.`);
+      throw `Signature mismatch: ${name}/${args.length} vs (${ALIASES})/1-${MAX}.`;
+    return exp;
   }
-  return { NAME, CHECKER };
+  return { NAME, checkSignature };
 }
 
 export function LogicalFour(ALIASES, FUNC) {
-  const { NAME, CHECKER } = MakeChecker(ALIASES, 4);
+  const { NAME, checkSignature } = SignatureChecker(ALIASES, 4);
   return function (exp) {
-    CHECKER(exp);
-    const { args } = exp;
+    const { args } = checkSignature(exp);
     let [bs, is, be, ie] = args.map(a => a == null ? a : FUNC(a));
     if (args.length === 1)
       return { [NAME]: bs };
@@ -113,23 +117,18 @@ export function Sequence(ALIASES, PROPS, FUNCS) {
   if (FUNCS instanceof Function) FUNCS = [FUNCS];
   for (let i = 0; i < PROPS.length; i++)
     FUNCS[i] ??= FUNCS[0];
-  const NAME = ALIASES && new RegExp(`^(${ALIASES})$`);
-  return function ({ name, args }) {
-    if (!args.length || args.length > PROPS.length || (NAME && !name.match(NAME)))
-      throw new SyntaxError(
-        `${name}() accepts upto ${PROPS.length} arguments, not ${args.length}`);
-    return Object.fromEntries(args.map((a, i) =>
-      [PROPS[i], a == null ? a : FUNCS[i](a)]));
+  const { checkSignature } = SignatureChecker(ALIASES, PROPS.length);
+  return function (exp) {
+    let { args } = checkSignature(exp);
+    args = args.map((a, i) => [PROPS[i], a == null ? a : FUNCS[i](a)]);
+    return Object.fromEntries(args);
   };
 }
 
 export function CssTextFunction(ALIASES, FUNCS) {
-  const NAME = ALIASES && ALIASES.split("|")[0];
-  ALIASES &&= new RegExp(`^(${ALIASES})$`);
-  return function ({ name, args }) {
-    if (!args.length || args.length > FUNCS.length || (NAME && !name.match(NAME)))
-      throw new SyntaxError(
-        `${name}() accepts upto ${PROPS.length} arguments, not ${args.length}`);
+  const { NAME, checkSignature } = SignatureChecker(ALIASES, FUNCS.length);
+  return function (exp) {
+    let { args } = checkSignature(exp);
     args = args.map((a, i) => FUNCS[i](a));
     return `${NAME}(${args.join()})`;
   };
@@ -190,15 +189,12 @@ export function Dictionary(...FUNCS) {
 //todo length == 3, then the third becomes all the inline ones
 //todo length === 4, then forth is the inline on the end side
 function LogicalEight(ALIASES, FUNC, DEFAULT = "0") {
-  const PROP = ALIASES.split("|")[0];
-  ALIASES = new RegExp(`^(${ALIASES})$`);
-  return function ({ name, args }) {
-    if (!args?.length || args.length > 8 || !name.match(ALIASES))
-      throw new SyntaxError(
-        `${name}/1-8   !=   ${name}/${args.length}.`);
+  const { NAME, checkSignature } = SignatureChecker(ALIASES, 8);
+  return function (exp) {
+    const { args } = checkSignature(exp);
 
     let [bss, iss, bes, ies, bse, ise, bee, iee] = args.map(FUNC);
-    if (args.length === 1) return { [PROP]: bss };
+    if (args.length === 1) return { [NAME]: bss };
     // if (args.length === 1) iss = bes = ies = bse = ise = bee = iee = bss;
     if (args.length === 2) ise = ies = iee = iss, bse = bes = bee = bss;
     if (args.length === 3) ise = ies = iee = iss, bse = bss, bee = bes;
@@ -207,10 +203,10 @@ function LogicalEight(ALIASES, FUNC, DEFAULT = "0") {
     if (args.length === 6) iee = ies, bee = bes;
     if (args.length === 7) iee = ies;
     const res = {};
-    if (bss || iss) res[PROP + "-top-left"] = `${bss ?? DEFAULT} ${iss ?? DEFAULT}`;
-    if (bse || ies) res[PROP + "-top-right"] = `${bse ?? DEFAULT} ${ies ?? DEFAULT}`;
-    if (bes || ise) res[PROP + "-bottom-left"] = `${bes ?? DEFAULT} ${ise ?? DEFAULT}`;
-    if (bee || iee) res[PROP + "-bottom-right"] = `${bee ?? DEFAULT} ${iee ?? DEFAULT}`;
+    if (bss || iss) res[NAME + "-top-left"] = `${bss ?? DEFAULT} ${iss ?? DEFAULT}`;
+    if (bse || ies) res[NAME + "-top-right"] = `${bse ?? DEFAULT} ${ies ?? DEFAULT}`;
+    if (bes || ise) res[NAME + "-bottom-left"] = `${bes ?? DEFAULT} ${ise ?? DEFAULT}`;
+    if (bee || iee) res[NAME + "-bottom-right"] = `${bee ?? DEFAULT} ${iee ?? DEFAULT}`;
     return res;
   };
 }
@@ -303,13 +299,9 @@ function ToCssVar(ALIASES, FUNC) {
 //todo this is a diverse list, args 3 < funcs 5
 //todo we also have the list of the same type
 export function ListOf(ALIASES, ...FUNCS) {
-  const NAME = ALIASES && ALIASES.split("|")[0];
-  ALIASES &&= new RegExp(`^(${ALIASES})$`);
+  const { NAME, checkSignature } = SignatureChecker(ALIASES, FUNCS.length);
   return function (exp) {
-    const { name, args } = exp;
-    if (!args.length || args.length > FUNCS.length || (ALIASES && !name.match(ALIASES)))
-      throw new SyntaxError(
-        `${name}() accepts upto ${FUNCS.length} arguments, not ${args.length}`);
+    const { args } = checkSignature(exp);
     return args.map((a, i) => a == null ? a : FUNCS[i](a));
   };
 }
