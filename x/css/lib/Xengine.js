@@ -1,6 +1,20 @@
 import { flex, _flex } from "./Xlayout.js";
 import { border, size, color } from "./Xfunc.js";
 
+export class Expression {
+
+  constructor(name, args) {
+    this.args = args;
+    this.name = name;
+  }
+  toString() {
+    return `${this.name}(${this.args.join(",")})`;
+  }
+  checkSignature(NAME, max) {
+    return this.name?.match(NAME) && this.args.length <= max;
+  }
+}
+
 const shortFuncs = { flex, _flex, border, size, color };
 
 export const toCss = txt => [...toCssText(txt, interpretClass(txt))].join("\n");
@@ -26,23 +40,6 @@ export function interpretClass(txt) {
   // return { container, items };
 }
 
-export class Expression {
-
-  constructor(name, args) {
-    this.args = args;
-    const ALIASES = {
-      p: "padding",
-      m: "margin",
-      snap: "scrollSnapType",
-    };
-    this.name = ALIASES[name] ?? name;
-    this._name = name;
-  }
-  toString() {
-    return `${this.name}(${this.args.join(",")})`;
-  }
-}
-
 const WORD = /[-a-z][a-z0-9-]*/;
 const CPP = /[,()]/.source;
 const nCPP = /[^,()]+/.source;
@@ -64,6 +61,8 @@ function diveDeep(tokens, top) {
     if (top && a === ")") throw "can't start with ')'";
     if (a === "," || a === ")") {         //empty
       res.push(undefined);
+      if (a === ")" && !res.length)
+        throw new SyntaxError("empty function not allowed in CSSs");
       if (a === ")")
         return res;
       continue;

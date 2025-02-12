@@ -40,9 +40,7 @@ export const PositiveLengthPercent =
   Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? str : null));
 // ValidNumber(LENGTHS_PER, n => n >= 0);
 
-const Zero100Percent = Unit("%", (str, v) => (v >= 0 && v <= 100 ? str : null));
 const Zero360Deg = Unit("deg|rad|", (str, v) => (v >= 0 && v <= 360 ? str : null));
-const Zero255 = ValidNumber(n => n >= 0 && n <= 255);
 
 export function LogicalFour(PROP_ALIASES, ArgHandler) {
   const PROP = PROP_ALIASES.split("|")[0];
@@ -101,18 +99,20 @@ export function Sequence(PROP_ALIASES, PROPS, FUNCS) {
 }
 
 export function CssTextFunction(PROP_ALIASES, FUNCS) {
-  const NAME = PROP_ALIASES && new RegExp(`^(${PROP_ALIASES})$`);
+  const NAME = PROP_ALIASES && PROP_ALIASES.split("|")[0];
+  PROP_ALIASES &&= new RegExp(`^(${PROP_ALIASES})$`);
   return function ({ name, args }) {
     if (!args.length || args.length > FUNCS.length || (NAME && !name.match(NAME)))
       throw new SyntaxError(
         `${name}() accepts upto ${PROPS.length} arguments, not ${args.length}`);
     args = args.map((a, i) => FUNCS[i](a));
-    return `${NAME}(${args.join(", ")})`;
+    return `${NAME}(${args.join()})`;
   };
 }
 
 export function MergeSequence(PROP_ALIASES, ...FUNCS) {
-  const NAME = PROP_ALIASES && new RegExp(`^(${PROP_ALIASES})$`);
+  const NAME = PROP_ALIASES && PROP_ALIASES.split("|")[0];
+  PROP_ALIASES &&= new RegExp(`^(${PROP_ALIASES})$`);
   return function ({ name, args }) {
     if (!args.length || args.length > FUNCS.length || (NAME && !name.match(NAME)))
       throw new SyntaxError(
@@ -121,19 +121,32 @@ export function MergeSequence(PROP_ALIASES, ...FUNCS) {
   };
 }
 
+function hitMe(FUNCS, x) {
+  for (let func of FUNCS)
+    try { return func(x); } catch (e) { }
+}
+
+function Either(...FUNCS) {
+  return function (exp) {
+    const res = hitMe(FUNCS, exp);
+    if(res == undefined) 
+      throw new SyntaxError(`No match in Either: ${exp}`);
+    return res;
+  };
+}
+
 export function Dictionary(...FUNCS) {
   return function ({ name, args }) {
     const res = {};
-    main: for (let arg of args) {
-      for (let func of FUNCS) {
-        try {
-          Object.assign(res, func(arg));
-          continue main;
-        } catch (e) {
-          console.debug(e);
-        }
-      }
-      throw new SyntaxError(`Invalid argument: ${name}(...${arg.toString()}...)`);
+    for (let arg of args) {
+      const res2 = hitMe(FUNCS, arg);
+      if (res2 == undefined)
+        throw new SyntaxError(`Invalid argument: ${name}(...${arg.toString()}...)`);
+      for (let k in res)
+        for (let k2 in res2)
+          if (k === k2 || k.startsWith(k2 + "-") || k2.startsWith(k + "-"))
+            throw new SyntaxError(`Property crash: ${k} vs ${k2}`);
+      Object.assign(res, res2);
     }
     return res;
   };
@@ -227,24 +240,26 @@ export const border = BorderSwitch(Dictionary(  //border-colors controlled by $c
   // LogicalFour("old-radius|or", PositiveLengthPercent),
   P("style", Word("solid|dotted|dashed|double")),
   //todo this should be added to the 
-  P("width", Word("thin|medium|thick")),
-  Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? { "width": str } : null))
+  P("width", Either(
+    Word("thin|medium|thick"),
+    Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? str : null))
+  ))
 ));
 
 const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
 const HEX = Word("#[0-9a-f]{6}|#[0-9a-f]{3}");
+const Zero255 = ValidNumber("", n => n >= 0 && n <= 255);
+const Zero100Percent = Unit("%|", (str, v) => (v >= 0 && v <= 100 ? str : null));
 const RGB = CssTextFunction("rgb", [Zero255, Zero255, Zero255]);
 const RGBA = CssTextFunction("rgba|rgb", [Zero255, Zero255, Zero255, Zero100Percent]);
 const HSL = CssTextFunction("hsl", [Zero360Deg, Zero100Percent, Zero100Percent]);
 const HSLA = CssTextFunction("hsla|hsl", [Zero360Deg, Zero100Percent, Zero100Percent, Zero100Percent]);
 
-
-function Color(exp) {
-  if (exp.match?.(/^(#[0-9a-f]{6}|#[0-9a-f]{3})$/i))
-    return exp;
-  if (exp.match?.(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/))
-    return exp;
-}
+const Color = Either(
+  HEX, 
+  WEB_COLORS,
+  RGB,
+);
 
 function ToCssVar(PROP_ALIASES, FUNC) {
   const PROP = PROP_ALIASES.split("|")[0];

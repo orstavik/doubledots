@@ -94,9 +94,29 @@
   --background-color: #123456;
   border-color: red;
 }`,
+    "$border(thin)":
+/*css*/`/*container 0*/
+/*$border(thin)*/
+:where(.\\$border\\(thin\\)) {
+  border-width: thin;
+}`,
+    "$border(thin,2px)": `Property crash: width vs width`,
+    "$border(2px,w(,,3px))": `Property crash: width vs width-top`,
+    "$border(s(,dashed), solid)": `Property crash: style-top vs style`,
+    "$color(rgb(0,12,255))":
+/*css*/`/*container 0*/
+/*$color(rgb(0,12,255))*/
+:where(.\\$color\\(rgb\\(0\\,12\\,255\\)\\)) {
+  color: rgb(0,12,255);
+}`,
   };
   for (let [expr, expect] of Object.entries(units).reverse()) {
-    const res = toCss(expr);
+    let res;
+    try {
+      res = toCss(expr);
+    } catch (err) {
+      res = err.message;
+    }
     if (res != expect) {
       let i = -1;
       while (i++ < res.length)

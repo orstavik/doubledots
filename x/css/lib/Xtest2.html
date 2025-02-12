@@ -1,0 +1,175 @@
+<style id="expected">
+  /*container 0*/
+  /*$border(solid,2px)*/
+  :where(.\$border\(solid\,2px\)) {
+    border-style: solid;
+    border-width: 2px;
+  }
+
+  /*container 0*/
+  /*|*$border(double,2px,radius(0.25rem))*/
+  :where(.\|\*\$border\(double\,2px\,radius\(0\.25rem\)\)) {}
+
+  /*item 0*/
+  /*|*$border(double,2px,radius(0.25rem))*/
+  :where(.\|\*\$border\(double\,2px\,radius\(0\.25rem\)\))>:where(*) {
+    border-style: double;
+    border-width: 2px;
+    border-radius: 0.25rem;
+  }
+
+  /*container 0*/
+  /*|.new$border(solid,4px,radius(1rem))*/
+  :where(.\|\.new\$border\(solid\,4px\,radius\(1rem\)\)) {}
+
+  /*item 1*/
+  /*|.new$border(solid,4px,radius(1rem))*/
+  :where(.\|\.new\$border\(solid\,4px\,radius\(1rem\)\))>:where(.new) {
+    border-style: solid;
+    border-width: 4px;
+    border-radius: 1rem;
+  }
+
+  /*container 0*/
+  /*|.sale$border(dashed,3px,radius(0.5rem))*/
+  :where(.\|\.sale\$border\(dashed\,3px\,radius\(0\.5rem\)\)) {}
+
+  /*item 1*/
+  /*|.sale$border(dashed,3px,radius(0.5rem))*/
+  :where(.\|\.sale\$border\(dashed\,3px\,radius\(0\.5rem\)\))>:where(.sale) {
+    border-style: dashed;
+    border-width: 3px;
+    border-radius: 0.5rem;
+  }
+
+  /*container 0*/
+  /*$color(black,white,b(black))*/
+  :where(.\$color\(black\,white\,b\(black\)\)) {
+    color: black;
+    --background-color: white;
+    border-color: black;
+  }
+
+  /*container 0*/
+  /*|*$color(,,b(blue))*/
+  :where(.\|\*\$color\(\,\,b\(blue\)\)) {}
+
+  /*item 0*/
+  /*|*$color(,,b(blue))*/
+  :where(.\|\*\$color\(\,\,b\(blue\)\))>:where(*) {
+    border-color: blue;
+  }
+
+  /*container 0*/
+  /*|.new$color(,,b(#4caf50))*/
+  :where(.\|\.new\$color\(\,\,b\(\#4caf50\)\)) {}
+
+  /*item 1*/
+  /*|.new$color(,,b(#4caf50))*/
+  :where(.\|\.new\$color\(\,\,b\(\#4caf50\)\))>:where(.new) {
+    border-color: #4caf50;
+  }
+
+  /*container 0*/
+  /*|.sale$color(,,b(#f44336))*/
+  :where(.\|\.sale\$color\(\,\,b\(\#f44336\)\)) {}
+
+  /*item 1*/
+  /*|.sale$color(,,b(#f44336))*/
+  :where(.\|\.sale\$color\(\,\,b\(\#f44336\)\))>:where(.sale) {
+    border-color: #f44336;
+  }
+
+  /*container 0*/
+  /*$size(300px,600px)*/
+  :where(.\$size\(300px\,600px\)) {
+    block-size: 300px;
+    inline-size: 600px;
+  }
+
+  /*container 0*/
+  /*$border(r(10px,30px,60px))*/
+  :where(.\$border\(r\(10px\,30px\,60px\)\)) {
+    border-top-left-radius: 10px 30px;
+    border-top-right-radius: 10px 30px;
+    border-bottom-left-radius: 60px 30px;
+    border-bottom-right-radius: 60px 30px;
+  }
+</style>
+
+<div class="
+  $border(solid,2px)
+  |*$border(double,2px,radius(0.25rem))
+  |.new$border(solid,4px,radius(1rem))
+  |.sale$border(dashed,3px,radius(0.5rem))
+                        
+ $color(black,white,b(black))
+  |*$color(,,b(blue))
+  |.new$color(,,b(#4caf50))
+  |.sale$color(,,b(#f44336))
+           ">
+  <div class="new">New Arrival: Product 1</div>
+  <div class="sale $size(300px,600px) $border(r(10px,30px,60px))"><br><br><br>On Sale: Product 2</div>
+  <div>Product 3</div>
+  <div class="sale">On Sale: Product 4</div>
+  <div class="new">New Arrival: Product 5</div>
+</div>
+
+<script type="module">
+  // import { toCss } from "./Xengine.js";
+  import { toCss } from "https://cdn.jsdelivr.net/gh/orstavik/doubledots@main25.02.11.10/x/css/lib/Xengine.js";
+
+  function diff(a, b) {
+    let i = -1;
+    while (i++ < a.length)
+      if (a[i] != b[i])
+        break;
+    const ar = a.split("").reverse().join("");
+    const br = b.split("").reverse().join("");
+    let j = -1;
+    while (j++ < ar.length)
+      if (ar[j] != br[j])
+        break;
+    return { i, j, a: a.substring(i, a.length - j), b: b.substring(i, b.length - j) };
+  }
+
+  function printDiff(logger, str, expected) {
+    const { i, j, a, b } = diff(str, expected);
+    logger("=============");
+    logger("FAIL", i, j);
+    logger("-------------start");
+    logger(a.substring(0, 40));
+    logger(b.substring(0, 40));
+    logger("-------------end");
+    logger(a.substr(-40));
+    logger(b.substr(-40));
+    logger("=============");
+  }
+
+  (async _ => {
+    let res = "";
+    for (let el of document.body.querySelectorAll('[class*="$"]'))
+      for (let clazz of el.classList)
+        if (clazz.includes("$")) {
+          try {
+            res += toCss(clazz);
+          } catch (er) {
+            console.error(er);
+          }
+        }
+
+    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$");
+    console.log(res);
+    console.log("$$$$$$$$$$$$$$$$$$$$$$$$$");
+
+    const expected = document.getElementById("expected").textContent.trim();
+    const resZ = res.replaceAll(/\s+/g, ""), expectedZ = expected.replaceAll(/\s+/g, "");
+    if (resZ == expectedZ)
+      return console.log("OK");
+    printDiff(console.log, resZ, expectedZ);
+
+    const style = document.createElement("style");
+    document.head.append(style);
+    style.textContent = res;
+  })();
+</script>
