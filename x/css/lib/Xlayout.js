@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, P, Dictionary, Sequence, LogicalFour, Unit } from "./Xfunc.js";
+import { PositiveLengthPercent, Word, P, Dictionary, Sequence, LogicalFour, CheckNum } from "./Xfunc.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
@@ -98,9 +98,9 @@ export const flex = Display("flex", Dictionary(
 //todo safe
 export const _flex = Dictionary(
   Word(_FLEX_ALIGN, doAlignSelf),
-  Unit("grow", (_, n) => ({ "flex-grow": n })),
-  Unit("shrink", (_, n) => ({ "flex-shrink": n })),
-  Unit("order", (_, n) => ({ "order": n })),
+  P("flex-grow", CheckNum("grow", 0)),
+  P("flex-shrink", CheckNum("shrink", 0)),
+  P("order", CheckNum("order", 0, null, true)),
   Sequence("basis", "flex-basis", PositiveLengthPercent),
   ..._LAYOUT
 );

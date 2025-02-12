@@ -3,6 +3,11 @@ export const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.so
 const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
 
+function hitMe(FUNCS, x) {
+  for (let func of FUNCS)
+    try { return func(x); } catch (e) { }
+}
+
 function DoRegEx(RX, func, x) {
   const m = x.match(RX);
   if (!m)
@@ -15,32 +20,43 @@ export function Word(prefix, func) {
   return DoRegEx.bind(null, new RegExp(`^(${prefix})$`), func);
 }
 
-export function Unit(units, func) {
-  return DoRegEx.bind(null, new RegExp(`^(${NUM})(${units})$`), func);
+function Clamp(INT, MIN, MAX) {
+  if (INT && MIN != null && MAX != null)
+    return n => Number.isInteger(n) && MIN <= n && n <= MAX;
+  if (INT && MIN != null)
+    return n => Number.isInteger(n) && MIN <= n;
+  if (INT && MAX != null)
+    return n => Number.isInteger(n) && n <= MAX;
+  if (INT)
+    return n => Number.isInteger(n);
+  if (MIN != null && MAX != null)
+    return n => MIN <= n && n <= MAX;
+  if (MIN != null)
+    return n => MIN <= n;
+  if (MAX != null)
+    return n => n <= MAX;
+};
+
+export function CheckNum(UNITS, MIN, MAX, IsINT) {
+  const RX = new RegExp(UNITS ? `${NUM}(${UNITS})` : NUM);
+  const clamp = Clamp(IsINT, MIN, MAX);
+  if (!clamp)
+    return Word(RX);
+
+  function validator(str, nFrac, n, frac) {
+    n = Number(n);
+    frac && (n /= Number(frac));
+    if (clamp(n))
+      return str;
+  };
+  return Word(RX, validator);
 }
 
 export function P(prop, FUNC) {
   return x => ({ [prop]: FUNC(x) });
 }
 
-export function ValidNumber(UNITS, CHECK) {
-  const RX = new RegExp(`^(${NUM})(${UNITS})$`);
-  return function (exp) {
-    const m = exp.match?.(RX);
-    if (m) {
-      let [, num, n, frac, unit] = m;
-      if (CHECK(frac ? Number(n) / Number(frac) : Number(n)))
-        return num;
-    }
-    throw new SyntaxError(`${exp.name ?? exp} doesn't match number format.`);
-  };
-}
-
-export const PositiveLengthPercent =
-  Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? str : null));
-// ValidNumber(LENGTHS_PER, n => n >= 0);
-
-const Zero360Deg = Unit("deg|rad|", (str, v) => (v >= 0 && v <= 360 ? str : null));
+export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
 
 export function LogicalFour(PROP_ALIASES, ArgHandler) {
   const PROP = PROP_ALIASES.split("|")[0];
@@ -121,15 +137,10 @@ export function MergeSequence(PROP_ALIASES, ...FUNCS) {
   };
 }
 
-function hitMe(FUNCS, x) {
-  for (let func of FUNCS)
-    try { return func(x); } catch (e) { }
-}
-
 function Either(...FUNCS) {
   return function (exp) {
     const res = hitMe(FUNCS, exp);
-    if(res == undefined) 
+    if (res == undefined)
       throw new SyntaxError(`No match in Either: ${exp}`);
     return res;
   };
@@ -242,23 +253,28 @@ export const border = BorderSwitch(Dictionary(  //border-colors controlled by $c
   //todo this should be added to the 
   P("width", Either(
     Word("thin|medium|thick"),
-    Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? str : null))
+    CheckNum(LENGTHS_PER, 0)
   ))
 ));
 
 const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
 const HEX = Word("#[0-9a-f]{6}|#[0-9a-f]{3}");
-const Zero255 = ValidNumber("", n => n >= 0 && n <= 255);
-const Zero100Percent = Unit("%|", (str, v) => (v >= 0 && v <= 100 ? str : null));
+
+const Zero360Deg = CheckNum("deg|rad|");
+const Zero255 = CheckNum("", 0, 255);
+const Percent = CheckNum("%|", 0, 100);
 const RGB = CssTextFunction("rgb", [Zero255, Zero255, Zero255]);
-const RGBA = CssTextFunction("rgba|rgb", [Zero255, Zero255, Zero255, Zero100Percent]);
-const HSL = CssTextFunction("hsl", [Zero360Deg, Zero100Percent, Zero100Percent]);
-const HSLA = CssTextFunction("hsla|hsl", [Zero360Deg, Zero100Percent, Zero100Percent, Zero100Percent]);
+const RGBA = CssTextFunction("rgba|rgb", [Zero255, Zero255, Zero255, Percent]);
+const HSL = CssTextFunction("hsl", [Zero360Deg, Percent, Percent]);
+const HSLA = CssTextFunction("hsla|hsl", [Zero360Deg, Percent, Percent, Percent]);
 
 const Color = Either(
-  HEX, 
+  HEX,
   WEB_COLORS,
   RGB,
+  RGBA,
+  HSL,
+  HSLA
 );
 
 function ToCssVar(PROP_ALIASES, FUNC) {
