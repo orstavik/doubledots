@@ -1,5 +1,4 @@
 export const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.source;
-export const WEB_COLORS = /azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/;
 
 const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
@@ -12,6 +11,7 @@ function DoRegEx(RX, func, x) {
 }
 
 export function Word(prefix, func) {
+  (prefix instanceof RegExp) && (prefix = prefix.source);
   return DoRegEx.bind(null, new RegExp(`^(${prefix})$`), func);
 }
 
@@ -24,8 +24,30 @@ export function PWord(prop, words, func) {
   return x => ({ [prop]: inner(x) });
 }
 
+export function P(prop, FUNC) {
+  return x => ({ [prop]: FUNC(x) });
+}
+
+export function ValidNumber(UNITS, CHECK) {
+  const RX = new RegExp(`^(${NUM})(${UNITS})$`);
+  return function (exp) {
+    const m = exp.match?.(RX);
+    if (m) {
+      let [, num, n, frac, unit] = m;
+      if (CHECK(frac ? Number(n) / Number(frac) : Number(n)))
+        return num;
+    }
+    throw new SyntaxError(`${exp.name ?? exp} doesn't match number format.`);
+  };
+}
+
 export const PositiveLengthPercent =
   Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? str : null));
+// ValidNumber(LENGTHS_PER, n => n >= 0);
+
+const Zero100Percent = Unit("%", (str, v) => (v >= 0 && v <= 100 ? str : null));
+const Zero360Deg = Unit("deg|rad|", (str, v) => (v >= 0 && v <= 360 ? str : null));
+const Zero255 = ValidNumber(n => n >= 0 && n <= 255);
 
 export function LogicalFour(PROP_ALIASES, ArgHandler) {
   const PROP = PROP_ALIASES.split("|")[0];
@@ -58,9 +80,9 @@ export function LogicalFour(PROP_ALIASES, ArgHandler) {
       };
     return {
       [PROP + "-top"]: bs,
-      [PROP + "-right"]: is,
+      [PROP + "-right"]: ie,
       [PROP + "-bottom"]: be,
-      [PROP + "-left"]: ie,
+      [PROP + "-left"]: is,
       [PROP + "-block-start"]: bs,
       [PROP + "-block-end"]: be,
       [PROP + "-inline-start"]: is,
@@ -80,6 +102,17 @@ export function Sequence(PROP_ALIASES, PROPS, FUNCS) {
         `${name}() accepts upto ${PROPS.length} arguments, not ${args.length}`);
     return Object.fromEntries(args.map((a, i) =>
       [PROPS[i], a == null ? a : FUNCS[i](a)]));
+  };
+}
+
+export function CssTextFunction(PROP_ALIASES, FUNCS) {
+  const NAME = PROP_ALIASES && new RegExp(`^(${PROP_ALIASES})$`);
+  return function ({ name, args }) {
+    if (!args.length || args.length > FUNCS.length || (NAME && !name.match(NAME)))
+      throw new SyntaxError(
+        `${name}() accepts upto ${PROPS.length} arguments, not ${args.length}`);
+    args = args.map((a, i) => FUNCS[i](a));
+    return `${NAME}(${args.join(", ")})`;
   };
 }
 
@@ -192,8 +225,8 @@ export const border = BorderSwitch(Dictionary(  //border-colors controlled by $c
   // LogicalFour("old-radius|or", PositiveLengthPercent),
   LogicalEight("radius|r", PositiveLengthPercent),
   //todo these shorthands are complicated..
-  PWord("style", "solid|dotted|dashed|double"),
-  PWord("width", "thin|medium|thick"),
+  P("style", Word("solid|dotted|dashed|double")),
+  P("width", Word("thin|medium|thick")),
   Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? { "width": str } : null))
 ));
 
@@ -202,10 +235,18 @@ export const size = MergeSequence(undefined,
   MinNormalMax("inline-size", PositiveLengthPercent)
 );
 
+const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
+const HEX = Word("#[0-9a-f]{3}|#[0-9a-f]{6}");
+const RGB = CssTextFunction("rgb", [Zero255, Zero255, Zero255]);
+const RGBA = CssTextFunction("rgba|rgb", [Zero255, Zero255, Zero255, Zero100Percent]);
+const HSL = CssTextFunction("hsl", [Zero360Deg, Zero100Percent, Zero100Percent]);
+const HSLA = CssTextFunction("hsla|hsl", [Zero360Deg, Zero100Percent, Zero100Percent, Zero100Percent]);
+
+
 function Color(exp) {
-  if (exp.match(/#[0-9a-f]{3,6}/i))
+  if (exp.match?.(/^(#[0-9a-f]{6}|#[0-9a-f]{3})$/i))
     return exp;
-  if (exp.match(WEB_COLORS))
+  if (exp.match?.(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/))
     return exp;
 }
 
@@ -237,3 +278,5 @@ export const color = MergeSequence(undefined,
   ToCssVar("background-color|bg", Color),
   BorderSwitch(LogicalFour("color|border|b", Color)),
 );
+
+export const cursor = P("cursor", Word(/default|none|context-menu|help|pointer|progress|wait|cell|crosshair|text|vertical-text|alias|copy|move|no-drop|not-allowed|grab|grabbing|col-resize|row-resize|n-resize|s-resize|e-resize|w-resize|ne-resize|nw-resize|se-resize|sw-resize|ew-resize|ns-resize|nesw-resize|nwse-resize|zoom-in|zoom-out/));//auto is excluded

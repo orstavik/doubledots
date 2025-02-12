@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, PWord, Dictionary, Sequence, LogicalFour, Unit } from "./Xfunc.js";
+import { PositiveLengthPercent, Word, P, Dictionary, Sequence, LogicalFour, Unit } from "./Xfunc.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
@@ -18,8 +18,8 @@ const LAYOUT = [
   LogicalFour("padding|p", PositiveLengthPercent),
   Word(OVERFLOW, doOverflow),
   LogicalFour("scroll-padding", PositiveLengthPercent),
-  PWord("scroll-snap-type", "snap(?:-(block|inline))?(?:-(mandatory))?",
-    (_, b = "both", m = "proximity") => `${b} ${m}`)
+  P("scroll-snap-type", Word("snap(?:-(block|inline))?(?:-(mandatory))?",
+    (_, b = "both", m = "proximity") => `${b} ${m}`))
 ];
 const _LAYOUT = [
   LogicalFour("margin|m", PositiveLengthPercent),
@@ -31,7 +31,7 @@ function Display(display, func) {
 }
 
 export const block = Display("block", Dictionary(
-  PWord("float", "float-(start|end)", (_, s) => "inline-" + s),
+  P("float", Word("float-(start|end)", (_, s) => "inline-" + s)),
   ...LAYOUT,
 ));
 export const _block = Dictionary(
@@ -69,10 +69,10 @@ function doAlignSelf(_, b, i) {
 }
 
 export const grid = Display("grid", Dictionary(
-  // PWord("grid-template-areas", "none"), //todo how do we want to write this in csss?
+  // P("grid-template-areas",Word( "none")), //todo how do we want to write this in csss?
   Sequence("column|c", "grid-auto-columns", PositiveLengthPercent),
   Sequence("row|r", "grid-auto-rows", PositiveLengthPercent),
-  PWord("grid-auto-flow", "(dense)-?(column)", (_, d, c = "row") => `${d} ${c}`),
+  P("grid-auto-flow", Word("(dense)-?(column)", (_, d, c = "row") => `${d} ${c}`)),
   Word(GRID_ALIGN, doAlign),
   Gap,
   ...LAYOUT
@@ -88,8 +88,8 @@ const FLEX_ALIGN = /([abcsuvw.])([abcsuvw.])([abcs_])/;
 const _FLEX_ALIGN = /([abcs_])/;
 
 export const flex = Display("flex", Dictionary(
-  PWord("flex-direction", "column|column-reverse|row-reverse"),
-  PWord("flex-wrap", "wrap|wrap-reverse"),
+  P("flex-direction", Word("column|column-reverse|row-reverse")),
+  P("flex-wrap", Word("wrap|wrap-reverse")),
   Word(FLEX_ALIGN, doAlign),
   Gap,
   ...LAYOUT
