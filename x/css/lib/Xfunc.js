@@ -276,18 +276,6 @@ function ToCssVar(ALIASES, FUNC) {
   };
 }
 
-export function ListOfProps(ALIASES, PROPS, FUNCS) {
-  if (FUNCS instanceof Function) FUNCS = [FUNCS];
-  for (let i = 0; i < PROPS.length; i++)
-    FUNCS[i] ??= FUNCS[0];
-  const { checkSignature } = SignatureChecker(ALIASES, PROPS.length);
-  return function (exp) {
-    let { args } = checkSignature(exp);
-    args = args.map((a, i) => [PROPS[i], a == null ? a : FUNCS[i](a)]);
-    return Object.fromEntries(args);
-  };
-}
-
 export function ListOfSame(ALIASES, FUNC) {
   const { checkSignature } = SignatureChecker(ALIASES, 1);
   return function (exp) {
@@ -296,10 +284,8 @@ export function ListOfSame(ALIASES, FUNC) {
   };
 }
 
-//todo this is a diverse list, args 3 < funcs 5
-//todo we also have the list of the same type
 export function ListOf(ALIASES, ...FUNCS) {
-  const { NAME, checkSignature } = SignatureChecker(ALIASES, FUNCS.length);
+  const { checkSignature } = SignatureChecker(ALIASES, FUNCS.length);
   return function (exp) {
     const { args } = checkSignature(exp);
     return args.map((a, i) => a == null ? a : FUNCS[i](a));

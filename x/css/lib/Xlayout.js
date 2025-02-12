@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, P, ListOfSame, Merge, Dictionary, ListOfProps, LogicalFour, CheckNum, ListOf } from "./Xfunc.js";
+import { PositiveLengthPercent, Word, P, ListOfSame, Merge, Dictionary, LogicalFour, CheckNum, ListOf } from "./Xfunc.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
@@ -40,8 +40,7 @@ export const _block = Merge(Dictionary(
 ));
 
 //GRID
-const Gap = ListOfProps("gap|g", ["gap-column", "gap-row"], PositiveLengthPercent);
-Merge(ListOf("gap|g",
+const Gap = Merge(ListOf("gap|g",
   P("gap-column", PositiveLengthPercent),
   P("gap-row", PositiveLengthPercent)
 ));
@@ -106,7 +105,6 @@ export const _flex = Merge(Dictionary(
   P("flex-grow", CheckNum("grow|g", 0)),
   P("flex-shrink", CheckNum("shrink|s", 0)),
   P("order", CheckNum("order|o", 0, null, true)),
-  // ListOfProps("basis", "flex-basis", PositiveLengthPercent),
   P("flex-basis", ListOf("basis", PositiveLengthPercent)),
   ..._LAYOUT
 ));
