@@ -170,14 +170,14 @@ export function Dictionary(...FUNCS) {
 //todo length == 2, I think that we could have top/bottom too
 //todo length == 3, then the third becomes all the inline ones
 //todo length === 4, then forth is the inline on the end side
-function LogicalEight(ALIASES, FUNC, DEFAULT = "0") {
-  const { NAME, checkSignature } = SignatureChecker(ALIASES, 8);
+function LogicalEight(NAME, FUNC, DEFAULT = "0") {
   return function (exp) {
-    const { args } = checkSignature(exp);
-
-    let [bss, iss, bes, ies, bse, ise, bee, iee] = args.map(FUNC);
-    if (args.length === 1) return { [NAME]: bss };
-    // if (args.length === 1) iss = bes = ies = bse = ise = bee = iee = bss;
+    const  args  = FUNC(exp);
+    if(!(args instanceof Array))
+      return { [NAME]: args };
+    if (args.length === 1)
+      return { [NAME]: args[0] };
+    let [bss, iss, bes, ies, bse, ise, bee, iee] = args;
     if (args.length === 2) ise = ies = iee = iss, bse = bes = bee = bss;
     if (args.length === 3) ise = ies = iee = iss, bse = bss, bee = bes;
     if (args.length === 4) ise = iss, iee = ies, bse = bss, bee = bes;
@@ -238,7 +238,7 @@ export const border = BorderSwitch(Merge(Dictionary(
     Word(/thin|medium|thick/),
     CheckNum(LENGTHS_PER, 0)
   )),
-  LogicalEight("radius|r", PositiveLengthPercent),
+  LogicalEight("radius", ListOfSame("radius|r", PositiveLengthPercent)),
   LogicalFour("radius", ListOfSame("r2|radius-og", PositiveLengthPercent))
   //needs to be NativeEight
 )));
