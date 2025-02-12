@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, P, Merge, Dictionary, Sequence, LogicalFour, CheckNum } from "./Xfunc.js";
+import { PositiveLengthPercent, Word, P, ListOfSame, Merge, Dictionary, ListOfProps, LogicalFour, CheckNum, ListOf } from "./Xfunc.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
@@ -40,7 +40,11 @@ export const _block = Merge(Dictionary(
 ));
 
 //GRID
-const Gap = Sequence("gap|g", ["gap-column", "gap-row"], PositiveLengthPercent);
+const Gap = ListOfProps("gap|g", ["gap-column", "gap-row"], PositiveLengthPercent);
+Merge(ListOf("gap|g",
+  P("gap-column", PositiveLengthPercent),
+  P("gap-row", PositiveLengthPercent)
+));
 const AlignAliases = {
   a: "start",
   b: "end",
@@ -71,8 +75,8 @@ function doAlignSelf(_, b, i) {
 
 export const grid = Display("grid", Merge(Dictionary(
   // P("grid-template-areas",Word( "none")), //todo how do we want to write this in csss?
-  Sequence("column|c", "grid-auto-columns", PositiveLengthPercent),
-  Sequence("row|r", "grid-auto-rows", PositiveLengthPercent),
+  P("grid-auto-columns", ListOfSame("column|c", PositiveLengthPercent)),
+  P("grid-auto-rows", ListOfSame("row|r", PositiveLengthPercent)),
   P("grid-auto-flow", Word(/(dense)-?(column)/, (_, d, c = "row") => `${d} ${c}`)),
   Word(GRID_ALIGN, doAlign),
   Gap,
@@ -102,6 +106,7 @@ export const _flex = Merge(Dictionary(
   P("flex-grow", CheckNum("grow|g", 0)),
   P("flex-shrink", CheckNum("shrink|s", 0)),
   P("order", CheckNum("order|o", 0, null, true)),
-  Sequence("basis", "flex-basis", PositiveLengthPercent),
+  // ListOfProps("basis", "flex-basis", PositiveLengthPercent),
+  P("flex-basis", ListOf("basis", PositiveLengthPercent)),
   ..._LAYOUT
 ));
