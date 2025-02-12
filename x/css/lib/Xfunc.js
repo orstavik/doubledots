@@ -63,7 +63,17 @@ export function P(PROP, FUNC) {
   };
 }
 
-function SignatureChecker(ALIASES, MAX) {
+function CssVarList(PROP, FUNC) {
+  return function (exp) {
+    const args = FUNC(exp);
+    return !(args instanceof Array) ? { [`--${PROP}`]: args } :
+      Object.fromEntries(args.map((a, i) =>
+        [`--${PROP}${i ? "-" + i : ""}`, a]));
+  };
+}
+
+
+function SignatureChecker(ALIASES, MAX = Infinity) {
   if (!ALIASES)
     return { checkSignature: x => x };
   const NAME = ALIASES.split("|")[0];
@@ -259,25 +269,8 @@ const Color = Either(
   HSLA
 );
 
-function ToCssVar(ALIASES, FUNC) {
-  const PROP = ALIASES.split("|")[0];
-  return function (exp) {
-    if (typeof exp == "string")
-      return { [`--${PROP}`]: FUNC(exp) };
-    const { name, args } = exp;
-    if (!args.length || !name.match(ALIASES))
-      throw new SyntaxError(`${name}/${args.length}   !=   ${PROP}/1+.`);
-    args = args.map(FUNC);
-    const res = { [`--${PROP}`]: args[0] };
-    for (let i = 1; i < args.length; i++)
-      if (args[i] != null)
-        res[`--${PROP}-${i}`] = args[i];
-    return res;
-  };
-}
-
 export function ListOfSame(ALIASES, FUNC) {
-  const { checkSignature } = SignatureChecker(ALIASES, 1);
+  const { checkSignature } = SignatureChecker(ALIASES);
   return function (exp) {
     const { args } = checkSignature(exp);
     return args.map(a => a == null ? a : FUNC(a));
@@ -299,7 +292,8 @@ export const size = Merge(ListOf(undefined,
 
 export const color = Merge(ListOf(null,
   P("color", Color),
-  ToCssVar("background-color|bg", Color),
+  CssVarList("background-color",
+    Either(Color, ListOfSame("background-color|bg", Color))),
   BorderSwitch(LogicalFour("color|border|b", Color)),
 ));
 
