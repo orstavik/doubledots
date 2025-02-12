@@ -10,8 +10,8 @@ export class Expression {
   toString() {
     return `${this.name}(${this.args.join(",")})`;
   }
-  checkSignature(NAME, max) {
-    return this.name?.match(NAME) && this.args.length <= max;
+  get signature(){
+    return this.name + "/" + this.args.length;
   }
 }
 

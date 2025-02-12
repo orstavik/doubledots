@@ -1,9 +1,9 @@
-import { PositiveLengthPercent, Word, P, Dictionary, Sequence, LogicalFour, CheckNum } from "./Xfunc.js";
+import { PositiveLengthPercent, Word, P, Merge, Dictionary, Sequence, LogicalFour, CheckNum } from "./Xfunc.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
-const doOverflow = (...args) => {
-  let [, t, b = "hidden", i = b] = args; //ellipsis/clip => hidden, //single setting means both
+//ellipsis/clip => hidden, //single setting means both
+function doOverflow(_, t, b = "hidden", i = b) {
   return {
     "overflow-x": i,
     "overflow-inline": i,
@@ -18,7 +18,8 @@ const LAYOUT = [
   LogicalFour("padding|p", PositiveLengthPercent),
   Word(OVERFLOW, doOverflow),
   LogicalFour("scroll-padding", PositiveLengthPercent),
-  P("scroll-snap-type", Word("snap(?:-(block|inline))?(?:-(mandatory))?",
+  P("scroll-snap-type", Word(
+    /snap(?:-(block|inline))?(?:-(mandatory))?/,
     (_, b = "both", m = "proximity") => `${b} ${m}`))
 ];
 const _LAYOUT = [
@@ -30,13 +31,13 @@ function Display(display, func) {
   return exp => ({ display, ...func(exp) });
 }
 
-export const block = Display("block", Dictionary(
-  P("float", Word("float-(start|end)", (_, s) => "inline-" + s)),
+export const block = Display("block", Merge(Dictionary(
+  P("float", Word(/float-(start|end)/, (_, s) => "inline-" + s)),
   ...LAYOUT,
-));
-export const _block = Dictionary(
+)));
+export const _block = Merge(Dictionary(
   ..._LAYOUT
-);
+));
 
 //GRID
 const Gap = Sequence("gap|g", ["gap-column", "gap-row"], PositiveLengthPercent);
@@ -68,39 +69,39 @@ function doAlignSelf(_, b, i) {
   };
 }
 
-export const grid = Display("grid", Dictionary(
+export const grid = Display("grid", Merge(Dictionary(
   // P("grid-template-areas",Word( "none")), //todo how do we want to write this in csss?
   Sequence("column|c", "grid-auto-columns", PositiveLengthPercent),
   Sequence("row|r", "grid-auto-rows", PositiveLengthPercent),
-  P("grid-auto-flow", Word("(dense)-?(column)", (_, d, c = "row") => `${d} ${c}`)),
+  P("grid-auto-flow", Word(/(dense)-?(column)/, (_, d, c = "row") => `${d} ${c}`)),
   Word(GRID_ALIGN, doAlign),
   Gap,
   ...LAYOUT
-));
+)));
 
-export const _grid = Dictionary(
+export const _grid = Merge(Dictionary(
   Word(_GRID_ALIGN, doAlignSelf),
   ..._LAYOUT
-);
+));
 
 //FLEX
 const FLEX_ALIGN = /([abcsuvw.])([abcsuvw.])([abcs_])/;
 const _FLEX_ALIGN = /([abcs_])/;
 
-export const flex = Display("flex", Dictionary(
-  P("flex-direction", Word("column|column-reverse|row-reverse")),
-  P("flex-wrap", Word("wrap|wrap-reverse")),
+export const flex = Display("flex", Merge(Dictionary(
+  P("flex-direction", Word(/column|column-reverse|row-reverse/)),
+  P("flex-wrap", Word(/wrap|wrap-reverse/)),
   Word(FLEX_ALIGN, doAlign),
   Gap,
   ...LAYOUT
-));
+)));
 
 //todo safe
-export const _flex = Dictionary(
+export const _flex = Merge(Dictionary(
   Word(_FLEX_ALIGN, doAlignSelf),
-  P("flex-grow", CheckNum("grow", 0)),
-  P("flex-shrink", CheckNum("shrink", 0)),
-  P("order", CheckNum("order", 0, null, true)),
+  P("flex-grow", CheckNum("grow|g", 0)),
+  P("flex-shrink", CheckNum("shrink|s", 0)),
+  P("order", CheckNum("order|o", 0, null, true)),
   Sequence("basis", "flex-basis", PositiveLengthPercent),
   ..._LAYOUT
-);
+));

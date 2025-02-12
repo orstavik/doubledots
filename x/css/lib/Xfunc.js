@@ -1,24 +1,21 @@
-export const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.source;
-
-const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
-const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
-
 function hitMe(FUNCS, x) {
   for (let func of FUNCS)
     try { return func(x); } catch (e) { }
 }
 
-function DoRegEx(RX, func, x) {
-  const m = x.match(RX);
-  if (!m)
-    throw new SyntaxError(`Invalid argument: ${x} => ${RX.source}.`);
-  return func ? func(...m) : x;
+export function Word(rx, func) {
+  const RX = new RegExp(`^(?:${rx.source})$`);
+  return function DoRegEx(x) {
+    const m = x.match(RX);
+    if (!m)
+      throw new SyntaxError(`Invalid argument: ${x} => ${rx.source}.`);
+    return func ? func(...m) : x;
+  };
 }
 
-export function Word(prefix, func) {
-  (prefix instanceof RegExp) && (prefix = prefix.source);
-  return DoRegEx.bind(null, new RegExp(`^(${prefix})$`), func);
-}
+export const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.source;
+const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
+const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
 
 function Clamp(INT, MIN, MAX) {
   if (INT && MIN != null && MAX != null)
@@ -43,7 +40,7 @@ export function CheckNum(UNITS, MIN, MAX, IsINT) {
   if (!clamp)
     return Word(RX);
 
-  function validator(str, nFrac, n, frac) {
+  function validator(str, n, frac) {
     n = Number(n);
     frac && (n /= Number(frac));
     if (clamp(n))
@@ -52,59 +49,71 @@ export function CheckNum(UNITS, MIN, MAX, IsINT) {
   return Word(RX, validator);
 }
 
+export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
+
+
+
+
 export function P(prop, FUNC) {
   return x => ({ [prop]: FUNC(x) });
 }
 
-export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
-
-export function LogicalFour(PROP_ALIASES, ArgHandler) {
-  const PROP = PROP_ALIASES.split("|")[0];
-  PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
-  return function ({ name, args }) {
-    if (!args?.length || args.length > 4 || !name.match(PROP_ALIASES))
+function MakeChecker(ALIASES, MAX) {
+  const NAME = ALIASES.split("|")[0];
+  const RX = new RegExp(`^(${ALIASES})$`);
+  function CHECKER({ name, args }) {
+    if (!args.length || args.length > MAX || !name.match(RX))
       throw new SyntaxError(
-        `${name}/1-4 doesn't match ${name}/${args.length}.`);
-    let [bs, is, be, ie] = args.map(a => a == null ? a : ArgHandler(a));
+        `Signature mismatch: ${name}/${args.length} vs (${ALIASES})/1-${MAX}.`);
+  }
+  return { NAME, CHECKER };
+}
+
+export function LogicalFour(ALIASES, FUNC) {
+  const { NAME, CHECKER } = MakeChecker(ALIASES, 4);
+  return function (exp) {
+    CHECKER(exp);
+    const { args } = exp;
+    let [bs, is, be, ie] = args.map(a => a == null ? a : FUNC(a));
     if (args.length === 1)
-      return { [PROP]: bs };
+      return { [NAME]: bs };
     if (args.length === 2)
       return {
-        [PROP + "-top"]: bs,
-        [PROP + "-right"]: is,
-        [PROP + "-bottom"]: bs,
-        [PROP + "-left"]: is,
-        [PROP + "-block"]: bs,
-        [PROP + "-inline"]: is,
+        [NAME + "-top"]: bs,
+        [NAME + "-right"]: is,
+        [NAME + "-bottom"]: bs,
+        [NAME + "-left"]: is,
+        [NAME + "-block"]: bs,
+        [NAME + "-inline"]: is,
       };
     if (args.length === 3)
       return {
-        [PROP + "-top"]: bs,
-        [PROP + "-right"]: is,
-        [PROP + "-bottom"]: be,
-        [PROP + "-left"]: is,
-        [PROP + "-block-start"]: bs,
-        [PROP + "-block-end"]: be,
-        [PROP + "-inline"]: is,
+        [NAME + "-top"]: bs,
+        [NAME + "-right"]: is,
+        [NAME + "-bottom"]: be,
+        [NAME + "-left"]: is,
+        [NAME + "-block-start"]: bs,
+        [NAME + "-block-end"]: be,
+        [NAME + "-inline"]: is,
       };
     return {
-      [PROP + "-top"]: bs,
-      [PROP + "-right"]: ie,
-      [PROP + "-bottom"]: be,
-      [PROP + "-left"]: is,
-      [PROP + "-block-start"]: bs,
-      [PROP + "-block-end"]: be,
-      [PROP + "-inline-start"]: is,
-      [PROP + "-inline-end"]: ie
+      [NAME + "-top"]: bs,
+      [NAME + "-right"]: ie,
+      [NAME + "-bottom"]: be,
+      [NAME + "-left"]: is,
+      [NAME + "-block-start"]: bs,
+      [NAME + "-block-end"]: be,
+      [NAME + "-inline-start"]: is,
+      [NAME + "-inline-end"]: ie
     };
   };
 }
 
-export function Sequence(PROP_ALIASES, PROPS, FUNCS) {
+export function Sequence(ALIASES, PROPS, FUNCS) {
   if (FUNCS instanceof Function) FUNCS = [FUNCS];
   for (let i = 0; i < PROPS.length; i++)
     FUNCS[i] ??= FUNCS[0];
-  const NAME = PROP_ALIASES && new RegExp(`^(${PROP_ALIASES})$`);
+  const NAME = ALIASES && new RegExp(`^(${ALIASES})$`);
   return function ({ name, args }) {
     if (!args.length || args.length > PROPS.length || (NAME && !name.match(NAME)))
       throw new SyntaxError(
@@ -114,9 +123,9 @@ export function Sequence(PROP_ALIASES, PROPS, FUNCS) {
   };
 }
 
-export function CssTextFunction(PROP_ALIASES, FUNCS) {
-  const NAME = PROP_ALIASES && PROP_ALIASES.split("|")[0];
-  PROP_ALIASES &&= new RegExp(`^(${PROP_ALIASES})$`);
+export function CssTextFunction(ALIASES, FUNCS) {
+  const NAME = ALIASES && ALIASES.split("|")[0];
+  ALIASES &&= new RegExp(`^(${ALIASES})$`);
   return function ({ name, args }) {
     if (!args.length || args.length > FUNCS.length || (NAME && !name.match(NAME)))
       throw new SyntaxError(
@@ -126,16 +135,6 @@ export function CssTextFunction(PROP_ALIASES, FUNCS) {
   };
 }
 
-export function MergeSequence(PROP_ALIASES, ...FUNCS) {
-  const NAME = PROP_ALIASES && PROP_ALIASES.split("|")[0];
-  PROP_ALIASES &&= new RegExp(`^(${PROP_ALIASES})$`);
-  return function ({ name, args }) {
-    if (!args.length || args.length > FUNCS.length || (NAME && !name.match(NAME)))
-      throw new SyntaxError(
-        `${name}() accepts upto ${FUNCS.length} arguments, not ${args.length}`);
-    return Object.assign({}, ...args.map((a, i) => FUNCS[i](a)));
-  };
-}
 
 function Either(...FUNCS) {
   return function (exp) {
@@ -146,18 +145,28 @@ function Either(...FUNCS) {
   };
 }
 
-export function Dictionary(...FUNCS) {
-  return function ({ name, args }) {
+export function Merge(cb) {
+  return function (exp) {
     const res = {};
-    for (let arg of args) {
-      const res2 = hitMe(FUNCS, arg);
-      if (res2 == undefined)
-        throw new SyntaxError(`Invalid argument: ${name}(...${arg.toString()}...)`);
+    for (let res2 of cb(exp)) {
       for (let k in res)
         for (let k2 in res2)
           if (k === k2 || k.startsWith(k2 + "-") || k2.startsWith(k + "-"))
             throw new SyntaxError(`Property crash: ${k} vs ${k2}`);
       Object.assign(res, res2);
+    }
+    return res;
+  };
+}
+
+export function Dictionary(...FUNCS) {
+  return function ({ name, args }) {
+    const res = [];
+    for (let arg of args) {
+      const res2 = hitMe(FUNCS, arg);
+      if (res2 == undefined)
+        throw new SyntaxError(`Invalid argument: ${name}(...${arg.toString()}...)`);
+      res.push(res2);
     }
     return res;
   };
@@ -180,11 +189,11 @@ export function Dictionary(...FUNCS) {
 //todo length == 2, I think that we could have top/bottom too
 //todo length == 3, then the third becomes all the inline ones
 //todo length === 4, then forth is the inline on the end side
-function LogicalEight(PROP_ALIASES, FUNC, DEFAULT = "0") {
-  const PROP = PROP_ALIASES.split("|")[0];
-  PROP_ALIASES = new RegExp(`^(${PROP_ALIASES})$`);
+function LogicalEight(ALIASES, FUNC, DEFAULT = "0") {
+  const PROP = ALIASES.split("|")[0];
+  ALIASES = new RegExp(`^(${ALIASES})$`);
   return function ({ name, args }) {
-    if (!args?.length || args.length > 8 || !name.match(PROP_ALIASES))
+    if (!args?.length || args.length > 8 || !name.match(ALIASES))
       throw new SyntaxError(
         `${name}/1-8   !=   ${name}/${args.length}.`);
 
@@ -227,10 +236,6 @@ function MinNormalMax(PROP, cb) {
   };
 }
 
-export const size = MergeSequence(undefined,
-  MinNormalMax("block-size", PositiveLengthPercent),
-  MinNormalMax("inline-size", PositiveLengthPercent)
-);
 
 function BorderSwitch(func) {
   return function (exp) {
@@ -244,21 +249,22 @@ function BorderSwitch(func) {
 }
 
 //todo Dictionary should check that none of the properties coming out are already set.
-export const border = BorderSwitch(Dictionary(  //border-colors controlled by $color
+//border-colors controlled by $color
+export const border = BorderSwitch(Merge(Dictionary(
   LogicalFour("width|w", PositiveLengthPercent),
-  LogicalFour("style|s", Word("solid|dotted|dashed|double")),
+  LogicalFour("style|s", Word(/solid|dotted|dashed|double/)),
   LogicalEight("radius|r", PositiveLengthPercent),
   // LogicalFour("old-radius|or", PositiveLengthPercent),
-  P("style", Word("solid|dotted|dashed|double")),
+  P("style", Word(/solid|dotted|dashed|double/)),
   //todo this should be added to the 
   P("width", Either(
-    Word("thin|medium|thick"),
+    Word(/thin|medium|thick/),
     CheckNum(LENGTHS_PER, 0)
   ))
-));
+)));
 
 const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
-const HEX = Word("#[0-9a-f]{6}|#[0-9a-f]{3}");
+const HEX = Word(/#[0-9a-f]{6}|#[0-9a-f]{3}/);
 
 const Zero360Deg = CheckNum("deg|rad|");
 const Zero255 = CheckNum("", 0, 255);
@@ -277,14 +283,13 @@ const Color = Either(
   HSLA
 );
 
-function ToCssVar(PROP_ALIASES, FUNC) {
-  const PROP = PROP_ALIASES.split("|")[0];
+function ToCssVar(ALIASES, FUNC) {
+  const PROP = ALIASES.split("|")[0];
   return function (exp) {
-    if (!exp) return;
     if (typeof exp == "string")
       return { [`--${PROP}`]: FUNC(exp) };
     const { name, args } = exp;
-    if (!args.length || !name.match(PROP_ALIASES))
+    if (!args.length || !name.match(ALIASES))
       throw new SyntaxError(`${name}/${args.length}   !=   ${PROP}/1+.`);
     args = args.map(FUNC);
     const res = { [`--${PROP}`]: args[0] };
@@ -295,10 +300,29 @@ function ToCssVar(PROP_ALIASES, FUNC) {
   };
 }
 
-export const color = MergeSequence(undefined,
+//todo this is a diverse list, args 3 < funcs 5
+//todo we also have the list of the same type
+export function ListOf(ALIASES, ...FUNCS) {
+  const NAME = ALIASES && ALIASES.split("|")[0];
+  ALIASES &&= new RegExp(`^(${ALIASES})$`);
+  return function (exp) {
+    const { name, args } = exp;
+    if (!args.length || args.length > FUNCS.length || (ALIASES && !name.match(ALIASES)))
+      throw new SyntaxError(
+        `${name}() accepts upto ${FUNCS.length} arguments, not ${args.length}`);
+    return args.map((a, i) => a == null ? a : FUNCS[i](a));
+  };
+}
+
+export const size = Merge(ListOf(undefined,
+  MinNormalMax("block-size", PositiveLengthPercent),
+  MinNormalMax("inline-size", PositiveLengthPercent)
+));
+
+export const color = Merge(ListOf(null,
   P("color", Color),
   ToCssVar("background-color|bg", Color),
   BorderSwitch(LogicalFour("color|border|b", Color)),
-);
+));
 
 export const cursor = P("cursor", Word(/default|none|context-menu|help|pointer|progress|wait|cell|crosshair|text|vertical-text|alias|copy|move|no-drop|not-allowed|grab|grabbing|col-resize|row-resize|n-resize|s-resize|e-resize|w-resize|ne-resize|nw-resize|se-resize|sw-resize|ew-resize|ns-resize|nesw-resize|nwse-resize|zoom-in|zoom-out/));//auto is excluded
