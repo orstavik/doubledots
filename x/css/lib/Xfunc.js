@@ -19,11 +19,6 @@ export function Unit(units, func) {
   return DoRegEx.bind(null, new RegExp(`^(${NUM})(${units})$`), func);
 }
 
-export function PWord(prop, words, func) {
-  const inner = Word(words, func);
-  return x => ({ [prop]: inner(x) });
-}
-
 export function P(prop, FUNC) {
   return x => ({ [prop]: FUNC(x) });
 }
@@ -207,6 +202,12 @@ function MinNormalMax(PROP, cb) {
     return { [PROP]: cb(exp) };
   };
 }
+
+export const size = MergeSequence(undefined,
+  MinNormalMax("block-size", PositiveLengthPercent),
+  MinNormalMax("inline-size", PositiveLengthPercent)
+);
+
 function BorderSwitch(func) {
   return function (exp) {
     const res = func(exp);
@@ -222,21 +223,16 @@ function BorderSwitch(func) {
 export const border = BorderSwitch(Dictionary(  //border-colors controlled by $color
   LogicalFour("width|w", PositiveLengthPercent),
   LogicalFour("style|s", Word("solid|dotted|dashed|double")),
-  // LogicalFour("old-radius|or", PositiveLengthPercent),
   LogicalEight("radius|r", PositiveLengthPercent),
-  //todo these shorthands are complicated..
+  // LogicalFour("old-radius|or", PositiveLengthPercent),
   P("style", Word("solid|dotted|dashed|double")),
+  //todo this should be added to the 
   P("width", Word("thin|medium|thick")),
   Unit(LENGTHS_PER, (str, v) => (Number(v) >= 0 ? { "width": str } : null))
 ));
 
-export const size = MergeSequence(undefined,
-  MinNormalMax("block-size", PositiveLengthPercent),
-  MinNormalMax("inline-size", PositiveLengthPercent)
-);
-
 const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
-const HEX = Word("#[0-9a-f]{3}|#[0-9a-f]{6}");
+const HEX = Word("#[0-9a-f]{6}|#[0-9a-f]{3}");
 const RGB = CssTextFunction("rgb", [Zero255, Zero255, Zero255]);
 const RGBA = CssTextFunction("rgba|rgb", [Zero255, Zero255, Zero255, Zero100Percent]);
 const HSL = CssTextFunction("hsl", [Zero360Deg, Zero100Percent, Zero100Percent]);
@@ -268,13 +264,8 @@ function ToCssVar(PROP_ALIASES, FUNC) {
   };
 }
 
-//todo implement this structure in the PWord ?? and other places?
-function WrapProp(PROP, FUNC) {
-  return x => x == null ? x : { [PROP]: FUNC(x) };
-}
-
 export const color = MergeSequence(undefined,
-  WrapProp("color", Color),
+  P("color", Color),
   ToCssVar("background-color|bg", Color),
   BorderSwitch(LogicalFour("color|border|b", Color)),
 );
