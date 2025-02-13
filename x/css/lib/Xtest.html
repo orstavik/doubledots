@@ -78,6 +78,23 @@
   --background-color: #123456;
   border-color: red;
 }`,
+    "$color(black, #123456, green)":
+/*css*/`/*container 0*/
+/*$color(black, #123456, green)*/
+:where(.\\$color\\(black\\,\\ \\#123456\\,\\ green\\)) {
+  color: black;
+  --background-color: #123456;
+  border-color: green;
+}`,
+    "$color(black, #123456, green:yellow)":
+/*css*/`/*container 0*/
+/*$color(black, #123456, green:yellow)*/
+:where(.\\$color\\(black\\,\\ \\#123456\\,\\ green\\:yellow\\)) {
+  color: black;
+  --background-color: #123456;
+  border-block-color: green;
+  border-inline-color: yellow;
+}`,
     "$border(thin,2px)": `Property crash: width vs width`,
     "$border(2px,w(,,3px))": `Property crash: width vs width-block-end`,
     "$border(s(,dashed), solid)": `Property crash: style-inline vs style`,

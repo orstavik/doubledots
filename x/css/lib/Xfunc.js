@@ -35,22 +35,31 @@ function signature(x, ALIASES, MAX) {
   throw `Signature mismatch: (${ALIASES})/1-${MAX} doesn't accept ${x}.`;
 }
 
+function shorthandSignature(x, ALIASES, SEP) {
+  if (typeof x === "string")
+    return x.split(SEP);
+  if (x instanceof Expression)
+    if (ALIASES == null || ALIASES.split("|").includes(x.name))
+      return x.args;
+  throw `Shorthand mismatch: (${ALIASES}) or ${SEP} doesn't accept ${x}.`;
+}
+
 function oneOf(FUNCS, x) {
   for (let func of FUNCS)
     try { return func(x); } catch (e) { }
-  throw new SyntaxError(`No match in Either: ${x}`);
+  throw new SyntaxError(`No match for: ${x}`);
 }
 
 export const ListOfSame = (Aliases, FUNC) =>
   x => signature(x, Aliases).map(a => a == null ? a : FUNC(a));
 export const ListOf = (Aliases, ...FUNCS) =>
   x => signature(x, Aliases, FUNCS.length).map((a, i) => a == null ? a : FUNCS[i](a));
+export const ShorthandFunction = (SEP, NAME, FUNC) =>
+  x => shorthandSignature(x, NAME, SEP).map(a => a == null ? a : FUNC(a));
 export const Either = (...FUNCS) =>
   x => oneOf(FUNCS, x);
 export const Dictionary = (...FUNCS) =>
   x => x.args.map(a => oneOf(FUNCS, a));
-export const ShorthandFunction = (SEP, NAME, FUNC) =>
-  x => (x.name === NAME ? x.args : x.split(SEP)).map(a => a == null ? a : FUNC(a));
 
 
 function spaceJoin(x) {
@@ -138,8 +147,7 @@ function safeMerge(ar) {
 function borderSwitch(obj) {
   return Object.fromEntries(Object.entries(obj).map(([k, v]) => {
     const [wsr, ...dirs] = k.split("-");
-    k = ["border", ...dirs, wsr].join("-");
-    return [k, v];
+    return [["border", ...dirs, wsr].join("-"), v];
   }));
 }
 
@@ -217,8 +225,8 @@ const Color = Either(
 
 export const color = Merge(ListOf(null,
   P("color", Color),
-  CssVarList("background-color", ListOfSame("background-color|bg|", Color)),
-  BorderSwitch(LogicalFour("color", ListOfSame("border|b", Color))),
+  CssVarList("background-color", ShorthandFunction(":", "background-color|bg|", Color)),
+  BorderSwitch(LogicalFour("color", ShorthandFunction(":", "border|b", Color))),
 ));
 
 export const cursor = P("cursor", Word(/default|none|context-menu|help|pointer|progress|wait|cell|crosshair|text|vertical-text|alias|copy|move|no-drop|not-allowed|grab|grabbing|col-resize|row-resize|n-resize|s-resize|e-resize|w-resize|ne-resize|nw-resize|se-resize|sw-resize|ew-resize|ns-resize|nesw-resize|nwse-resize|zoom-in|zoom-out/));//auto is excluded
