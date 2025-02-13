@@ -172,8 +172,8 @@ export function Dictionary(...FUNCS) {
 //todo length === 4, then forth is the inline on the end side
 function LogicalEight(NAME, FUNC, DEFAULT = "0") {
   return function (exp) {
-    const  args  = FUNC(exp);
-    if(!(args instanceof Array))
+    const args = FUNC(exp);
+    if (!(args instanceof Array))
       return { [NAME]: args };
     if (args.length === 1)
       return { [NAME]: args[0] };
@@ -200,7 +200,6 @@ function LogicalEight(NAME, FUNC, DEFAULT = "0") {
 function MinNormalMax(PROP, cb) {
   const MIN = "min-" + PROP, MAX = "max-" + PROP;
   return function mnm(exp) {
-    if (!exp) return;
     const { name, args } = exp;
     if (name === "min" && args.length === 1)
       return { [MIN]: cb(args[0]) };
