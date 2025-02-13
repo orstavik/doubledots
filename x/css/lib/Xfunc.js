@@ -1,17 +1,12 @@
 import { Expression } from "./Xengine.js";
 
-function hitMe(FUNCS, x) {
-  for (let func of FUNCS)
-    try { return func(x); } catch (e) { }
-}
-
 export function Word(rx, func) {
   const RX = new RegExp(`^(?:${rx.source})$`);
   return function word(x) {
     const m = x.match?.(RX);
     if (m)
       return func ? func(...m) : x;
-    throw new SyntaxError(`Invalid argument: ${x} => ${rx.source}.`);
+    throw `Invalid argument: ${x} => ${rx.source}.`;
   };
 }
 
@@ -19,44 +14,21 @@ export const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.so
 const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
 const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
 
-function Clamp(INT, MIN, MAX) {
-  if (INT && MIN != null && MAX != null)
-    return n => Number.isInteger(n) && MIN <= n && n <= MAX;
-  if (INT && MIN != null)
-    return n => Number.isInteger(n) && MIN <= n;
-  if (INT && MAX != null)
-    return n => Number.isInteger(n) && n <= MAX;
-  if (INT)
-    return n => Number.isInteger(n);
-  if (MIN != null && MAX != null)
-    return n => MIN <= n && n <= MAX;
-  if (MIN != null)
-    return n => MIN <= n;
-  if (MAX != null)
-    return n => n <= MAX;
+const Clamp = (INT, MIN, MAX) => (str, n, frac) => {
+  n = Number(n) / (frac ? Number(frac) : 1);
+  if ((!INT || Number.isInteger(n)) && (MIN == null || n >= MIN) && (MAX == null || n <= MAX))
+    return str;
 };
 
-export function CheckNum(UNITS, MIN, MAX, IsINT) {
-  const RX = new RegExp(UNITS ? `${NUM}(${UNITS})` : NUM);
-  const clamp = Clamp(IsINT, MIN, MAX);
-  if (!clamp)
-    return Word(RX);
-
-  function validator(str, n, frac) {
-    n = Number(n);
-    frac && (n /= Number(frac));
-    if (clamp(n))
-      return str;
-  };
-  return Word(RX, validator);
-}
+export const CheckNum = (UNITS, MIN, MAX, IsINT) =>
+  Word(new RegExp(UNITS ? `${NUM}(${UNITS})` : NUM), Clamp(IsINT, MIN, MAX));
 
 export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
 
 
 function signature(exp, ALIASES, MAX) {
   if (exp instanceof Expression) {
-    if (ALIASES == null || ALIASES.includes(exp.name))
+    if (ALIASES == null || ALIASES.split("|").includes(exp.name))
       if (MAX == null || exp.args.length <= MAX)
         return exp.args;
   } else if (ALIASES.includes(""))
@@ -64,28 +36,20 @@ function signature(exp, ALIASES, MAX) {
   throw `Signature mismatch: (${ALIASES})/1-${MAX} doesn't accept ${exp}.`;
 }
 
-export function ListOfSame(Aliases, FUNC) {
-  Aliases &&= Aliases.split("|");
-  return function (x) {
-    return signature(x, Aliases).map(a => a == null ? a : FUNC(a));
-  };
+function oneOf(FUNCS, x) {
+  for (let func of FUNCS)
+    try { return func(x); } catch (e) { }
+  throw new SyntaxError(`No match in Either: ${exp}`);
 }
 
-export function ListOf(Aliases, ...FUNCS) {
-  Aliases &&= Aliases.split("|");
-  return function (x) {
-    return signature(x, Aliases, FUNCS.length).map((a, i) => a == null ? a : FUNCS[i](a));
-  };
-}
-
-function Either(...FUNCS) {
-  return function either(exp) {
-    const res = hitMe(FUNCS, exp);
-    if (res == undefined)
-      throw new SyntaxError(`No match in Either: ${exp}`);
-    return res;
-  };
-}
+export const ListOfSame = (Aliases, FUNC) =>
+  x => signature(x, Aliases).map(a => a == null ? a : FUNC(a));
+export const ListOf = (Aliases, ...FUNCS) =>
+  x => signature(x, Aliases, FUNCS.length).map((a, i) => a == null ? a : FUNCS[i](a));
+export const Either = (...FUNCS) =>
+  x => oneOf(FUNCS, x);
+export const Dictionary = (...FUNCS) =>
+  x => x.args.map(a => oneOf(FUNCS, a));
 
 
 function spaceJoin(x) {
@@ -144,14 +108,7 @@ function toLogicalEight(NAME, DEFAULT, args) {
   return res;
 }
 
-export const P = (PROP, FUNC) => x => ({ [PROP]: spaceJoin(FUNC(x)) });
-export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
-export const CssTextFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join()})`;
-export const CssVarList = (PROP, FUNC) => x => toCssVarList(PROP, FUNC(x));
-export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
-
-
-function safeMerge(ar){
+function safeMerge(ar) {
   const res = {};
   for (let res2 of ar) {
     for (let k in res2)
@@ -166,20 +123,21 @@ function safeMerge(ar){
   return res;
 }
 
-export const Merge = FUNC => x => safeMerge(FUNC(x));
-
-export function Dictionary(...FUNCS) {
-  return function ({ name, args }) {
-    const res = [];
-    for (let arg of args) {
-      const res2 = hitMe(FUNCS, arg);
-      if (res2 == undefined)
-        throw new SyntaxError(`Invalid argument: ${name}(...${arg.toString()}...)`);
-      res.push(res2);
-    }
-    return res;
-  };
+function borderSwitch(obj) {
+  return Object.fromEntries(Object.entries(obj).map(([k, v]) => {
+    const [wsr, ...dirs] = k.split("-");
+    k = ["border", ...dirs, wsr].join("-");
+    return [k, v];
+  }));
 }
+
+export const P = (PROP, FUNC) => x => ({ [PROP]: spaceJoin(FUNC(x)) });
+export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
+export const CssTextFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join()})`;
+export const CssVarList = (PROP, FUNC) => x => toCssVarList(PROP, FUNC(x));
+export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
+export const Merge = FUNC => x => safeMerge(FUNC(x));
+export const BorderSwitch = FUNC => x => borderSwitch(FUNC(x));
 
 //min(x) => clamp(x,,)
 //max(x) => clamp(,,x)
@@ -202,16 +160,6 @@ function MinNormalMax(PROP, cb) {
 }
 
 
-function BorderSwitch(func) {
-  return function (exp) {
-    const res = func(exp);
-    return Object.fromEntries(Object.entries(res).map(([k, v]) => {
-      const [wsr, ...dirs] = k.split("-");
-      k = ["border", ...dirs, wsr].join("-");
-      return [k, v];
-    }));
-  };
-}
 
 //todo Dictionary should check that none of the properties coming out are already set.
 //border-colors controlled by $color
@@ -222,8 +170,8 @@ export const border = BorderSwitch(Merge(Dictionary(
     Word(/thin|medium|thick/)
   )),
   LogicalEight("radius", ListOfSame("radius|r", PositiveLengthPercent)),
-  LogicalFour("radius", ListOfSame("r2|radius-og", PositiveLengthPercent))
-  //needs to be NativeEight
+  LogicalFour("radius", ListOfSame("r2|radius-og", PositiveLengthPercent))//NativeEight?
+
 )));
 
 const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
@@ -246,7 +194,7 @@ const Color = Either(
   HSLA
 );
 
-export const size = Merge(ListOf(undefined,
+export const size = Merge(ListOf(null,
   MinNormalMax("block-size", PositiveLengthPercent),
   MinNormalMax("inline-size", PositiveLengthPercent)
 ));
