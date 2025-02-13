@@ -1,3 +1,5 @@
+import { Expression } from "./Xengine.js";
+
 function hitMe(FUNCS, x) {
   for (let func of FUNCS)
     try { return func(x); } catch (e) { }
@@ -73,22 +75,6 @@ function CssVarList(PROP, FUNC) {
 }
 
 
-function SignatureChecker(ALIASES, MAX = Infinity) {
-  if (!ALIASES)
-    return { checkSignature: x => x };
-  const NAME = ALIASES.split("|")[0];
-  const RX = new RegExp(`^(${ALIASES})$`);
-  function checkSignature(exp) {
-    if (!exp || typeof exp == "string")
-      throw `Invalid argument: ${exp}, must be an expression.`;
-    const { name, args } = exp;
-    if (!args.length || args.length > MAX || !name.match(RX))
-      throw `Signature mismatch: ${name}/${args.length} vs (${ALIASES})/1-${MAX}.`;
-    return exp;
-  }
-  return { NAME, checkSignature };
-}
-
 export function LogicalFour(NAME, FUNC) {
   return function logicalFour(exp) {
     let args = FUNC(exp);
@@ -116,11 +102,9 @@ export function LogicalFour(NAME, FUNC) {
   };
 }
 
-export function CssTextFunction(ALIASES, FUNCS) {
-  const { NAME, checkSignature } = SignatureChecker(ALIASES, FUNCS.length);
+export function CssTextFunction(NAME, FUNC) {
   return function cssTextFunction(exp) {
-    let { args } = checkSignature(exp);
-    args = args.map((a, i) => FUNCS[i](a));
+    const args = FUNC(exp);
     return `${NAME}(${args.join()})`;
   };
 }
@@ -228,14 +212,10 @@ function BorderSwitch(func) {
 //todo Dictionary should check that none of the properties coming out are already set.
 //border-colors controlled by $color
 export const border = BorderSwitch(Merge(Dictionary(
-  LogicalFour("style", Either(
-    ListOfSame("style|s", Word(/solid|dotted|dashed|double/)),
-    Word(/solid|dotted|dashed|double/)
-  )),
+  LogicalFour("style", ListOfSame("style|s|", Word(/solid|dotted|dashed|double/))),
   LogicalFour("width", Either(
-    ListOfSame("width|w", PositiveLengthPercent),
-    Word(/thin|medium|thick/),
-    CheckNum(LENGTHS_PER, 0)
+    ListOfSame("width|w|", PositiveLengthPercent),
+    Word(/thin|medium|thick/)
   )),
   LogicalEight("radius", ListOfSame("radius|r", PositiveLengthPercent)),
   LogicalFour("radius", ListOfSame("r2|radius-og", PositiveLengthPercent))
@@ -248,10 +228,10 @@ const HEX = Word(/#[0-9a-f]{6}|#[0-9a-f]{3}/);
 const Zero360Deg = CheckNum("deg|rad|");
 const Zero255 = CheckNum("", 0, 255);
 const Percent = CheckNum("%|", 0, 100);
-const RGB = CssTextFunction("rgb", [Zero255, Zero255, Zero255]);
-const RGBA = CssTextFunction("rgba|rgb", [Zero255, Zero255, Zero255, Percent]);
-const HSL = CssTextFunction("hsl", [Zero360Deg, Percent, Percent]);
-const HSLA = CssTextFunction("hsla|hsl", [Zero360Deg, Percent, Percent, Percent]);
+const RGB = CssTextFunction("rgb", ListOf("rgb", Zero255, Zero255, Zero255));
+const RGBA = CssTextFunction("rgba", ListOf("rgba|rgb", Zero255, Zero255, Zero255, Percent));
+const HSL = CssTextFunction("hsl", ListOf("hsl", Zero360Deg, Percent, Percent));
+const HSLA = CssTextFunction("hsla", ListOf("hsla|hsl", Zero360Deg, Percent, Percent, Percent));
 
 const Color = Either(
   HEX,
@@ -262,19 +242,27 @@ const Color = Either(
   HSLA
 );
 
-export function ListOfSame(ALIASES, FUNC) {
-  const { checkSignature } = SignatureChecker(ALIASES);
-  return function (exp) {
-    const { args } = checkSignature(exp);
-    return args.map(a => a == null ? a : FUNC(a));
+function getArgs(exp, ALIASES, MAX) {
+  if (exp instanceof Expression) {
+    if (ALIASES == null || ALIASES.includes(exp.name))
+      if (MAX == null || exp.args.length <= MAX)
+        return exp.args;
+  } else if (ALIASES.includes(""))
+    return [exp];
+  throw `Signature mismatch: (${ALIASES})/1-${MAX} doesn't accept ${exp}.`;
+}
+
+export function ListOfSame(Aliases, FUNC) {
+  Aliases &&= Aliases.split("|");
+  return function (x) {
+    return getArgs(x, Aliases).map(a => a == null ? a : FUNC(a));
   };
 }
 
-export function ListOf(ALIASES, ...FUNCS) {
-  const { checkSignature } = SignatureChecker(ALIASES, FUNCS.length);
-  return function (exp) {
-    const { args } = checkSignature(exp);
-    return args.map((a, i) => a == null ? a : FUNCS[i](a));
+export function ListOf(Aliases, ...FUNCS) {
+  Aliases &&= Aliases.split("|");
+  return function (x) {
+    return getArgs(x, Aliases, FUNCS.length).map((a, i) => a == null ? a : FUNCS[i](a));
   };
 }
 
@@ -285,8 +273,7 @@ export const size = Merge(ListOf(undefined,
 
 export const color = Merge(ListOf(null,
   P("color", Color),
-  CssVarList("background-color",
-    Either(Color, ListOfSame("background-color|bg", Color))),
+  CssVarList("background-color", ListOfSame("background-color|bg|", Color)),
   BorderSwitch(LogicalFour("color", ListOfSame("border|b", Color))),
 ));
 

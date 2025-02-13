@@ -10,8 +10,15 @@ export class Expression {
   toString() {
     return `${this.name}(${this.args.join(",")})`;
   }
-  get signature(){
+  get signature() {
     return this.name + "/" + this.args.length;
+  }
+  filterArgs(aliases, max) {
+    if (aliases && !aliases.split("|").includes(this.name))
+      return;
+    if (max && this.args.length > max)
+      return;
+    return this.args;
   }
 }
 
