@@ -88,11 +88,8 @@ function Either(...FUNCS) {
 }
 
 
-function spaceJoin(x){
+function spaceJoin(x) {
   return x instanceof Array ? x.join(" ") : x;
-}
-export function P(PROP, FUNC) {
-  return x=> ({ [PROP]: spaceJoin(FUNC(x)) });
 }
 
 function toCssVarList(NAME, ar) {
@@ -124,6 +121,7 @@ function toLogicalFour(NAME, ar) {
   };
 }
 
+export const P = (PROP, FUNC) => x => ({ [PROP]: spaceJoin(FUNC(x)) });
 export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
 export const CssTextFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join()})`;
 export const CssVarList = (PROP, FUNC) => x => toCssVarList(PROP, FUNC(x));
