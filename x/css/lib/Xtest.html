@@ -27,28 +27,19 @@
   border-block-end-style: solid;
   border-inline-end-style: dashed;
 }`,
-    "$size(1px,2px)":
+    "$w(1px,2px,)":
 /*css*/`/*container 0*/
-/*$size(1px,2px)*/
-:where(.\\$size\\(1px\\,2px\\)) {
-  block-size: 1px;
+/*$w(1px,2px,)*/
+:where(.\\$w\\(1px\\,2px\\,\\)) {
+  min-inline-size: 1px;
   inline-size: 2px;
 }`,
-    "$size(,2px)":
+    "$h(,2px,)":
 /*css*/`/*container 0*/
-/*$size(,2px)*/
-:where(.\\$size\\(\\,2px\\)) {
-  inline-size: 2px;
-}`,
-    "$size(fit(2px))":
-/*css*/`/*container 0*/
-/*$size(fit(2px))*/
-:where(.\\$size\\(fit\\(2px\\)\\)) {
-  min-block-size: min-content;
+/*$h(,2px,)*/
+:where(.\\$h\\(\\,2px\\,\\)) {
   block-size: 2px;
-  max-block-size: max-content;
 }`,
-
     "$border(solid,2px)|.new$border(solid,4px,radius(1rem))|.sale$border(dashed,3px,radius(0.5rem))|*$border(double,2px,radius(0.25rem))":
 /*css*/`/*container 0*/
 /*$border(solid,2px)|.new$border(solid,4px,radius(1rem))|.sale$border(dashed,3px,radius(0.5rem))|*$border(double,2px,radius(0.25rem))*/\n:where(.\\$border\\(solid\\,2px\\)\\|\\.new\\$border\\(solid\\,4px\\,radius\\(1rem\\)\\)\\|\\.sale\\$border\\(dashed\\,3px\\,radius\\(0\\.5rem\\)\\)\\|\\*\\$border\\(double\\,2px\\,radius\\(0\\.25rem\\)\\)) {
@@ -101,6 +92,20 @@
 /*$color(rgb(0,12,255))*/
 :where(.\\$color\\(rgb\\(0\\,12\\,255\\)\\)) {
   color: rgb(0,12,255);
+}`,
+    "$w(min)":
+/*css*/`/*container 0*/
+/*$w(min)*/
+:where(.\\$w\\(min\\)) {
+  inline-size: min-content;
+}`,
+    "$w(min,2px,max)":
+/*css*/`/*container 0*/
+/*$w(min,2px,max)*/
+:where(.\\$w\\(min\\,2px\\,max\\)) {
+  min-inline-size: min-content;
+  inline-size: 2px;
+  max-inline-size: max-content;
 }`,
   };
   for (let [expr, expect] of Object.entries(units).reverse()) {

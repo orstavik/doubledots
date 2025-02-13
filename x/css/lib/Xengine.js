@@ -1,5 +1,5 @@
 import { flex, _flex } from "./Xlayout.js";
-import { border, size, color } from "./Xfunc.js";
+import { border, color, w, h } from "./Xfunc.js";
 
 export class Expression {
 
@@ -15,7 +15,7 @@ export class Expression {
   }
 }
 
-const shortFuncs = { flex, _flex, border, size, color };
+const shortFuncs = { flex, _flex, border, color, w, h };
 
 export const toCss = txt => [...toCssText(txt, interpretClass(txt))].join("\n");
 

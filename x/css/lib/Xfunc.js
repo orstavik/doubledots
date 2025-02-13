@@ -1,5 +1,7 @@
 import { Expression } from "./Xengine.js";
 
+const Debugger = FUNC => x => { debugger; const res = FUNC(x); debugger; return res; };
+
 export function Word(rx, func) {
   const RX = new RegExp(`^(?:${rx.source})$`);
   return function word(x) {
@@ -23,23 +25,20 @@ const Clamp = (INT, MIN, MAX) => (str, n, frac) => {
 export const CheckNum = (UNITS, MIN, MAX, IsINT) =>
   Word(new RegExp(UNITS ? `${NUM}(${UNITS})` : NUM), Clamp(IsINT, MIN, MAX));
 
-export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
-
-
-function signature(exp, ALIASES, MAX) {
-  if (exp instanceof Expression) {
-    if (ALIASES == null || ALIASES.split("|").includes(exp.name))
-      if (MAX == null || exp.args.length <= MAX)
-        return exp.args;
+function signature(x, ALIASES, MAX) {
+  if (x instanceof Expression) {
+    if (ALIASES == null || ALIASES.split("|").includes(x.name))
+      if (MAX == null || x.args.length <= MAX)
+        return x.args;
   } else if (ALIASES.includes(""))
-    return [exp];
-  throw `Signature mismatch: (${ALIASES})/1-${MAX} doesn't accept ${exp}.`;
+    return [x];
+  throw `Signature mismatch: (${ALIASES})/1-${MAX} doesn't accept ${x}.`;
 }
 
 function oneOf(FUNCS, x) {
   for (let func of FUNCS)
     try { return func(x); } catch (e) { }
-  throw new SyntaxError(`No match in Either: ${exp}`);
+  throw new SyntaxError(`No match in Either: ${x}`);
 }
 
 export const ListOfSame = (Aliases, FUNC) =>
@@ -50,6 +49,8 @@ export const Either = (...FUNCS) =>
   x => oneOf(FUNCS, x);
 export const Dictionary = (...FUNCS) =>
   x => x.args.map(a => oneOf(FUNCS, a));
+export const ShorthandFunction = (SEP, NAME, FUNC) =>
+  x => (x.name === NAME ? x.args : x.split(SEP)).map(a => a == null ? a : FUNC(a));
 
 
 function spaceJoin(x) {
@@ -108,6 +109,17 @@ function toLogicalEight(NAME, DEFAULT, args) {
   return res;
 }
 
+function toMinMax(NAME, res) {
+  if (res.length == 1)
+    return { [NAME]: res[0] };
+  if (res.length == 3)
+    return {
+      [`min-${NAME}`]: res[0],
+      [NAME]: res[1],
+      [`max-${NAME}`]: res[2]
+    };
+}
+
 function safeMerge(ar) {
   const res = {};
   for (let res2 of ar) {
@@ -131,34 +143,42 @@ function borderSwitch(obj) {
   }));
 }
 
+function toCssFunctionIf2(NAME, ar) {
+  return ar.length == 1 ? ar[0] :
+    `${NAME}(${ar.join(",")})`;
+}
+
 export const P = (NAME, FUNC) => x => ({ [NAME]: spaceJoin(FUNC(x)) });
 export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
-export const CssTextFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join()})`;
+export const CssFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join(",")})`;
+export const CssFunctionIf2 = (NAME, FUNC) => x => toCssFunctionIf2(NAME, FUNC(x));
 export const CssVarList = (NAME, FUNC) => x => toCssVarList(NAME, FUNC(x));
 export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
+export const ToMinMax = (DIR, FUNC) => x => toMinMax(DIR, FUNC(x));
 export const Merge = FUNC => x => safeMerge(FUNC(x));
 export const Assign = (OBJ, FUNC) => x => ({ ...OBJ, ...FUNC(x) });
 export const BorderSwitch = FUNC => x => borderSwitch(FUNC(x));
 
-//min(x) => clamp(x,,)
-//max(x) => clamp(,,x)
-//fit|fit-content(x) => clamp(min-content, x, max-content)
-//clamp => clamp(,,x)
-function MinNormalMax(PROP, cb) {
-  const MIN = "min-" + PROP, MAX = "max-" + PROP;
-  return function mnm(exp) {
-    const { name, args } = exp;
-    if (name === "min" && args.length === 1)
-      return { [MIN]: cb(args[0]) };
-    if (name === "max" && args.length === 1)
-      return { [MAX]: cb(args[0]) };
-    if ((name === "fit" || name === "fit-content") && args.length === 1)
-      return { [MIN]: "min-content", [PROP]: cb(args[0]), [MAX]: "max-content" };
-    if (name === "clamp" && args.length === 3)
-      return { [MIN]: cb(args[0]), [PROP]: cb(args[1]), [MAX]: cb(args[2]) };
-    return { [PROP]: cb(exp) };
-  };
-}
+export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
+
+export const PositiveSize = Either(
+  Word(/(min|max)(-content)?/, (_, m, c = "-content") => m + c),
+  PositiveLengthPercent
+);
+
+
+//enables us to write a min and max eiter as 2px:5px or max(2px,5px)
+const Size = DIR => ToMinMax(DIR, Either(
+  ListOf(null, PositiveSize),
+  ListOf(null,
+    CssFunctionIf2("max", ShorthandFunction(":", "max", PositiveSize)),
+    PositiveSize,
+    CssFunctionIf2("max", ShorthandFunction(":", "min", PositiveSize))
+  )
+));
+
+export const w = Size("inline-size");
+export const h = Size("block-size");
 
 
 
@@ -181,10 +201,10 @@ const HEX = Word(/#[0-9a-f]{6}|#[0-9a-f]{3}/);
 const Zero360Deg = CheckNum("deg|rad|");
 const Zero255 = CheckNum("", 0, 255);
 const Percent = CheckNum("%|", 0, 100);
-const RGB = CssTextFunction("rgb", ListOf("rgb", Zero255, Zero255, Zero255));
-const RGBA = CssTextFunction("rgba", ListOf("rgba|rgb", Zero255, Zero255, Zero255, Percent));
-const HSL = CssTextFunction("hsl", ListOf("hsl", Zero360Deg, Percent, Percent));
-const HSLA = CssTextFunction("hsla", ListOf("hsla|hsl", Zero360Deg, Percent, Percent, Percent));
+const RGB = CssFunction("rgb", ListOf("rgb", Zero255, Zero255, Zero255));
+const RGBA = CssFunction("rgba", ListOf("rgba|rgb", Zero255, Zero255, Zero255, Percent));
+const HSL = CssFunction("hsl", ListOf("hsl", Zero360Deg, Percent, Percent));
+const HSLA = CssFunction("hsla", ListOf("hsla|hsl", Zero360Deg, Percent, Percent, Percent));
 
 const Color = Either(
   HEX,
@@ -194,11 +214,6 @@ const Color = Either(
   HSL,
   HSLA
 );
-
-export const size = Merge(ListOf(null,
-  MinNormalMax("block-size", PositiveLengthPercent),
-  MinNormalMax("inline-size", PositiveLengthPercent)
-));
 
 export const color = Merge(ListOf(null,
   P("color", Color),

@@ -81,9 +81,14 @@
   }
 
   /*container 0*/
-  /*$size(300px,600px)*/
-  :where(.\$size\(300px\,600px\)) {
+  /*$h(300px)*/
+  :where(.\$h\(300px\)) {
     block-size: 300px;
+  }
+
+  /*container 0*/
+  /*$w(600px)*/
+  :where(.\$w\(600px\)) {
     inline-size: 600px;
   }
 
@@ -109,15 +114,15 @@
   |.sale$color(,,b(#f44336))
            ">
   <div class="new">New Arrival: Product 1</div>
-  <div class="sale $size(300px,600px) $border(r(10px,30px,60px))"><br><br><br>On Sale: Product 2</div>
+  <div class="sale $h(300px) $w(600px) $border(r(10px,30px,60px))"><br><br><br>On Sale: Product 2</div>
   <div>Product 3</div>
   <div class="sale">On Sale: Product 4</div>
   <div class="new">New Arrival: Product 5</div>
 </div>
 
 <script type="module">
-  // import { toCss } from "./Xengine.js";
-  import { toCss } from "https://cdn.jsdelivr.net/gh/orstavik/doubledots@main25.02.11.10/x/css/lib/Xengine.js";
+  import { toCss } from "./Xengine.js";
+  // import { toCss } from "https://cdn.jsdelivr.net/gh/orstavik/doubledots@main25.02.11.10/x/css/lib/Xengine.js";
 
   function diff(a, b) {
     let i = -1;
