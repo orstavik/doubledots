@@ -88,23 +88,16 @@ function Either(...FUNCS) {
 }
 
 
-
+function spaceJoin(x){
+  return x instanceof Array ? x.join(" ") : x;
+}
 export function P(PROP, FUNC) {
-  return function p(x) {
-    let res = FUNC(x);
-    if (res instanceof Array)
-      res = res.join(" ");
-    return { [PROP]: res };
-  };
+  return x=> ({ [PROP]: spaceJoin(FUNC(x)) });
 }
 
-function CssVarList(PROP, FUNC) {
-  return function cssVarList(exp) {
-    const args = FUNC(exp);
-    return !(args instanceof Array) ? { [`--${PROP}`]: args } :
-      Object.fromEntries(args.map((a, i) =>
-        [`--${PROP}${i ? "-" + i : ""}`, a]));
-  };
+function toCssVarList(NAME, ar) {
+  return !(ar instanceof Array) ? { [`--${NAME}`]: ar } :
+    Object.fromEntries(ar.map((a, i) => [`--${NAME}${i ? "-" + i : ""}`, a]));
 }
 
 function toLogicalFour(NAME, ar) {
@@ -131,13 +124,9 @@ function toLogicalFour(NAME, ar) {
   };
 }
 
-export function LogicalFour(NAME, FUNC) {
-  return exp => toLogicalFour(NAME, FUNC(exp));
-}
-
-export function CssTextFunction(NAME, FUNC) {
-  return exp => `${NAME}(${FUNC(exp).join()})`;
-}
+export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
+export const CssTextFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join()})`;
+export const CssVarList = (PROP, FUNC) => x => toCssVarList(PROP, FUNC(x));
 
 export function Merge(cb) {
   return function (exp) {
