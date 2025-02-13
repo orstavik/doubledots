@@ -54,6 +54,39 @@ export function CheckNum(UNITS, MIN, MAX, IsINT) {
 export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
 
 
+function signature(exp, ALIASES, MAX) {
+  if (exp instanceof Expression) {
+    if (ALIASES == null || ALIASES.includes(exp.name))
+      if (MAX == null || exp.args.length <= MAX)
+        return exp.args;
+  } else if (ALIASES.includes(""))
+    return [exp];
+  throw `Signature mismatch: (${ALIASES})/1-${MAX} doesn't accept ${exp}.`;
+}
+
+export function ListOfSame(Aliases, FUNC) {
+  Aliases &&= Aliases.split("|");
+  return function (x) {
+    return signature(x, Aliases).map(a => a == null ? a : FUNC(a));
+  };
+}
+
+export function ListOf(Aliases, ...FUNCS) {
+  Aliases &&= Aliases.split("|");
+  return function (x) {
+    return signature(x, Aliases, FUNCS.length).map((a, i) => a == null ? a : FUNCS[i](a));
+  };
+}
+
+function Either(...FUNCS) {
+  return function either(exp) {
+    const res = hitMe(FUNCS, exp);
+    if (res == undefined)
+      throw new SyntaxError(`No match in Either: ${exp}`);
+    return res;
+  };
+}
+
 
 
 export function P(PROP, FUNC) {
@@ -74,49 +107,36 @@ function CssVarList(PROP, FUNC) {
   };
 }
 
+function toLogicalFour(NAME, ar) {
+  if (!(ar instanceof Array))
+    return { [NAME]: ar };
+  if (ar.length === 1)
+    return { [NAME]: ar[0] };
+  if (ar.length === 2)
+    return {
+      [NAME + "-block"]: ar[0],
+      [NAME + "-inline"]: ar[1],
+    };
+  if (ar.length === 3)
+    return {
+      [NAME + "-block-start"]: ar[0],
+      [NAME + "-inline"]: ar[1],
+      [NAME + "-block-end"]: ar[2],
+    };
+  return {
+    [NAME + "-block-start"]: ar[0],
+    [NAME + "-inline-start"]: ar[1],
+    [NAME + "-block-end"]: ar[2],
+    [NAME + "-inline-end"]: ar[3]
+  };
+}
 
 export function LogicalFour(NAME, FUNC) {
-  return function logicalFour(exp) {
-    let args = FUNC(exp);
-    if (!(args instanceof Array))
-      return { [NAME]: args };
-    if (args.length === 1)
-      return { [NAME]: args[0] };
-    if (args.length === 2)
-      return {
-        [NAME + "-block"]: args[0],
-        [NAME + "-inline"]: args[1],
-      };
-    if (args.length === 3)
-      return {
-        [NAME + "-block-start"]: args[0],
-        [NAME + "-inline"]: args[1],
-        [NAME + "-block-end"]: args[2],
-      };
-    return {
-      [NAME + "-block-start"]: args[0],
-      [NAME + "-inline-start"]: args[1],
-      [NAME + "-block-end"]: args[2],
-      [NAME + "-inline-end"]: args[3]
-    };
-  };
+  return exp => toLogicalFour(NAME, FUNC(exp));
 }
 
 export function CssTextFunction(NAME, FUNC) {
-  return function cssTextFunction(exp) {
-    const args = FUNC(exp);
-    return `${NAME}(${args.join()})`;
-  };
-}
-
-
-function Either(...FUNCS) {
-  return function either(exp) {
-    const res = hitMe(FUNCS, exp);
-    if (res == undefined)
-      throw new SyntaxError(`No match in Either: ${exp}`);
-    return res;
-  };
+  return exp => `${NAME}(${FUNC(exp).join()})`;
 }
 
 export function Merge(cb) {
@@ -241,30 +261,6 @@ const Color = Either(
   HSL,
   HSLA
 );
-
-function getArgs(exp, ALIASES, MAX) {
-  if (exp instanceof Expression) {
-    if (ALIASES == null || ALIASES.includes(exp.name))
-      if (MAX == null || exp.args.length <= MAX)
-        return exp.args;
-  } else if (ALIASES.includes(""))
-    return [exp];
-  throw `Signature mismatch: (${ALIASES})/1-${MAX} doesn't accept ${exp}.`;
-}
-
-export function ListOfSame(Aliases, FUNC) {
-  Aliases &&= Aliases.split("|");
-  return function (x) {
-    return getArgs(x, Aliases).map(a => a == null ? a : FUNC(a));
-  };
-}
-
-export function ListOf(Aliases, ...FUNCS) {
-  Aliases &&= Aliases.split("|");
-  return function (x) {
-    return getArgs(x, Aliases, FUNCS.length).map((a, i) => a == null ? a : FUNCS[i](a));
-  };
-}
 
 export const size = Merge(ListOf(undefined,
   MinNormalMax("block-size", PositiveLengthPercent),
