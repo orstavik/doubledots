@@ -37,8 +37,8 @@ export const _block = Merge(Dictionary(
 
 //GRID
 const Gap = Merge(ListOf("gap|g",
-  P("gap-column", PositiveLengthPercent),
-  P("gap-row", PositiveLengthPercent)
+  P("column-gap", PositiveLengthPercent),
+  P("row-gap", PositiveLengthPercent)
 ));
 const AlignAliases = {
   a: "start",
