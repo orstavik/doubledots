@@ -1,4 +1,4 @@
-import { PositiveLengthPercent, Word, P, ListOfSame, Merge, Dictionary, LogicalFour, CheckNum, ListOf } from "./Xfunc.js";
+import { PositiveLengthPercent, Word, P, ListOfSame, Merge,Assign, Dictionary, LogicalFour, CheckNum, ListOf } from "./Xfunc.js";
 
 //wrap is a single word. ellipsis-scroll => block: ellipsis, inline: scroll
 const OVERFLOW = /(ellipsis|clip)|(auto|scroll|visible)(?:-(auto|scroll|hidden|visible))?/;
@@ -27,11 +27,7 @@ const _LAYOUT = [
   LogicalFour("scroll-margin", ListOfSame("scroll-margin", PositiveLengthPercent))
 ];
 
-function Display(display, func) {
-  return exp => ({ display, ...func(exp) });
-}
-
-export const block = Display("block", Merge(Dictionary(
+export const block = Assign({display: "block"}, Merge(Dictionary(
   P("float", Word(/float-(start|end)/, (_, s) => "inline-" + s)),
   ...LAYOUT,
 )));
@@ -72,7 +68,7 @@ function doAlignSelf(_, b, i) {
   };
 }
 
-export const grid = Display("grid", Merge(Dictionary(
+export const grid = Assign({display: "grid"}, Merge(Dictionary(
   // P("grid-template-areas",Word( "none")), //todo how do we want to write this in csss?
   P("grid-auto-columns", ListOfSame("column|c", PositiveLengthPercent)),
   P("grid-auto-rows", ListOfSame("row|r", PositiveLengthPercent)),
@@ -91,7 +87,7 @@ export const _grid = Merge(Dictionary(
 const FLEX_ALIGN = /([abcsuvw.])([abcsuvw.])([abcs_])/;
 const _FLEX_ALIGN = /([abcs_])/;
 
-export const flex = Display("flex", Merge(Dictionary(
+export const flex = Assign({display: "flex"}, Merge(Dictionary(
   P("flex-direction", Word(/column|column-reverse|row-reverse/)),
   P("flex-wrap", Word(/wrap|wrap-reverse/)),
   Word(FLEX_ALIGN, doAlign),

@@ -131,12 +131,13 @@ function borderSwitch(obj) {
   }));
 }
 
-export const P = (PROP, FUNC) => x => ({ [PROP]: spaceJoin(FUNC(x)) });
+export const P = (NAME, FUNC) => x => ({ [NAME]: spaceJoin(FUNC(x)) });
 export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
 export const CssTextFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join()})`;
-export const CssVarList = (PROP, FUNC) => x => toCssVarList(PROP, FUNC(x));
+export const CssVarList = (NAME, FUNC) => x => toCssVarList(NAME, FUNC(x));
 export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
 export const Merge = FUNC => x => safeMerge(FUNC(x));
+export const Assign = (OBJ, FUNC) => x => ({ ...OBJ, ...FUNC(x) });
 export const BorderSwitch = FUNC => x => borderSwitch(FUNC(x));
 
 //min(x) => clamp(x,,)
