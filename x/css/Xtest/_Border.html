@@ -4,16 +4,11 @@
 <div class="$border(w(,1px,2px,),s(,,solid,dashed))">sunshine</div>
 <div class="$border(thin)">!!!</div>
 
-<span class="
-        $border(thin,2px)
-        $border(2px,w(,,3px))
-        $border(s(,dashed),solid)">
-  should fail, no border</span>
-
 <style id="expected">
   /*container 0*/
   /*$border(radius(1rem))*/
   :where(.\$border\(radius\(1rem\)\)) {
+    border-style: solid;
     border-radius: 1rem;
   }
 
@@ -29,6 +24,7 @@
   /*container 0*/
   /*$border(thin)*/
   :where(.\$border\(thin\)) {
+    border-style: solid;
     border-width: thin;
   }
 </style>

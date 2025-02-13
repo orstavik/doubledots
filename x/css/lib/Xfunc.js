@@ -156,6 +156,19 @@ function toCssFunctionIf2(NAME, ar) {
     `${NAME}(${ar.join(",")})`;
 }
 
+function assignIfNone(Defaults, res) {
+  const res2 = {};
+  main: for (let k in Defaults) {
+    if (k in res)
+      continue;
+    for (let k2 in res)
+      if (k2.match(new RegExp(`^(${k.replaceAll(/-/g, ".+")})$`)))
+        continue main;
+    res2[k] = Defaults[k];
+  }
+  return { ...res2, ...res };
+}
+
 export const P = (NAME, FUNC) => x => ({ [NAME]: spaceJoin(FUNC(x)) });
 export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
 export const CssFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join(",")})`;
@@ -164,7 +177,7 @@ export const CssVarList = (NAME, FUNC) => x => toCssVarList(NAME, FUNC(x));
 export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
 export const ToMinMax = (DIR, FUNC) => x => toMinMax(DIR, FUNC(x));
 export const Merge = FUNC => x => safeMerge(FUNC(x));
-export const Assign = (OBJ, FUNC) => x => ({ ...OBJ, ...FUNC(x) });
+export const Assign = (OBJ, FUNC) => x => assignIfNone(OBJ, FUNC(x));
 export const BorderSwitch = FUNC => x => borderSwitch(FUNC(x));
 
 export const PositiveLengthPercent = CheckNum(LENGTHS_PER, 0);
@@ -192,7 +205,7 @@ export const h = Size("block-size");
 
 //todo Dictionary should check that none of the properties coming out are already set.
 //border-colors controlled by $color
-export const border = BorderSwitch(Merge(Dictionary(
+export const border = Assign({"border-style": "solid"}, BorderSwitch(Merge(Dictionary(
   LogicalFour("style", ListOfSame("style|s|", Word(/solid|dotted|dashed|double/))),
   LogicalFour("width", Either(
     ListOfSame("width|w|", PositiveLengthPercent),
@@ -200,8 +213,7 @@ export const border = BorderSwitch(Merge(Dictionary(
   )),
   LogicalEight("radius", ListOfSame("radius|r", PositiveLengthPercent)),
   LogicalFour("radius", ListOfSame("r2|radius-og", PositiveLengthPercent))//NativeEight?
-
-)));
+))));
 
 const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
 const HEX = Word(/#[0-9a-f]{6}|#[0-9a-f]{3}/);
