@@ -2,6 +2,7 @@
 
 <div class="$border(radius(1rem))">hello</div>
 <div class="$border(w(,1px,2px,),s(,,solid,dashed))">sunshine</div>
+<div class="$border(thin)">!!!</div>
 
 <style id="expected">
   /*container 0*/
@@ -17,5 +18,11 @@
     border-block-end-width: 2px;
     border-block-end-style: solid;
     border-inline-end-style: dashed;
+  }
+
+  /*container 0*/
+  /*$border(thin)*/
+  :where(.\$border\(thin\)) {
+    border-width: thin;
   }
 </style>
