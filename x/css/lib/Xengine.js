@@ -13,13 +13,6 @@ export class Expression {
   get signature() {
     return this.name + "/" + this.args.length;
   }
-  filterArgs(aliases, max) {
-    if (aliases && !aliases.split("|").includes(this.name))
-      return;
-    if (max && this.args.length > max)
-      return;
-    return this.args;
-  }
 }
 
 const shortFuncs = { flex, _flex, border, size, color };
