@@ -120,29 +120,53 @@ function toLogicalFour(NAME, ar) {
     [NAME + "-inline-end"]: ar[3]
   };
 }
+//todo there are different ways to do the logic here..
+//todo length == 2, I think that we could have top/bottom too
+//todo length == 3, then the third becomes all the inline ones
+//todo length === 4, then forth is the inline on the end side
+function toLogicalEight(NAME, DEFAULT, args) {
+  if (!(args instanceof Array))
+    return { [NAME]: args };
+  if (args.length === 1)
+    return { [NAME]: args[0] };
+  let [bss, iss, bes, ies, bse, ise, bee, iee] = args;
+  if (args.length === 2) ise = ies = iee = iss, bse = bes = bee = bss;
+  if (args.length === 3) ise = ies = iee = iss, bse = bss, bee = bes;
+  if (args.length === 4) ise = iss, iee = ies, bse = bss, bee = bes;
+  if (args.length === 5) ise = iss, iee = ies, bee = bes;
+  if (args.length === 6) iee = ies, bee = bes;
+  if (args.length === 7) iee = ies;
+  const res = {};
+  if (bss || iss) res[NAME + "-top-left"] = `${bss ?? DEFAULT} ${iss ?? DEFAULT}`;
+  if (bse || ies) res[NAME + "-top-right"] = `${bse ?? DEFAULT} ${ies ?? DEFAULT}`;
+  if (bes || ise) res[NAME + "-bottom-left"] = `${bes ?? DEFAULT} ${ise ?? DEFAULT}`;
+  if (bee || iee) res[NAME + "-bottom-right"] = `${bee ?? DEFAULT} ${iee ?? DEFAULT}`;
+  return res;
+}
 
 export const P = (PROP, FUNC) => x => ({ [PROP]: spaceJoin(FUNC(x)) });
 export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
 export const CssTextFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join()})`;
 export const CssVarList = (PROP, FUNC) => x => toCssVarList(PROP, FUNC(x));
+export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
 
-export function Merge(cb) {
-  return function (exp) {
-    const ar = cb(exp);
-    const res = {};
-    for (let res2 of ar) {
-      for (let k in res2)
-        if (res2[k] == null)
-          delete res2[k];
-      for (let k in res)
-        for (let k2 in res2)
-          if (k === k2 || k.startsWith(k2 + "-") || k2.startsWith(k + "-"))
-            throw new SyntaxError(`Property crash: ${k} vs ${k2}`);
-      Object.assign(res, res2);
-    }
-    return res;
-  };
+
+function safeMerge(ar){
+  const res = {};
+  for (let res2 of ar) {
+    for (let k in res2)
+      if (res2[k] == null)
+        delete res2[k];
+    for (let k in res)
+      for (let k2 in res2)
+        if (k === k2 || k.startsWith(k2 + "-") || k2.startsWith(k + "-"))
+          throw new SyntaxError(`Property crash: ${k} vs ${k2}`);
+    Object.assign(res, res2);
+  }
+  return res;
 }
+
+export const Merge = FUNC => x => safeMerge(FUNC(x));
 
 export function Dictionary(...FUNCS) {
   return function ({ name, args }) {
@@ -153,33 +177,6 @@ export function Dictionary(...FUNCS) {
         throw new SyntaxError(`Invalid argument: ${name}(...${arg.toString()}...)`);
       res.push(res2);
     }
-    return res;
-  };
-}
-
-//todo there are different ways to do the logic here..
-//todo length == 2, I think that we could have top/bottom too
-//todo length == 3, then the third becomes all the inline ones
-//todo length === 4, then forth is the inline on the end side
-function LogicalEight(NAME, FUNC, DEFAULT = "0") {
-  return function (exp) {
-    const args = FUNC(exp);
-    if (!(args instanceof Array))
-      return { [NAME]: args };
-    if (args.length === 1)
-      return { [NAME]: args[0] };
-    let [bss, iss, bes, ies, bse, ise, bee, iee] = args;
-    if (args.length === 2) ise = ies = iee = iss, bse = bes = bee = bss;
-    if (args.length === 3) ise = ies = iee = iss, bse = bss, bee = bes;
-    if (args.length === 4) ise = iss, iee = ies, bse = bss, bee = bes;
-    if (args.length === 5) ise = iss, iee = ies, bee = bes;
-    if (args.length === 6) iee = ies, bee = bes;
-    if (args.length === 7) iee = ies;
-    const res = {};
-    if (bss || iss) res[NAME + "-top-left"] = `${bss ?? DEFAULT} ${iss ?? DEFAULT}`;
-    if (bse || ies) res[NAME + "-top-right"] = `${bse ?? DEFAULT} ${ies ?? DEFAULT}`;
-    if (bes || ise) res[NAME + "-bottom-left"] = `${bes ?? DEFAULT} ${ise ?? DEFAULT}`;
-    if (bee || iee) res[NAME + "-bottom-right"] = `${bee ?? DEFAULT} ${iee ?? DEFAULT}`;
     return res;
   };
 }
