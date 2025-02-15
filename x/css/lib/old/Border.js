@@ -1,4 +1,4 @@
-import { PrefixTable2, join, LENGTH_POS } from "./utils.js";
+import { PrefixTable2, join, LENGTH_POS } from "../utils.js";
 
 const BORDER_STYLE = /solid|dashed|dotted|double|groove|ridge|inset|outset|none/;
 

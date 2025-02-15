@@ -1,5 +1,5 @@
-import { LENGTH_PERCENT_POS, spaceJoin4 } from "./utils.js";
-import { logicalFour, doPrefix } from "./utils2.js";
+import { LENGTH_PERCENT_POS, spaceJoin4 } from "../utils.js";
+import { logicalFour, doPrefix } from "../utils2.js";
 
 const STYLES = {
   word: /solid|dashed|dotted|double|groove|ridge|inset|outset/

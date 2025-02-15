@@ -1,5 +1,5 @@
-import { LENGTH_PERCENT_POS } from "./utils.js";
-import { logicalPairs, tlbr, postProcess, doPrefix } from "./utils2.js";
+import { LENGTH_PERCENT_POS } from "../utils.js";
+import { logicalPairs, tlbr, postProcess, doPrefix } from "../utils2.js";
 
 const STYLES = {
   word: /solid|dashed|dotted|double|groove|ridge|inset|outset/
