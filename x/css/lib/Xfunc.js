@@ -144,10 +144,6 @@ function safeMerge(ar) {
   return res;
 }
 
-function cssColorTextFunction(name, color = "", a, b, c, d = "") {
-  return `${name}(${color ? `from ${color} `: ""}${a} ${b} ${c}${d ? ` /${d}` : ""})`;
-}
-
 function borderSwitch(obj) {
   return Object.fromEntries(Object.entries(obj).map(([k, v]) => {
     const [wsr, ...dirs] = k.split("-");
@@ -184,7 +180,6 @@ export const P = (NAME, FUNC) => x => ({ [NAME]: spaceJoin(FUNC(x)) });
 export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
 export const ShadowProps = (PROPS, FUNC) => x => shadowProps(PROPS, FUNC(x));
 export const CssFunction = (NAME, SEP, FUNC) => x => `${NAME}(${FUNC(x).join(SEP)})`;
-export const CssColorTextFunction = (NAME, ARGS) => cssColorTextFunction(NAME, ...ARGS);
 export const CssFunctionIf2 = (NAME, FUNC) => x => toCssFunctionIf2(NAME, FUNC(x));
 export const CssVarList = (NAME, FUNC) => x => toCssVarList(NAME, FUNC(x));
 export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
