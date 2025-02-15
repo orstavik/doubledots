@@ -144,6 +144,10 @@ function safeMerge(ar) {
   return res;
 }
 
+function cssColorTextFunction(name, color = "", a, b, c, d = "") {
+  return `${name}(${color ? `from ${color} `: ""}${a} ${b} ${c}${d ? ` /${d}` : ""})`;
+}
+
 function borderSwitch(obj) {
   return Object.fromEntries(Object.entries(obj).map(([k, v]) => {
     const [wsr, ...dirs] = k.split("-");
@@ -169,9 +173,18 @@ function assignIfNone(Defaults, res) {
   return { ...res2, ...res };
 }
 
+function shadowProps(props, ar) {
+  if (!ar.length || ar.length > props.length)
+    throw new SyntaxError(`Invalid number of arguments: ${ar.length} vs ${props.length}`);
+  let a;
+  return props.reduce((o, k, i) => (o[k] = a = ar[i] ?? a, o), {});
+}
+
 export const P = (NAME, FUNC) => x => ({ [NAME]: spaceJoin(FUNC(x)) });
 export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
-export const CssFunction = (NAME, FUNC) => x => `${NAME}(${FUNC(x).join(",")})`;
+export const ShadowProps = (PROPS, FUNC) => x => shadowProps(PROPS, FUNC(x));
+export const CssFunction = (NAME, SEP, FUNC) => x => `${NAME}(${FUNC(x).join(SEP)})`;
+export const CssColorTextFunction = (NAME, ARGS) => cssColorTextFunction(NAME, ...ARGS);
 export const CssFunctionIf2 = (NAME, FUNC) => x => toCssFunctionIf2(NAME, FUNC(x));
 export const CssVarList = (NAME, FUNC) => x => toCssVarList(NAME, FUNC(x));
 export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
@@ -205,7 +218,7 @@ export const h = Size("block-size");
 
 //todo Dictionary should check that none of the properties coming out are already set.
 //border-colors controlled by $color
-export const border = Assign({"border-style": "solid"}, BorderSwitch(Merge(Dictionary(
+export const border = Assign({ "border-style": "solid" }, BorderSwitch(Merge(Dictionary(
   LogicalFour("style", ListOfSame("style|s|", Word(/solid|dotted|dashed|double/))),
   LogicalFour("width", Either(
     ListOfSame("width|w|", PositiveLengthPercent),
@@ -218,27 +231,69 @@ export const border = Assign({"border-style": "solid"}, BorderSwitch(Merge(Dicti
 const WEB_COLORS = Word(/azure|beige|bisque|black|blanchedalmond|blue|blueviolet|brown|burlywood|cadetblue|chartreuse|chocolate|coral|cornflowerblue|cornsilk|crimson|cyan|darkblue|darkcyan|darkgoldenrod|darkgray|darkgreen|darkgrey|darkkhaki|darkmagenta|darkolivegreen|darkorange|darkorchid|darkred|darksalmon|darkseagreen|darkslateblue|darkslategray|darkslategrey|darkturquoise|darkviolet|deeppink|deepskyblue|dimgray|dimgrey|dodgerblue|firebrick|floralwhite|forestgreen|fuchsia|gainsboro|ghostwhite|gold|goldenrod|gray|green|greenyellow|grey|honeydew|hotpink|indianred|indigo|ivory|khaki|lavender|lavenderblush|lawngreen|lemonchiffon|lightblue|lightcoral|lightcyan|lightgoldenrodyellow|lightgray|lightgreen|lightgrey|lightpink|lightsalmon|lightseagreen|lightskyblue|lightslategray|lightslategrey|lightsteelblue|lightyellow|lime|limegreen|linen|magenta|maroon|mediumaquamarine|mediumblue|mediumorchid|mediumpurple|mediumseagreen|mediumslateblue|mediumspringgreen|mediumturquoise|mediumvioletred|midnightblue|mintcream|mistyrose|moccasin|navajowhite|navy|oldlace|olive|olivedrab|orange|orangered|orchid|palegoldenrod|palegreen|paleturquoise|palevioletred|papayawhip|peachpuff|peru|pink|plum|powderblue|purple|rebeccapurple|red|rosybrown|royalblue|saddlebrown|salmon|sandybrown|seagreen|seashell|sienna|silver|skyblue|slateblue|slategray|slategrey|snow|springgreen|steelblue|tan|teal|thistle|tomato|turquoise|violet|wheat|white|whitesmoke|yellow|yellowgreen/);
 const HEX = Word(/#[0-9a-f]{6}|#[0-9a-f]{3}/);
 
-const Zero360Deg = CheckNum("deg|rad|");
+const Calc = L => Word(new RegExp(`^[${L}0-9.e*/+-]+$`), x => `calc(${x.replaceAll(/[*/+-]/g, " $& ")})`);
+const Degree = CheckNum("deg|rad|");
 const Zero255 = CheckNum("", 0, 255);
 const Percent = CheckNum("%|", 0, 100);
-const RGB = CssFunction("rgb", ListOf("rgb", Zero255, Zero255, Zero255));
-const RGBA = CssFunction("rgba", ListOf("rgba|rgb", Zero255, Zero255, Zero255, Percent));
-const HSL = CssFunction("hsl", ListOf("hsl", Zero360Deg, Percent, Percent));
-const HSLA = CssFunction("hsla", ListOf("hsla|hsl", Zero360Deg, Percent, Percent, Percent));
+const ZeroOne = CheckNum("", 0, 1);
+const RGB = CssFunction("rgb", ",", ListOf("rgb", Zero255, Zero255, Zero255));
+const RGBA = CssFunction("rgba", ",", ListOf("rgba|rgb", Zero255, Zero255, Zero255, Percent));
+const HSL = CssFunction("hsl", ",", ListOf("hsl", Degree, Percent, Percent));
+const HSLA = CssFunction("hsla", ",", ListOf("hsla|hsl", Degree, Percent, Percent, Percent));
+let Color;
+const OKLAB = CssColorTextFunction("oklab", " ", ListOf("oklab", Color, Calc("l"), Calc("a"), Calc("b"), ZeroOne));
+const OKLCH = CssColorTextFunction("oklch", " ", ListOf("oklch", Color, Calc("l"), Calc("c"), Degree, ZeroOne));
+const LAB = CssColorTextFunction("lab", " ", ListOf("lab", Color, Calc("l"), Calc("a"), Calc("b"), ZeroOne));
+const LCH = CssColorTextFunction("lch", " ", ListOf("lch", Color, Calc("l"), Calc("c"), Degree, ZeroOne));
 
-const Color = Either(
+Color = Either(
   HEX,
   WEB_COLORS,
   RGB,
   RGBA,
   HSL,
-  HSLA
+  HSLA,
+  LAB,
+  LCH,
+  OKLAB,
+  OKLCH
 );
 
+/*
+
+ * { 
+  border-top-color: inherit; 
+  border-right-color: inherit;
+  border-bottom-color: inherit;
+  border-left-color: inherit;
+  text-decoration-color: inherit;
+}
+  // --box-shadow-color  
+  // --text-shadow-color
+  // --drop-shadow-color
+  outline-color
+Usage: Colors the outline drawn around an element, often used for focus styles.
+  column-rule-color
+Usage: Sets the color of the rule (divider) between columns in a multi-column layout.
+  text-emphasis-color
+Usage: Colors the emphasis marks used in some typographic styles.
+   caret-color
+Usage: Determines the color of the text insertion cursor (caret) in editable elements.
+  accent-color
+Usage: Applies to form controls (checkboxes, radio buttons, etc.) and other UI components to set their accent color.
+*/
 export const color = Merge(ListOf(null,
   P("color", Color),
   CssVarList("background-color", ShorthandFunction(":", "background-color|bg|", Color)),
   BorderSwitch(LogicalFour("color", ShorthandFunction(":", "border|b", Color))),
+  ShadowProps(["--box-shadow-color", "--text-shadow-color", "--drop-shadow-color"],
+    ListOf("shadow|s", Color)),
+  ListOf("caret|accent|text-emphasis|text-decoration|column-rule|outline", Color),
+  ListOf("caret|accent|text-emphasis|text-decoration|column-rule|outline", Color),
+  ListOf("caret|accent|text-emphasis|text-decoration|column-rule|outline", Color),
+  ListOf("caret|accent|text-emphasis|text-decoration|column-rule|outline", Color),
+  ListOf("caret|accent|text-emphasis|text-decoration|column-rule|outline", Color),
+  ListOf("caret|accent|text-emphasis|text-decoration|column-rule|outline", Color)
 ));
 
 export const cursor = P("cursor", Word(/default|none|context-menu|help|pointer|progress|wait|cell|crosshair|text|vertical-text|alias|copy|move|no-drop|not-allowed|grab|grabbing|col-resize|row-resize|n-resize|s-resize|e-resize|w-resize|ne-resize|nw-resize|se-resize|sw-resize|ew-resize|ns-resize|nesw-resize|nwse-resize|zoom-in|zoom-out/));//auto is excluded
