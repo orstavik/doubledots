@@ -1,5 +1,6 @@
 import { flex, _flex } from "./Xlayout.js";
-import { border, color, w, h } from "./Xfunc.js";
+import { border, w, h } from "./Xfunc.js";
+import {color} from "./Xcolor.js";
 
 export class Expression {
 
