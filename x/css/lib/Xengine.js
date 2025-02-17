@@ -1,6 +1,6 @@
 import { flex, _flex } from "./Xlayout.js";
 import { border, w, h } from "./Xfunc.js";
-import {color} from "./Xcolor.js";
+import { color, bgColor, colorBorder, colorCaret, colorAccent, colorTextEmphasis, colorTextDecoration, colorColumnRule, colorOutline, colorTextShadow, colorDropShadow, colorShadow } from "./Xcolor.js";
 
 export class Expression {
 
@@ -16,7 +16,19 @@ export class Expression {
   }
 }
 
-const shortFuncs = { flex, _flex, border, color, w, h };
+const shortFuncs = {
+  flex, _flex, border,
+  color, bgColor, colorBorder, colorCaret, colorAccent, colorTextEmphasis, colorTextDecoration, colorColumnRule, colorOutline, colorTextShadow, colorDropShadow, colorShadow,
+  w, h,
+};
+for (let [k, v] of Object.entries(shortFuncs)) {
+  const kebab = k.replace(/[A-Z]/g, "-$&").toLowerCase();
+  if (kebab !== k) {
+    shortFuncs[kebab] = v;
+    delete shortFuncs[k];
+  }
+}
+
 
 export const toCss = txt => [...toCssText(txt, interpretClass(txt))].join("\n");
 

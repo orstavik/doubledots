@@ -1,6 +1,9 @@
 <script src="./cssTester.js" type="module"></script>
 
-<div class="$color(black,#123456,b(red))">
+<div class="$color(rgb(,0,12,255))">
+  hello
+</div>
+<div class="$color(black,#123456)$color-border(red)">
   hello
 </div>
 <div class="$color(black,#123456,green)">
@@ -9,14 +12,11 @@
 <div class="$color(black,#123456,green:yellow)">
   hello
 </div>
-<div class="$color(rgb(0,12,255))">
-  hello
-</div>
 
 <style id="expected">
   /*container 0*/
-  /*$color(black,#123456,b(red))*/
-  :where(.\$color\(black\,\#123456\,b\(red\)\)) {
+  /*$color(black,#123456)$color-border(red)*/
+  :where(.\$color\(black\,\#123456\)\$color-border\(red\)) {
     color: black;
     --background-color: #123456;
     border-color: red;
@@ -40,8 +40,8 @@
   }
 
   /*container 0*/
-  /*$color(rgb(0,12,255))*/
-  :where(.\$color\(rgb\(0\,12\,255\)\)) {
+  /*$color(rgb(,0,12,255))*/
+  :where(.\$color\(rgb\(\,0\,12\,255\)\)) {
     color: rgb(0, 12, 255);
   }
 </style>

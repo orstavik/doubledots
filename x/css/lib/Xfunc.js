@@ -13,8 +13,8 @@ export function Word(rx, func) {
 }
 
 export const LENGTHS_PER = /px|em|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|ch|ex|%/.source;
-const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
-const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
+export const N = /-?[0-9]*\.?[0-9]+(?:e[+-]?[0-9]+)?/.source;
+export const NUM = `(${N})(?:\\/(${N}))?`; //num frac allows for -.5e+0/-122.5e-12
 
 const Clamp = (INT, MIN, MAX) => (str, n, frac) => {
   n = Number(n) / (frac ? Number(frac) : 1);
@@ -64,11 +64,6 @@ export const Dictionary = (...FUNCS) =>
 
 function spaceJoin(x) {
   return x instanceof Array ? x.join(" ") : x;
-}
-
-function toCssVarList(NAME, ar) {
-  return !(ar instanceof Array) ? { [`--${NAME}`]: ar } :
-    Object.fromEntries(ar.map((a, i) => [`--${NAME}${i ? "-" + i : ""}`, a]));
 }
 
 function toLogicalFour(NAME, ar) {
@@ -169,19 +164,15 @@ function assignIfNone(Defaults, res) {
   return { ...res2, ...res };
 }
 
-function shadowProps(props, ar) {
-  if (!ar.length || ar.length > props.length)
-    throw new SyntaxError(`Invalid number of arguments: ${ar.length} vs ${props.length}`);
-  let a;
-  return props.reduce((o, k, i) => (o[k] = a = ar[i] ?? a, o), {});
+function pP(NAMES, ar) {
+  return ar.reduce((res, x, i) => ((res[NAMES[i]] = spaceJoin(x)), res), {});
 }
 
 export const P = (NAME, FUNC) => x => ({ [NAME]: spaceJoin(FUNC(x)) });
+export const PP = (NAMES, FUNC) => x => pP(NAMES, FUNC(x));
 export const LogicalFour = (NAME, FUNC) => x => toLogicalFour(NAME, FUNC(x));
-export const ShadowProps = (PROPS, FUNC) => x => shadowProps(PROPS, FUNC(x));
 export const CssFunction = (NAME, SEP, FUNC) => x => `${NAME}(${FUNC(x).join(SEP)})`;
 export const CssFunctionIf2 = (NAME, FUNC) => x => toCssFunctionIf2(NAME, FUNC(x));
-export const CssVarList = (NAME, FUNC) => x => toCssVarList(NAME, FUNC(x));
 export const LogicalEight = (NAME, FUNC) => x => toLogicalEight(NAME, 0, FUNC(x));
 export const ToMinMax = (DIR, FUNC) => x => toMinMax(DIR, FUNC(x));
 export const Merge = FUNC => x => safeMerge(FUNC(x));
