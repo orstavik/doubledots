@@ -1,40 +1,3 @@
-var __defProp = Object.defineProperty;
-var __defNormalProp = (obj, key, value) => key in obj ? __defProp(obj, key, { enumerable: true, configurable: true, writable: true, value }) : obj[key] = value;
-var __publicField = (obj, key, value) => {
-  __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value);
-  return value;
-};
-var __accessCheck = (obj, member, msg) => {
-  if (!member.has(obj))
-    throw TypeError("Cannot " + msg);
-};
-var __privateGet = (obj, member, getter) => {
-  __accessCheck(obj, member, "read from private field");
-  return getter ? getter.call(obj) : member.get(obj);
-};
-var __privateAdd = (obj, member, value) => {
-  if (member.has(obj))
-    throw TypeError("Cannot add the same private member more than once");
-  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
-};
-var __privateSet = (obj, member, value, setter) => {
-  __accessCheck(obj, member, "write to private field");
-  setter ? setter.call(obj, value) : member.set(obj, value);
-  return value;
-};
-var __privateWrapper = (obj, member, setter, getter) => ({
-  set _(value) {
-    __privateSet(obj, member, value, setter);
-  },
-  get _() {
-    return __privateGet(obj, member, getter);
-  }
-});
-var __privateMethod = (obj, member, method) => {
-  __accessCheck(obj, member, "access private method");
-  return method;
-};
-
 // src/dd/1_DoubleDots.js
 var OG = {};
 function monkeyPatch(path, valueOrSet, get) {
@@ -68,35 +31,31 @@ function nextTick(cb) {
   ael.call(a, "ratechange", cb);
   a.playbackRate = 2;
 }
-var _bigSet, _key;
-var _AttrWeakSet = class extends Set {
+var AttrWeakSet = class _AttrWeakSet extends Set {
+  static #bigSet = /* @__PURE__ */ new Set();
+  //wr => AttrWeakSet
+  static #key;
+  static GC = 1e4;
   static gc() {
     let active, l;
-    for (let wr of __privateGet(_AttrWeakSet, _bigSet)) {
+    for (let wr of _AttrWeakSet.#bigSet) {
       if (l = wr.deref())
         for (let a of l)
           a.isConnected ? active = true : (l.delete(a), a.remove());
       else
-        __privateGet(_AttrWeakSet, _bigSet).delete(wr);
+        _AttrWeakSet.#bigSet.delete(wr);
     }
-    !active && __privateSet(_AttrWeakSet, _key, clearInterval(__privateGet(_AttrWeakSet, _key)));
+    !active && (_AttrWeakSet.#key = clearInterval(_AttrWeakSet.#key));
   }
   constructor(...args) {
     super(...args);
-    __privateGet(_AttrWeakSet, _bigSet).add(new WeakRef(this));
+    _AttrWeakSet.#bigSet.add(new WeakRef(this));
   }
   add(at) {
-    __privateGet(_AttrWeakSet, _key) ?? __privateSet(_AttrWeakSet, _key, si(_AttrWeakSet.gc, _AttrWeakSet.GC));
+    _AttrWeakSet.#key ??= si(_AttrWeakSet.gc, _AttrWeakSet.GC);
     super.add(at);
   }
 };
-var AttrWeakSet = _AttrWeakSet;
-_bigSet = new WeakMap();
-_key = new WeakMap();
-__privateAdd(AttrWeakSet, _bigSet, /* @__PURE__ */ new Set());
-//wr => AttrWeakSet
-__privateAdd(AttrWeakSet, _key, void 0);
-__publicField(AttrWeakSet, "GC", 1e4);
 var nativeEvents = function() {
   function extractHandlers(obj) {
     return Object.keys(obj).filter((k) => k.startsWith("on")).map((k) => k.substring(2).toLowerCase());
@@ -172,7 +131,7 @@ var DoubleDotsError = class extends Error {
     super(msg);
   }
 };
-var ThisArrowFunctionError = class extends DoubleDotsError {
+var ThisArrowFunctionError = class _ThisArrowFunctionError extends DoubleDotsError {
   constructor(Func) {
     super("arrow function with `this`.");
   }
@@ -184,7 +143,7 @@ var ThisArrowFunctionError = class extends DoubleDotsError {
     txt = txt.replace(/(["'])(?:(?=(\\?))\2.)*?\1/g, "");
     txt = txt.replace(/(`)(?:(?=(\\?))\2.)*?\1/g, "");
     if (/\bthis\b/.test(txt))
-      throw new ThisArrowFunctionError(Definition);
+      throw new _ThisArrowFunctionError(Definition);
   }
 };
 window.DoubleDots = {
@@ -220,19 +179,28 @@ window.DoubleDots = {
 };
 
 // src/dd/2_AttrCustom.js
-var _makeRT, makeRT_fn, _ids;
-var _AttrCustom = class extends Attr {
+var AttrCustom2 = class _AttrCustom extends Attr {
+  // Interface
+  // set value(newValue) { const oldValue = super.value; super.value = newValue; ... }
+  // upgrade(){ super.upgrade(); ... }
+  // remove(){ ...; super.remove() }
+  static #makeRT(at) {
+    let [trigger, ...reactions] = at.name.split(":");
+    reactions.length === 1 && !reactions[0] && reactions.pop();
+    Object.defineProperties(at, {
+      "trigger": { value: trigger, enumerable: true },
+      "reactions": { value: Object.freeze(reactions), enumerable: true }
+    });
+  }
   toJSON() {
     const { id, trigger, reactions, value, initDocument } = this;
     return { id, trigger, reactions, value, initDocument };
   }
   get trigger() {
-    var _a;
-    return __privateMethod(_a = _AttrCustom, _makeRT, makeRT_fn).call(_a, this), this.trigger;
+    return _AttrCustom.#makeRT(this), this.trigger;
   }
   get reactions() {
-    var _a;
-    return __privateMethod(_a = _AttrCustom, _makeRT, makeRT_fn).call(_a, this), this.reactions;
+    return _AttrCustom.#makeRT(this), this.reactions;
   }
   isConnected() {
     return this.ownerElement.isConnected();
@@ -264,6 +232,8 @@ var _AttrCustom = class extends Attr {
     for (let c of el.children)
       this.upgradeElementRoot(c);
   }
+  static #ids = 0;
+  static errorMap = /* @__PURE__ */ new Map();
   static upgrade(at, Def) {
     try {
       Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
@@ -277,7 +247,7 @@ var _AttrCustom = class extends Attr {
       }
       Object.setPrototypeOf(at, Def.prototype);
       Object.defineProperties(at, {
-        "id": { value: __privateWrapper(this, _ids)._++, enumerable: true },
+        "id": { value: this.#ids++, enumerable: true },
         "initDocument": { value: at.getRootNode(), enumerable: true }
       });
       DoubleDots.cube?.("attr", at);
@@ -289,24 +259,6 @@ var _AttrCustom = class extends Attr {
     }
   }
 };
-var AttrCustom2 = _AttrCustom;
-_makeRT = new WeakSet();
-makeRT_fn = function(at) {
-  let [trigger, ...reactions] = at.name.split(":");
-  reactions.length === 1 && !reactions[0] && reactions.pop();
-  Object.defineProperties(at, {
-    "trigger": { value: trigger, enumerable: true },
-    "reactions": { value: Object.freeze(reactions), enumerable: true }
-  });
-};
-_ids = new WeakMap();
-// Interface
-// set value(newValue) { const oldValue = super.value; super.value = newValue; ... }
-// upgrade(){ super.upgrade(); ... }
-// remove(){ ...; super.remove() }
-__privateAdd(AttrCustom2, _makeRT);
-__privateAdd(AttrCustom2, _ids, 0);
-__publicField(AttrCustom2, "errorMap", /* @__PURE__ */ new Map());
 var AttrImmutable = class extends AttrCustom2 {
   remove() {
   }
@@ -464,23 +416,23 @@ var DefinitionError = class extends DoubleDots.DoubleDotsError {
     this.RuleFun = RuleFun;
   }
 };
-var TriggerNameError = class extends DefinitionError {
+var TriggerNameError = class _TriggerNameError extends DefinitionError {
   constructor(fullname2) {
     super(`Trigger name/prefix must begin with english letter or '_'.
 ${fullname2} begins with '${fullname2[0]}'.`);
   }
   static check(name) {
     if (!name.match(/[a-z_].*/))
-      throw new TriggerNameError(name);
+      throw new _TriggerNameError(name);
   }
 };
-var DefinitionNameError = class extends DefinitionError {
+var DefinitionNameError = class _DefinitionNameError extends DefinitionError {
   constructor(name) {
     super(`DoubleDots definition names and rule prefixes can only contain /^[a-z0-9_.-]*$/: ${name}`);
   }
   static check(name) {
     if (!name.match(/^[a-z0-9_\.-]*$/))
-      throw new DefinitionNameError(name);
+      throw new _DefinitionNameError(name);
   }
 };
 var AsyncDefinitionError = class extends DefinitionError {
@@ -561,10 +513,10 @@ var DefinitionsMap = class {
     return this.#definitions[fullname2] || this.#checkViaRule(fullname2);
   }
 };
-var UnknownDefinition = class extends Promise {
+var UnknownDefinition = class _UnknownDefinition extends Promise {
   static make(attr) {
     let resolve, reject;
-    const promise = new UnknownDefinition((a, b) => {
+    const promise = new _UnknownDefinition((a, b) => {
       resolve = a;
       reject = b;
     });
@@ -875,6 +827,12 @@ var __EventLoop = class {
 };
 globalThis.__eventLoop = new __EventLoop();
 var EventLoop = class {
+  static Break = {};
+  static SpreadReaction = function(fun) {
+    return function SpreadReaction(oi) {
+      return oi instanceof Iterable ? fun.call(this, ...oi) : fun.call(this, oi);
+    };
+  };
   //todo freeze the SpreadReaction, Break.
   get event() {
     return __eventLoop.task?.event;
@@ -896,12 +854,6 @@ var EventLoop = class {
     __eventLoop.batch(event, iterable);
   }
 };
-__publicField(EventLoop, "Break", {});
-__publicField(EventLoop, "SpreadReaction", function(fun) {
-  return function SpreadReaction(oi) {
-    return oi instanceof Iterable ? fun.call(this, ...oi) : fun.call(this, oi);
-  };
-});
 Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
 DoubleDots.EventLoopError = EventLoopError;
 window.EventLoop = EventLoop;
@@ -1026,8 +978,7 @@ async function loadDef(url, lookup) {
   if (!module || typeof module !== "object" && !(module instanceof Object))
     throw new TypeError(`URL is not an es6 module: ${this.url}`);
   const def = module[lookup];
-  if (def)
-    return def;
+  if (def) return def;
   for (let [k, v] of Object.entries(module))
     if (k.startsWith("dynamic")) {
       if (v[lookup])

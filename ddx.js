@@ -138,29 +138,28 @@ function nav(e) {
 }
 
 // x/embrace/LoopCube.js
-var LoopCube = class {
+var LoopCube = class _LoopCube {
   static compareSmall(compare, old, now) {
     const exact = new Array(now.length);
     const unused = [];
     if (!old?.length)
       return { exact, unused };
-    main:
-      for (let o = 0; o < old.length; o++) {
-        for (let n = 0; n < now.length; n++) {
-          if (!exact[n] && compare(old[o], now[n])) {
-            exact[n] = o;
-            continue main;
-          }
+    main: for (let o = 0; o < old.length; o++) {
+      for (let n = 0; n < now.length; n++) {
+        if (!exact[n] && compare(old[o], now[n])) {
+          exact[n] = o;
+          continue main;
         }
-        unused.push(o);
       }
+      unused.push(o);
+    }
     return { exact, unused };
   }
   constructor(embrace2, compare = (a, b) => a === b) {
     this.embrace = embrace2;
     this.now = [];
     this.nowEmbraces = [];
-    this.comparator = LoopCube.compareSmall.bind(null, compare);
+    this.comparator = _LoopCube.compareSmall.bind(null, compare);
   }
   step(now = []) {
     const old = this.now;
@@ -247,7 +246,7 @@ function dotScope(data, superior, cache = {}) {
   };
   return me;
 }
-var EmbraceRoot = class {
+var EmbraceRoot = class _EmbraceRoot {
   constructor(name, docFrag, nodes, expressions) {
     this.name = name;
     this.template = docFrag;
@@ -262,7 +261,7 @@ var EmbraceRoot = class {
   clone() {
     const docFrag = this.template.cloneNode(true);
     const nodes = [...flatDomNodesAll(docFrag)];
-    return new EmbraceRoot(this.name, docFrag, nodes, this.expressions);
+    return new _EmbraceRoot(this.name, docFrag, nodes, this.expressions);
   }
   run(scope, _, ancestor) {
     for (let { exp, node } of this.todos)
@@ -345,8 +344,7 @@ function* flatDomNodesAll(docFrag) {
   const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
   for (let n = it.nextNode(); n = it.nextNode(); ) {
     yield n;
-    if (n instanceof Element)
-      yield* n.attributes;
+    if (n instanceof Element) yield* n.attributes;
   }
 }
 function parseTemplate(template, name = "embrace") {
@@ -496,7 +494,7 @@ var ER = class {
     return res;
   }
 };
-var ErAnalysis = class extends ER {
+var ErAnalysis = class _ErAnalysis extends ER {
   //step 1
   static entitiesToTypeValue(posts) {
     const res = {};
@@ -513,7 +511,7 @@ var ErAnalysis = class extends ER {
   }
   //step 2
   static extractTypeList(list) {
-    const types = [...new Set(list.map(ErAnalysis.extractType))].sort();
+    const types = [...new Set(list.map(_ErAnalysis.extractType))].sort();
     if (types.includes("text") && types.includes("textmd"))
       types.splice(types.indexOf("text"), 1);
     if (types.includes("int") && types.includes("float"))
@@ -556,15 +554,14 @@ var ErAnalysis = class extends ER {
     if (Array.isArray(value))
       return "list: " + [...new Set(value.map((str) => str.split("/")[0]))].join(",");
     try {
-      if (decodeURI(new URL(value).href) === decodeURI(value))
-        return "url";
+      if (decodeURI(new URL(value).href) === decodeURI(value)) return "url";
     } catch (_) {
     }
     if (/^#([0-9A-F]{3}){1,2}$/i.test(value))
       return "color";
     if (Number(value) + "" === value)
       return "number";
-    return ErAnalysis.isMarkDown(value) ?? "text";
+    return _ErAnalysis.isMarkDown(value) ?? "text";
   }
   static valuesToTypes(typeValueSchema) {
     const res = {};
@@ -572,7 +569,7 @@ var ErAnalysis = class extends ER {
       const entityType = res[type] = {};
       const propValues = typeValueSchema[type];
       for (let prop in propValues)
-        entityType[prop] = ErAnalysis.extractTypeList(propValues[prop]);
+        entityType[prop] = _ErAnalysis.extractTypeList(propValues[prop]);
     }
     return res;
   }
@@ -608,10 +605,10 @@ var ErAnalysis = class extends ER {
     return res;
   }
   static analyze(posts) {
-    const schemaTypeValues = ErAnalysis.entitiesToTypeValue(posts);
-    const schemaTypedUnsorted = ErAnalysis.valuesToTypes(schemaTypeValues);
-    const relationsUp = ErAnalysis.bottomUpRelations(schemaTypedUnsorted);
-    const entitySequence = ErAnalysis.topologicalSort(schemaTypedUnsorted, relationsUp);
+    const schemaTypeValues = _ErAnalysis.entitiesToTypeValue(posts);
+    const schemaTypedUnsorted = _ErAnalysis.valuesToTypes(schemaTypeValues);
+    const relationsUp = _ErAnalysis.bottomUpRelations(schemaTypedUnsorted);
+    const entitySequence = _ErAnalysis.topologicalSort(schemaTypedUnsorted, relationsUp);
     return entitySequence.map((type) => [type, schemaTypedUnsorted[type]]);
   }
   #schema;
@@ -620,7 +617,7 @@ var ErAnalysis = class extends ER {
     return this.#schema ??= Object.fromEntries(this.schemaSorted);
   }
   get schemaSorted() {
-    return this.#schemaSorted ??= ErAnalysis.analyze(this.posts);
+    return this.#schemaSorted ??= _ErAnalysis.analyze(this.posts);
   }
 };
 
