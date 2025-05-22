@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fetch v2 Test</title>
+  <script src="/dd.js"></script>
+  <script type="module" src="/ddx.js"></script>
+  <script type="module" src="v2.js?basicFetch&fetchDotRule&fetch_Rule" _:define></script>
+  <script>
+    // Mock fetch for testing
+    const originalFetch = window.fetch;
+    const mockResponses = {
+      '/api/data.json': { hello: 'world' },
+      '/api/text': 'Hello world text',
+      '/api/binary': new Blob(['binary data']),
+      '/api/test': 'Test data'
+    };
+
+    window.fetch = async function (url, options = {}) {
+      console.log(`Fetch called with URL: ${url}, method: ${options.method || 'GET'}`);
+      if (options.headers) {
+        console.log(`Headers:`, options.headers);
+      }
+
+      // Create a mock response based on the URL
+      const responseData = mockResponses[url] || 'Default response';
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => typeof responseData === 'object' ? responseData : { data: responseData },
+        text: async () => typeof responseData === 'string' ? responseData : JSON.stringify(responseData),
+        blob: async () => responseData instanceof Blob ? responseData : new Blob([typeof responseData === 'string' ? responseData : JSON.stringify(responseData)]),
+        formData: async () => {
+          const formData = new FormData();
+          if (typeof responseData === 'object') {
+            for (const key in responseData) {
+              formData.append(key, responseData[key]);
+            }
+          } else {
+            formData.append('data', responseData);
+          }
+          return formData;
+        },
+        arrayBuffer: async () => new TextEncoder().encode(typeof responseData === 'string' ? responseData : JSON.stringify(responseData)).buffer
+      };
+    };
+
+    // Helper function to display results
+    function displayResult(id, data) {
+      const elem = document.getElementById(id);
+      if (typeof data === 'object') {
+        elem.textContent = JSON.stringify(data, null, 2);
+      } else {
+        elem.textContent = data;
+      }
+    }
+
+    // Restore original fetch after tests
+    window.addEventListener('unload', () => {
+      window.fetch = originalFetch;
+    });
+  </script>
+  <style>
+    .test-case {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .result {
+      background-color: #f5f5f5;
+      padding: 10px;
+      border-radius: 5px;
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
+
+    button {
+      padding: 8px 12px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Fetch v2 Tests</h1>
+  <p>This page tests the functionality in the fetch/v2.js file.</p>
+
+  <div class="test-case">
+    <h2>Basic Fetch (GET text)</h2>
+    <button _:basicFetch="/api/text" _:click="displayResult('basic-result', event.detail)">Run Basic Fetch</button>
+    <div id="basic-result" class="result"></div>
+  </div>
+
+  <div class="test-case">
+    <h2>fetchDotRule: Fetch.get.json</h2>
+    <button _:fetchDotRule.get.json="/api/data.json" _:click="displayResult('get-json-result', event.detail)">Get
+      JSON</button>
+    <div id="get-json-result" class="result"></div>
+  </div>
+
+  <div class="test-case">
+    <h2>fetchDotRule: Fetch.get.text</h2>
+    <button _:fetchDotRule.get.text="/api/text" _:click="displayResult('get-text-result', event.detail)">Get
+      Text</button>
+    <div id="get-text-result" class="result"></div>
+  </div>
+
+  <div class="test-case">
+    <h2>fetchDotRule: Fetch.get.blob</h2>
+    <button _:fetchDotRule.get.blob="/api/binary"
+      _:click="displayResult('get-blob-result', 'Blob received with size: ' + event.detail.size + ' bytes')">Get
+      Blob</button>
+    <div id="get-blob-result" class="result"></div>
+  </div>
+
+  <div class="test-case">
+    <h2>fetchDotRule: Fetch.head.json.auth (with credentials)</h2>
+    <button _:fetchDotRule.head.json.auth="/api/data.json"
+      _:click="displayResult('head-json-auth-result', 'HEAD request executed with auth header')">HEAD with Auth</button>
+    <div id="head-json-auth-result" class="result"></div>
+  </div>
+
+  <div class="test-case">
+    <h2>fetch_Rule: Fetch_post.json</h2>
+    <button _:fetch_Rule.post.json="/api/data.json" _:click="displayResult('post-json-result', event.detail)">POST
+      JSON</button>
+    <div id="post-json-result" class="result"></div>
+  </div>
+
+  <div class="test-case">
+    <h2>fetch_Rule: Fetch_put.text.nocache</h2>
+    <button _:fetch_Rule.put.text.nocache="/api/text" _:click="displayResult('put-text-result', event.detail)">PUT
+      Text</button>
+    <div id="put-text-result" class="result"></div>
+  </div>
+
+  <div class="test-case">
+    <h2>Error Test - Invalid Segment</h2>
+    <p>This would throw an error because 'invalid' is not a valid segment:</p>
+    <pre>fetchDotRule.get.invalid</pre>
+  </div>
+
+  <div class="test-case">
+    <h2>Error Test - Multiple Methods</h2>
+    <p>This would throw an error because multiple methods are specified:</p>
+    <pre>fetchDotRule.get.head</pre>
+  </div>
+
+  <div class="test-case">
+    <h2>Error Test - Multiple Response Types</h2>
+    <p>This would throw an error because multiple response types are specified:</p>
+    <pre>fetchDotRule.get.json.text</pre>
+  </div>
+
+  <script>
+    // Initialize test results with descriptions
+    document.querySelectorAll('.result').forEach(elem => {
+      elem.textContent = 'Click the button to run the test...';
+    });
+  </script>
+</body>
+
+</html>
