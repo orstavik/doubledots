@@ -751,6 +751,51 @@ function fetch_Rule(name) {
   };
 }
 
+// x/class/v1.js
+function classList() {
+  return this.ownerElement.classList;
+}
+function clazz() {
+  return this.ownerElement.getAttribute("class");
+}
+function classDot(name) {
+  name = name.split(".")[1];
+  if (!name) throw new SyntaxError("'class.' needs a name such as 'class.cssClassName'.");
+  return function classDot2() {
+    return this.ownerElement.classList.contains(name) ? name : void 0;
+  };
+}
+function class_(name) {
+  name = name.split("_")[1];
+  if (!name)
+    return function class_2(input) {
+      return this.ownerElement.classList.add(input), input;
+    };
+  return function class_name() {
+    return this.ownerElement.classList.add(name), name;
+  };
+}
+function toggleClass_(name) {
+  const segs = name.split("_")[1];
+  const name2 = segs[1];
+  let previous;
+  if (!name2) {
+    return function toggleClass_input(input) {
+      if (previous)
+        this.ownerElement.classList.remove(previous);
+      previous = input;
+      return this.ownerElement.classList.toggle(input), input;
+    };
+  }
+  if (segs.length === 3)
+    return function toggleClass_onOff(input) {
+      return this.ownerElement.classList.toggle(name2, !!input), !!input ? name2 : void 0;
+    };
+  return function toggleClass_name() {
+    return this.ownerElement.classList.toggle(name2), name2;
+  };
+}
+
 // x/PropagationSimple/prop.js
 var WindowTrigger = class extends AttrListener {
   get target() {
@@ -886,6 +931,10 @@ export {
   State_,
   WindowTrigger,
   basicFetch,
+  classDot,
+  classList,
+  class_,
+  clazz,
   dynamicSimpleProp,
   dynamicDots as dynamicsDots,
   embrace,
@@ -899,6 +948,7 @@ export {
   sat_Rule,
   state,
   state_,
-  tat_Rule
+  tat_Rule,
+  toggleClass_
 };
 //# sourceMappingURL=ddx.js.map

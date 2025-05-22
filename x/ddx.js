@@ -5,6 +5,7 @@ export * from "./dotRule/dot.js";
 export * from "./er/ErAnalysis.js";
 export * from "./at/v1.js";
 export * from "./fetch/v2.js";
+export * from "./class/v1.js";
 export * from "./PropagationSimple/prop.js";
 export * from "./formdata/v1.js";
 export * from "./css/v1.js";
