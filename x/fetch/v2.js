@@ -1,13 +1,3 @@
-const METHOD = {
-  post: 'POST',
-  put: 'PUT',
-  delete: 'DELETE',
-  patch: 'PATCH',
-};
-const dotMETHOD = {
-  get: 'GET',
-  head: 'HEAD',
-};
 const RESPONSE_TYPES = {
   json: "json",
   text: "text",
@@ -21,7 +11,22 @@ const RESPONSE_TYPES = {
   arraybuffer: "arrayBuffer",
   buffer: "arrayBuffer",
 };
+function parseResponseType(tail) {
+  if (!tail) return "json";
+  if (RESPONSE_TYPES[tail]) return RESPONSE_TYPES[tail];
+  throw new SyntaxError("Unknown fetch- response type: " + tail);
+}
 
+const METHOD = {
+  post: 'POST',
+  put: 'PUT',
+  delete: 'DELETE',
+  patch: 'PATCH',
+};
+const dotMETHOD = {
+  get: 'GET',
+  head: 'HEAD',
+};
 const HEADERS = {
   auth: ["credentials", 'include'],
   omit: ["credentials", 'omit'],
@@ -44,7 +49,6 @@ const HEADERS = {
   unsafe: ["referrerPolicy", 'unsafe-url'],
   refsameorigin: ["referrerPolicy", 'same-origin'],
 };
-
 function parseSegments(name, splitter, methodMap) {
   const [, ...segments] = name.toLowerCase().split(splitter);
   let method;
@@ -55,10 +59,6 @@ function parseSegments(name, splitter, methodMap) {
       if (method)
         throw new SyntaxError("multiple fetch methods: " + methodMap[seg] + ", " + seg);
       method = methodMap[seg];
-    } else if (RESPONSE_TYPES[seg]) {
-      if (responseType)
-        throw new SyntaxError("multiple fetch response types: " + RESPONSE_TYPES[seg] + ", " + seg);
-      responseType = RESPONSE_TYPES[seg];
     } else if (HEADERS[seg]) {
       const [type, value] = HEADERS[seg];
       if (type in headers)
@@ -71,24 +71,39 @@ function parseSegments(name, splitter, methodMap) {
   return { method, responseType, headers };
 }
 
-//basic get fetch, returning text()
-export async function basicFetch() {
-  return (await fetch(this.value)).text();
+//Att! fetch defaults to .json(), not .text()!
+export async function basicFetch() { return (await fetch(this.value)).json(); }
+
+export function fetchDashRule(name) {
+  const [head, type, tail] = name.split(/([._])/);
+  const responseType = parseResponseType(tail);
+  const m = type === "." ? "GET" : "POST";
+  const { headers, method = m } = parseSegments(head, "-", type === "." ? dotMETHOD : METHOD);
+  return type === "." ?
+    async function fetchDash() {
+      return (await fetch(this.value, { method, headers }))[responseType]();
+    } :
+    async function fetchDash_(body) {
+      //todo should we check the body?? nah, dont think so..
+      return (await fetch(this.value, { method, headers, body }))[responseType]();
+    };
 }
 
 //fetch.
 export function fetchDotRule(name) {
-  const { method = "get", responseType = "text", headers } = parseSegments(name, ".", dotMETHOD);
-  return async function fetchDot() {
-    return (await fetch(this.value, { method, headers }))[responseType]();
-  };
+  const [, tail] = name.split(".");
+  const responseType = parseResponseType(tail);
+  return async function fetchDash() {
+    return (await fetch(this.value, { method: "GET" }))[responseType]();
+  }
 }
 
 //fetch_
 export function fetch_Rule(name) {
-  const { method = "post", responseType = "text", headers } = parseSegments(name, "_", METHOD);
+  const [, tail] = name.split("_");
+  const responseType = parseResponseType(tail);
   return async function fetch_(body) {
     //todo should we check the body?? nah, dont think so..
-    return (await fetch(this.value, { method, headers, body }))[responseType]();
+    return (await fetch(this.value, { method: "POST", body }))[responseType]();
   };
 }
