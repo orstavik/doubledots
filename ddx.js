@@ -621,12 +621,134 @@ var ErAnalysis = class _ErAnalysis extends ER {
   }
 };
 
-// x/fetch/v1.js
-async function fetch_json() {
+// x/at/v1.js
+function gatRule(name) {
+  name = name.split(".")[1];
+  return function gat() {
+    return this.ownerElement.getAttribute(name);
+  };
+}
+function sat_Rule(name) {
+  name = name.split(".")[1];
+  if (!name)
+    return function sat_(input) {
+      return this.value = parseStringValue(input);
+    };
+  return function sat_(input) {
+    return this.ownerElement.setAttribute(name, parseStringValue(input));
+  };
+}
+function tat_Rule(name) {
+  name = name.split(".")[1];
+  if (!name)
+    throw new SyntaxError("In :DD you can't do tat_ on the current attribute.");
+  return function tat_(input) {
+    return this.ownerElement.toggleAttribute(name);
+  };
+}
+function rat_Rule(name) {
+  name = name.split(".")[1];
+  return function rat_(input) {
+    return this.ownerElement.removeAttribute(name);
+  };
+}
+
+// x/fetch/v2.js
+var RESPONSE_TYPES = {
+  json: "json",
+  text: "text",
+  blob: "blob",
+  form: "formData",
+  formdata: "formData",
+  bytes: "bytes",
+  uint8array: "bytes",
+  uint8: "bytes",
+  clone: "clone",
+  arraybuffer: "arrayBuffer",
+  buffer: "arrayBuffer"
+};
+function parseResponseType(tail) {
+  if (!tail) return "json";
+  if (RESPONSE_TYPES[tail]) return RESPONSE_TYPES[tail];
+  throw new SyntaxError("Unknown fetch- response type: " + tail);
+}
+var METHOD = {
+  post: "POST",
+  put: "PUT",
+  delete: "DELETE",
+  patch: "PATCH"
+};
+var dotMETHOD = {
+  get: "GET",
+  head: "HEAD"
+};
+var HEADERS = {
+  auth: ["credentials", "include"],
+  omit: ["credentials", "omit"],
+  nocache: ["cache", "no-cache"],
+  nostore: ["cache", "no-store"],
+  reload: ["cache", "reload"],
+  forcecache: ["cache", "force-cache"],
+  onlyifcached: ["cache", "only-if-cached"],
+  cors: ["mode", "cors"],
+  nocors: ["mode", "no-cors"],
+  sameorigin: ["mode", "same-origin"],
+  noreferrer: ["referrerPolicy", "no-referrer"],
+  origin: ["referrerPolicy", "origin"],
+  originwhencross: ["referrerPolicy", "origin-when-cross-origin"],
+  strictorigin: ["referrerPolicy", "strict-origin"],
+  strictorigincross: ["referrerPolicy", "strict-origin-when-cross-origin"],
+  unsafe: ["referrerPolicy", "unsafe-url"],
+  refsameorigin: ["referrerPolicy", "same-origin"]
+};
+function parseSegments(name, splitter, methodMap) {
+  const [, ...segments] = name.toLowerCase().split(splitter);
+  let method;
+  let responseType;
+  const headers = {};
+  for (let seg of segments) {
+    if (methodMap[seg]) {
+      if (method)
+        throw new SyntaxError("multiple fetch methods: " + methodMap[seg] + ", " + seg);
+      method = methodMap[seg];
+    } else if (HEADERS[seg]) {
+      const [type, value] = HEADERS[seg];
+      if (type in headers)
+        throw new SyntaxError("multiple fetch headers of same type: " + type + ", " + seg);
+      headers[type] = value;
+    } else {
+      throw new SyntaxError("unknown fetch segment: " + seg);
+    }
+  }
+  return { method, responseType, headers };
+}
+async function basicFetch() {
   return (await fetch(this.value)).json();
 }
-async function fetch_text() {
-  return (await fetch(this.value)).text();
+function fetchDashRule(name) {
+  const [head, type, tail] = name.split(/([._])/);
+  const responseType = parseResponseType(tail);
+  const m = type === "." ? "GET" : "POST";
+  const { headers, method = m } = parseSegments(head, "-", type === "." ? dotMETHOD : METHOD);
+  return type === "." ? async function fetchDash() {
+    return (await fetch(this.value, { method, headers }))[responseType]();
+  } : async function fetchDash_(body) {
+    return (await fetch(this.value, { method, headers, body }))[responseType]();
+  };
+}
+function fetchDotRule(name) {
+  const [, tail] = name.split(".");
+  const responseType = parseResponseType(tail);
+  return async function fetchDash() {
+    return (await fetch(this.value, { method: "GET" }))[responseType]();
+  };
+}
+function fetch_Rule(name) {
+  const [, tail] = name.split("_");
+  const responseType = parseResponseType(tail);
+  return async function fetch_(body) {
+    return (await fetch(this.value, { method: "POST", body }))[responseType]();
+  };
 }
 
 // x/PropagationSimple/prop.js
@@ -763,14 +885,20 @@ export {
   State,
   State_,
   WindowTrigger,
+  basicFetch,
   dynamicSimpleProp,
   dynamicDots as dynamicsDots,
   embrace,
-  fetch_json,
-  fetch_text,
+  fetchDashRule,
+  fetchDotRule,
+  fetch_Rule,
   formdata_,
+  gatRule,
   nav,
+  rat_Rule,
+  sat_Rule,
   state,
-  state_
+  state_,
+  tat_Rule
 };
 //# sourceMappingURL=ddx.js.map
