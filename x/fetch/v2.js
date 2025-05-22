@@ -8,12 +8,18 @@ const dotMETHOD = {
   get: 'GET',
   head: 'HEAD',
 };
-const RESPONSE = {
-  json: res => res.json(),
-  text: res => res.text(),
-  blob: res => res.blob(),
-  form: res => res.formData(),
-  arraybuffer: res => res.arrayBuffer()
+const RESPONSE_TYPES = {
+  json: "json",
+  text: "text",
+  blob: "blob",
+  form: "formData",
+  formdata: "formData",
+  bytes: "bytes",
+  uint8array: "bytes",
+  uint8: "bytes",
+  clone: "clone",
+  arraybuffer: "arrayBuffer",
+  buffer: "arrayBuffer",
 };
 
 const HEADERS = {
@@ -49,10 +55,10 @@ function parseSegments(name, splitter, methodMap) {
       if (method)
         throw new SyntaxError("multiple fetch methods: " + methodMap[seg] + ", " + seg);
       method = methodMap[seg];
-    } else if (RESPONSE[seg]) {
+    } else if (RESPONSE_TYPES[seg]) {
       if (responseType)
-        throw new SyntaxError("multiple fetch response types: " + RESPONSE[seg] + ", " + seg);
-      responseType = RESPONSE[seg];
+        throw new SyntaxError("multiple fetch response types: " + RESPONSE_TYPES[seg] + ", " + seg);
+      responseType = RESPONSE_TYPES[seg];
     } else if (HEADERS[seg]) {
       const [type, value] = HEADERS[seg];
       if (type in headers)
@@ -80,8 +86,9 @@ export function fetchDotRule(name) {
 
 //fetch_
 export function fetch_Rule(name) {
-  const { method = post, responseType = "text", headers } = parseSegments(name, "_", METHOD);
-  return async function fetch_() {
-    return (await fetch(this.value, { method, headers }))[responseType]();
+  const { method = "post", responseType = "text", headers } = parseSegments(name, "_", METHOD);
+  return async function fetch_(body) {
+    //todo should we check the body?? nah, dont think so..
+    return (await fetch(this.value, { method, headers, body }))[responseType]();
   };
 }
