@@ -1,3 +1,92 @@
+// x/e/v1.js
+function e_() {
+  const e = window.eventLoop.event;
+  return e.preventDefault(), e;
+}
+function eDot(name) {
+  const [, ...props] = name.split(".");
+  return function eDot2() {
+    return props.reduce((acc, prop) => acc[prop], window.eventLoop.event);
+  };
+}
+
+// x/at/v1.js
+function gatRule(name) {
+  name = name.split(".")[1];
+  return function gat() {
+    return this.ownerElement.getAttribute(name);
+  };
+}
+function sat_Rule(name) {
+  name = name.split(".")[1];
+  if (!name)
+    return function sat_(input) {
+      return this.value = parseStringValue(input);
+    };
+  return function sat_(input) {
+    return this.ownerElement.setAttribute(name, parseStringValue(input));
+  };
+}
+function tat_Rule(name) {
+  name = name.split(".")[1];
+  if (!name)
+    throw new SyntaxError("In :DD you can't do tat_ on the current attribute.");
+  return function tat_(input) {
+    return this.ownerElement.toggleAttribute(name);
+  };
+}
+function rat_Rule(name) {
+  name = name.split(".")[1];
+  return function rat_(input) {
+    return this.ownerElement.removeAttribute(name);
+  };
+}
+
+// x/class/v1.js
+function classList() {
+  return this.ownerElement.classList;
+}
+function clazz() {
+  return this.ownerElement.getAttribute("class");
+}
+function classDot(name) {
+  name = name.split(".")[1];
+  if (!name) throw new SyntaxError("'class.' needs a name such as 'class.cssClassName'.");
+  return function classDot2() {
+    return this.ownerElement.classList.contains(name) ? name : void 0;
+  };
+}
+function class_(name) {
+  name = name.split("_")[1];
+  if (!name)
+    return function class_2(input) {
+      return this.ownerElement.classList.add(input), input;
+    };
+  return function class_name() {
+    return this.ownerElement.classList.add(name), name;
+  };
+}
+function toggleClass_(name) {
+  const segs = name.split("_")[1];
+  const name2 = segs[1];
+  let previous;
+  if (!name2) {
+    return function toggleClass_input(input) {
+      if (previous)
+        this.ownerElement.classList.remove(previous);
+      previous = input;
+      return this.ownerElement.classList.toggle(input), input;
+    };
+  }
+  if (segs.length === 3)
+    return function toggleClass_onOff(input) {
+      return this.ownerElement.classList.toggle(name2, !!input), !!input ? name2 : void 0;
+    };
+  return function toggleClass_name() {
+    return this.ownerElement.classList.toggle(name2), name2;
+  };
+}
+
 // x/state/v1.js
 function matchesPath(observedPaths, path) {
   for (let observedPath of observedPaths)
@@ -621,38 +710,6 @@ var ErAnalysis = class _ErAnalysis extends ER {
   }
 };
 
-// x/at/v1.js
-function gatRule(name) {
-  name = name.split(".")[1];
-  return function gat() {
-    return this.ownerElement.getAttribute(name);
-  };
-}
-function sat_Rule(name) {
-  name = name.split(".")[1];
-  if (!name)
-    return function sat_(input) {
-      return this.value = parseStringValue(input);
-    };
-  return function sat_(input) {
-    return this.ownerElement.setAttribute(name, parseStringValue(input));
-  };
-}
-function tat_Rule(name) {
-  name = name.split(".")[1];
-  if (!name)
-    throw new SyntaxError("In :DD you can't do tat_ on the current attribute.");
-  return function tat_(input) {
-    return this.ownerElement.toggleAttribute(name);
-  };
-}
-function rat_Rule(name) {
-  name = name.split(".")[1];
-  return function rat_(input) {
-    return this.ownerElement.removeAttribute(name);
-  };
-}
-
 // x/fetch/v2.js
 var RESPONSE_TYPES = {
   json: "json",
@@ -748,51 +805,6 @@ function fetch_Rule(name) {
   const responseType = parseResponseType(tail);
   return async function fetch_(body) {
     return (await fetch(this.value, { method: "POST", body }))[responseType]();
-  };
-}
-
-// x/class/v1.js
-function classList() {
-  return this.ownerElement.classList;
-}
-function clazz() {
-  return this.ownerElement.getAttribute("class");
-}
-function classDot(name) {
-  name = name.split(".")[1];
-  if (!name) throw new SyntaxError("'class.' needs a name such as 'class.cssClassName'.");
-  return function classDot2() {
-    return this.ownerElement.classList.contains(name) ? name : void 0;
-  };
-}
-function class_(name) {
-  name = name.split("_")[1];
-  if (!name)
-    return function class_2(input) {
-      return this.ownerElement.classList.add(input), input;
-    };
-  return function class_name() {
-    return this.ownerElement.classList.add(name), name;
-  };
-}
-function toggleClass_(name) {
-  const segs = name.split("_")[1];
-  const name2 = segs[1];
-  let previous;
-  if (!name2) {
-    return function toggleClass_input(input) {
-      if (previous)
-        this.ownerElement.classList.remove(previous);
-      previous = input;
-      return this.ownerElement.classList.toggle(input), input;
-    };
-  }
-  if (segs.length === 3)
-    return function toggleClass_onOff(input) {
-      return this.ownerElement.classList.toggle(name2, !!input), !!input ? name2 : void 0;
-    };
-  return function toggleClass_name() {
-    return this.ownerElement.classList.toggle(name2), name2;
   };
 }
 
@@ -937,6 +949,8 @@ export {
   clazz,
   dynamicSimpleProp,
   dynamicDots as dynamicsDots,
+  eDot,
+  e_,
   embrace,
   fetchDashRule,
   fetchDotRule,
