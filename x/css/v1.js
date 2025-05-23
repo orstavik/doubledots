@@ -1,23 +1,20 @@
 // import { SheetWrapper } from "http://127.0.0.1:3003/src/engine.js";
-import { SheetWrapper } from "https://cdn.jsdelivr.net/gh/orstavik/csss@1.0.5/src/engine.js";
+import { SheetWrapper } from "https://cdn.jsdelivr.net/gh/orstavik/csss@1.0.8/src/engine.js";
 
 let sheetWrapper;
-export class Csss extends AttrCustom {
-
-  upgrade() {
-    if (this.ownerElement.tagName === "STYLE")
-      sheetWrapper = new SheetWrapper(this.ownerElement.sheet);
-    else
-      console.warn("The 'csss' attribute should be used on a <style> element.");
+function makeSheetWrapper() {
+  let style = document.querySelector("style[csss]");
+  if (!style) {
+    style = document.createElement("style");
+    style.setAttribute("csss", "");
+    document.head.appendChild(style);
   }
-  set value(v) { sheetWrapper.readSupers(super.value = v); }
-  get value() { return super.value; }
+  return sheetWrapper = new SheetWrapper(style.sheet);
 }
 
-function overlap({ rule: { shorts: A } }, { rule: { shorts: B } }) {
-  for (const a in A)
-    for (const b in B)
-      if (a === b) return a;
+let active;
+function updateTextContent() {
+  active ||= setTimeout(() => (sheetWrapper.cleanup(), (active = undefined)), 500);
 }
 
 export class Class extends AttrCustom {
@@ -28,6 +25,7 @@ export class Class extends AttrCustom {
 
   set value(v) {
     super.value = v;
+    sheetWrapper ??= makeSheetWrapper();
     let positions = [], last = -1;
     for (let clz of this.ownerElement.classList) {
       if (clz.includes("$")) {
@@ -44,6 +42,7 @@ export class Class extends AttrCustom {
         } else
           last = pos;
       }
+      updateTextContent();
     }
   }
 
