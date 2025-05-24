@@ -880,7 +880,7 @@ function formdata_(rule) {
 }
 
 // x/css/v1.js
-import { SheetWrapper } from "https://cdn.jsdelivr.net/gh/orstavik/csss@1.0.8/src/engine.js";
+import { SheetWrapper } from "https://cdn.jsdelivr.net/gh/orstavik/csss@1.0.9/src/engine.js";
 var sheetWrapper;
 function makeSheetWrapper() {
   let style = document.querySelector("style[csss]");
