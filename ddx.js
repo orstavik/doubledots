@@ -1,4 +1,4 @@
-import { SheetWrapper } from 'https://cdn.jsdelivr.net/gh/orstavik/csss@1.0.9/src/engine.js';
+import { SheetWrapper } from 'https://cdn.jsdelivr.net/gh/orstavik/csss@25.05.27.09/src/engine.js';
 
 function e_() {
   const e = window.eventLoop.event;
