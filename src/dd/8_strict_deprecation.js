@@ -59,7 +59,7 @@ export const DoubleDotDeprecated = {
   "Document.prototype.createAttribute": d,
   "Document.prototype.createComment": d,
   "Document.prototype.createDocumentFragment": d,
-  "Document.prototype.createElement": d,
+  // "Document.prototype.createElement": d, //maybe allow this, now that we can take elements in and out of a document, but not adopt it.
   "Document.prototype.createTextNode": d,
   "Document.prototype.importNode": d,
   "Document.prototype.currentScript": d,

@@ -1,71 +1,57 @@
-// x/e/v1.js
+import { SheetWrapper } from 'https://cdn.jsdelivr.net/gh/orstavik/csss@1.0.9/src/engine.js';
+
 function e_() {
   const e = window.eventLoop.event;
   return e.preventDefault(), e;
 }
+
 function eDot(name) {
   const [, ...props] = name.split(".");
-  return function eDot2() {
+  return function eDot() {
     return props.reduce((acc, prop) => acc[prop], window.eventLoop.event);
-  };
+  }
 }
 
-// x/at/v1.js
 function gatRule(name) {
   name = name.split(".")[1];
-  return function gat() {
-    return this.ownerElement.getAttribute(name);
-  };
+  return function gat() { return this.ownerElement.getAttribute(name); };
 }
 function sat_Rule(name) {
   name = name.split(".")[1];
   if (!name)
-    return function sat_(input) {
-      return this.value = parseStringValue(input);
-    };
-  return function sat_(input) {
-    return this.ownerElement.setAttribute(name, parseStringValue(input));
-  };
+    return function sat_(input) { return this.value = parseStringValue(input); }
+  return function sat_(input) { return this.ownerElement.setAttribute(name, parseStringValue(input)); };
 }
 function tat_Rule(name) {
   name = name.split(".")[1];
   if (!name)
     throw new SyntaxError("In :DD you can't do tat_ on the current attribute.");
-  return function tat_(input) {
-    return this.ownerElement.toggleAttribute(name);
-  };
+  return function tat_(input) { return this.ownerElement.toggleAttribute(name); };
 }
 function rat_Rule(name) {
   name = name.split(".")[1];
-  return function rat_(input) {
-    return this.ownerElement.removeAttribute(name);
-  };
+  return function rat_(input) { return this.ownerElement.removeAttribute(name); };
 }
 
-// x/class/v1.js
-function classList() {
-  return this.ownerElement.classList;
-}
-function clazz() {
-  return this.ownerElement.getAttribute("class");
-}
+function classList() { return this.ownerElement.classList; }
+
+function clazz() { return this.ownerElement.getAttribute("class"); }
+
 function classDot(name) {
   name = name.split(".")[1];
   if (!name) throw new SyntaxError("'class.' needs a name such as 'class.cssClassName'.");
-  return function classDot2() {
-    return this.ownerElement.classList.contains(name) ? name : void 0;
-  };
+  return function classDot() {
+    return this.ownerElement.classList.contains(name) ? name : undefined;
+  }
 }
+
 function class_(name) {
   name = name.split("_")[1];
   if (!name)
-    return function class_2(input) {
-      return this.ownerElement.classList.add(input), input;
-    };
-  return function class_name() {
-    return this.ownerElement.classList.add(name), name;
-  };
+    return function class_(input) { return this.ownerElement.classList.add(input), input; }
+  return function class_name() { return this.ownerElement.classList.add(name), name; }
 }
+
 function toggleClass_(name) {
   const segs = name.split("_")[1];
   const name2 = segs[1];
@@ -76,26 +62,26 @@ function toggleClass_(name) {
         this.ownerElement.classList.remove(previous);
       previous = input;
       return this.ownerElement.classList.toggle(input), input;
-    };
+    }
   }
   if (segs.length === 3)
     return function toggleClass_onOff(input) {
-      return this.ownerElement.classList.toggle(name2, !!input), !!input ? name2 : void 0;
-    };
+      return this.ownerElement.classList.toggle(name2, !!input), !!input ? name2 : undefined;
+    }
   return function toggleClass_name() {
     return this.ownerElement.classList.toggle(name2), name2;
-  };
+  }
 }
 
-// x/state/v1.js
 function matchesPath(observedPaths, path) {
   for (let observedPath of observedPaths)
     if (path.startsWith(observedPath))
       return true;
 }
-function pathsAllSet(observedPaths, state2) {
+
+function pathsAllSet(observedPaths, state) {
   for (let path of observedPaths) {
-    let obj = state2;
+    let obj = state;
     for (let p of path) {
       if (!(p in obj))
         return false;
@@ -104,30 +90,33 @@ function pathsAllSet(observedPaths, state2) {
   }
   return true;
 }
-function makeIterator(attrs2, state2, pathString) {
+
+function makeIterator(attrs, state, pathString) {
   if (!pathString)
-    return attrs2[Symbol.iterator]();
+    return attrs[Symbol.iterator]();
   const matches = [];
-  for (let at of attrs2) {
-    if (!at.constructor.paths)
+  for (let at of attrs) {
+    if(!at.constructor.paths)
       matches.push(at);
-    else if (matchesPath(at.constructor.branches, pathString)) {
-      if (pathsAllSet(at.constructor.paths, state2))
+    else if (matchesPath(at.constructor.branches, pathString))
+      if (pathsAllSet(at.constructor.paths, state))
         matches.push(at);
-    }
   }
   return matches[Symbol.iterator]();
 }
-var attrs = {};
+
+const attrs = {};
 function addAttr(at, name) {
   (attrs[name] ??= new DoubleDots.AttrWeakSet()).add(at);
 }
-var states = {};
+const states = {};
+
 function setInObjectCreatePaths(obj, path, key, value) {
   for (let p of path)
-    obj = obj[p] ??= {};
+    obj = (obj[p] ??= {});
   obj[key] = value;
 }
+
 function setInObjectIfDifferent(obj, path, key, value) {
   const parent = path.reduce((o, p) => o?.[p], obj);
   if (JSON.stringify(parent?.[key]) === JSON.stringify(value))
@@ -135,11 +124,11 @@ function setInObjectIfDifferent(obj, path, key, value) {
   setInObjectCreatePaths(obj, path, key, value);
   return true;
 }
-var State = class extends AttrCustom {
-  upgrade() {
-    addAttr(this, this.trigger);
-  }
-};
+
+class State extends AttrCustom {
+  upgrade() { addAttr(this, this.trigger); }
+}
+
 function state(value) {
   const name = eventLoop.reaction;
   if (JSON.stringify(states[name]) === JSON.stringify(value))
@@ -149,26 +138,22 @@ function state(value) {
   const it = makeIterator(attrs[name], states[name]);
   eventLoop.dispatchBatch(e, it);
 }
+
 function State_(rule) {
   const [name, ...branches] = rule.split("_");
-  const paths = branches.map((b) => b.split("."));
+  const paths = branches.map(b => b.split("."));
   return class State extends AttrCustom {
-    upgrade() {
-      addAttr(this, name);
-    }
-    static get branches() {
-      return branches;
-    }
-    static get paths() {
-      return paths;
-    }
+    upgrade() { addAttr(this, name); }
+    static get branches() { return branches; }
+    static get paths() { return paths; }
   };
 }
+
 function state_(rule) {
   let [name, branch] = rule.split("_");
   const path = branch.split(".");
   const key = path.pop();
-  return function(value) {
+  return function (value) {
     const change = setInObjectIfDifferent(states[name] ??= {}, path, key, value);
     if (!change)
       return;
@@ -179,16 +164,17 @@ function state_(rule) {
   };
 }
 
-// x/nav/v1.js
-var triggers = new DoubleDots.AttrWeakSet();
-var active;
-var LocationEvent = (_) => Object.assign(new Event("location"), { [Event.data]: new URL(location) });
-var Nav = class extends AttrCustom {
+const triggers = new DoubleDots.AttrWeakSet();
+let active$1;
+
+const LocationEvent = _ => Object.assign(new Event("location"), { [Event.data]: new URL(location) });
+
+class Nav extends AttrCustom {
   upgrade() {
-    if (!active) {
+    if (!active$1) {
       for (let e of ["click", "popstate"])
         document.documentElement.setAttribute(`${e}:${this.trigger}`);
-      active = true;
+      active$1 = true;
     }
     triggers.add(this);
     this.dispatchEvent(LocationEvent());
@@ -196,7 +182,8 @@ var Nav = class extends AttrCustom {
   remove() {
     triggers.delete(this);
   }
-};
+}
+
 function nav(e) {
   if (typeof e === "string") {
     const url = new URL(e, location.href);
@@ -204,9 +191,10 @@ function nav(e) {
     return eventLoop.dispatchBatch(LocationEvent(), triggers);
   }
   if (!triggers.size) {
-    for (let e2 of ["click", "popstate", "hashchange"])
-      document.htmlElement.removeAttribute(`${e2}:${eventLoop.reaction.name}`);
-    active = false;
+    for (let e of ["click", "popstate", "hashchange"])
+      document.htmlElement.removeAttribute(`${e}:${eventLoop.reaction.name}`);
+    //todo check that this eventLoop.reaction.name is correct
+    active$1 = false;
     return;
   }
   if (e.defaultPrevented)
@@ -226,8 +214,7 @@ function nav(e) {
   eventLoop.dispatchBatch(LocationEvent(), triggers);
 }
 
-// x/embrace/LoopCube.js
-var LoopCube = class _LoopCube {
+class LoopCube {
   static compareSmall(compare, old, now) {
     const exact = new Array(now.length);
     const unused = [];
@@ -244,12 +231,14 @@ var LoopCube = class _LoopCube {
     }
     return { exact, unused };
   }
-  constructor(embrace2, compare = (a, b) => a === b) {
-    this.embrace = embrace2;
+
+  constructor(embrace, compare = (a, b) => a === b) {
+    this.embrace = embrace;
     this.now = [];
     this.nowEmbraces = [];
-    this.comparator = _LoopCube.compareSmall.bind(null, compare);
+    this.comparator = LoopCube.compareSmall.bind(null, compare);
   }
+
   step(now = []) {
     const old = this.now;
     const oldEmbraces = this.nowEmbraces;
@@ -267,59 +256,74 @@ var LoopCube = class _LoopCube {
       }
     }
     this.nowEmbraces = embraces;
-    const removes = unused.map((o) => oldEmbraces[o]);
+    const removes = unused.map(o => oldEmbraces[o]);
     return { embraces, removes, changed };
   }
-};
+}
 
-// x/embrace/Tokenizer.js
-var loophole = /\b(?:JSON.stringify|Object.values|Object.keys|Object.entries|(?:instanceof\s+(?:[\p{L}\p{N}_$]+)))\b/;
-var ignore = /\b(?:break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|interface|let|new|null|package|private|protected|public|return|static|switch|throw|true|try|typeof|var|void|while|with|yield|async|await|\s+)\b/;
-var dotWords = /\.\s*[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]+)*/u;
-var words = /#?[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]+)*/u;
-var quote1 = /'([^'\\]*(\\.[^'\\]*)*)'/;
-var quote2 = /"([^"\\]*(\\.[^"\\]*)*)"/;
-var number = /0[xX][0-9a-fA-F]+|\d*\.?\d+(?:[eE][+-]?\d+)?/;
-var regex = /\/[^/\\]*(?:\\.[^/\\]*)*\/[gimyu]*/;
-var linecomment = /\/\/[^\n]*/;
-var starcomment = /\/\*[^]*?\*\//;
-var tokens = [loophole, ignore, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
-var tokenizer = new RegExp(tokens.map((r) => `(${r.source})`).join("|"), "gu");
+const loophole = /\b(?:JSON.stringify|Object.values|Object.keys|Object.entries|(?:instanceof\s+(?:[\p{L}\p{N}_$]+)))\b/;
+const ignore = /\b(?:break|case|catch|class|const|continue|debugger|default|delete|do|else|enum|export|extends|false|finally|for|function|if|implements|import|in|interface|let|new|null|package|private|protected|public|return|static|switch|throw|true|try|typeof|var|void|while|with|yield|async|await|\s+)\b/; //space are ignored
+const dotWords = /\.\s*[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]+)*/u;
+const words = /#?[\p{L}_$][\p{L}\p{N}_$]*(?:\s*\.\s*[\p{L}\p{N}_$]+)*/u;
+const quote1 = /'([^'\\]*(\\.[^'\\]*)*)'/;
+const quote2 = /"([^"\\]*(\\.[^"\\]*)*)"/;
+const number = /0[xX][0-9a-fA-F]+|\d*\.?\d+(?:[eE][+-]?\d+)?/;
+const regex = /\/[^/\\]*(?:\\.[^/\\]*)*\/[gimyu]*/;
+const linecomment = /\/\/[^\n]*/;
+const starcomment = /\/\*[^]*?\*\//;
+
+//todo so many security problems. Mainly with ["lookup"] and ("something"||[]).dot.lookups
+
+//0. [].constructor. 
+//02. []["constructor"] => That will give us the Array object without any dotWords. Only [] lookups.
+//1. template strings: `comments ${here can come devils}`. strategy 1) make it throw an error, 2) tokenize ${} inside recursively?..
+//2. something["bad"].CAN.HAPPEN.HERE.constructor.__proto__.etc strategy a) make it throw an error? b) make the function work hiddenly?
+// const dangerous = /super|window|this|document|globalThis|arguments|Function|eval/;
+// These dangerous words are captured, replaced with args[1], and attempted gotten from the context. Thus, they are safe.
+
+const tokens = [loophole, ignore, words, dotWords, quote1, quote2, number, linecomment, starcomment, regex];
+const tokenizer = new RegExp(tokens.map(r => `(${r.source})`).join("|"), "gu");
+
 function extractArgs(txt) {
-  return txt.replaceAll(tokenizer, (o, l, i, p) => p ? `args("${p.replace(/\s+/g, "")}")` : o);
+  return txt.replaceAll(tokenizer, (o, l, i, p) =>
+    p ? `args("${p.replace(/\s+/g, "")}")` : o);
 }
+
 function interpretTemplateString(txt) {
-  return `\`${txt.split(/{{([^}]+)}}/).map((str, i) => i % 2 ? `\${(v = ${extractArgs(str)}) === false || v === undefined ? "": v}` : str.replaceAll("`", "\\`")).join("")}\``;
+  return `\`${txt.split(/{{([^}]+)}}/).map((str, i) =>
+    i % 2 ?
+      `\${(v = ${extractArgs(str)}) === false || v === undefined ? "": v}` :
+      str.replaceAll("`", "\\`")).join("")}\``;
 }
-var tsts = [
-  [
-    `series instanceof Array`,
-    `args("series") instanceof Array`
-  ],
-  [
-    `//the word are all references. They will *all* be replaced with arg[i]
+
+const tsts = [[
+  `series instanceof Array`,
+  `args("series") instanceof Array`
+], [
+  `//the word are all references. They will *all* be replaced with arg[i]
   const word = / #something.else */u;
   const quote = / name /;
   const number = /n . a . m . e/;
-  const regex = //[^/\\]*(?:\\.[^/\\]*)*/[gimyu]*/;
-  const starcomment = //*[^]*?*//;`,
-    `//the word are all references. They will *all* be replaced with arg[i]
+  const regex = /\/[^/\\]*(?:\\.[^/\\]*)*\/[gimyu]*/;
+  const starcomment = /\/\*[^]*?\*\//;`,
+
+  `//the word are all references. They will *all* be replaced with arg[i]
   const args("word") = / #something.else */u;
   const args("quote") = / name /;
   const args("number") = /n . a . m . e/;
   const args("regex") = //[^/\\]*(?:\\.[^/\\]*)*/[gimyu]*/;
   const args("starcomment") = //*[^]*?*//;`
-  ],
-  [
-    `name hello . sunshine #hello.world bob123 _123`,
-    `args("name") args("hello.sunshine") args("#hello.world") args("bob123") args("_123")`
-  ],
-  [
-    `name.hello["bob"].sunshine  . bob`,
-    `args("name.hello")["bob"].sunshine  . bob`
-  ]
+], [
+  `name hello . sunshine #hello.world bob123 _123`,
+  `args("name") args("hello.sunshine") args("#hello.world") args("bob123") args("_123")`
+], [
+  `name.hello["bob"].sunshine  . bob`,
+  `args("name.hello")["bob"].sunshine  . bob`
+],
   //todo this last test.. it should actually turn this into args("name.hello.bob.sunshine.bob"), right? We should disallow property names with space in them? " "
+
 ];
+
 function test() {
   for (let [before, after] of tsts) {
     const exp = extractArgs(before).trim();
@@ -328,14 +332,21 @@ function test() {
   }
 }
 
-// x/embrace/v1.js
+// test();
+
+//Template engine
 function dotScope(data, superior, cache = {}) {
   const me = function scope(path) {
-    return path.constructor === Object ? dotScope(data, me, path) : path === "$" ? data : cache[path] ??= path.split(".").reduce((o, p) => o?.[p], cache) ?? superior?.(path) ?? path.split(".").reduce((o, p) => o?.[p], data);
+    return path.constructor === Object ? dotScope(data, me, path) :
+      path === "$" ? data : cache[path] ??=
+        path.split('.').reduce((o, p) => o?.[p], cache) ??
+        superior?.(path) ??
+        path.split('.').reduce((o, p) => o?.[p], data);
   };
   return me;
 }
-var EmbraceRoot = class _EmbraceRoot {
+
+class EmbraceRoot {
   constructor(name, docFrag, nodes, expressions) {
     this.name = name;
     this.template = docFrag;
@@ -347,38 +358,45 @@ var EmbraceRoot = class _EmbraceRoot {
       if (expressions[i])
         this.todos.push({ exp: expressions[i], node: nodes[i] });
   }
+
   clone() {
     const docFrag = this.template.cloneNode(true);
     const nodes = [...flatDomNodesAll(docFrag)];
-    return new _EmbraceRoot(this.name, docFrag, nodes, this.expressions);
+    return new EmbraceRoot(this.name, docFrag, nodes, this.expressions);
   }
+
   run(scope, _, ancestor) {
     for (let { exp, node } of this.todos)
       if (ancestor.contains(node.ownerElement ?? node))
         exp.run(scope, node, ancestor);
   }
+
   prep(funcs) {
     for (let { exp } of this.todos) {
       exp.cb = funcs[exp.name];
       exp.innerRoot?.prep(funcs);
     }
   }
+
   runFirst(el, dataObject, funcs) {
     this.prep(funcs);
     el.prepend(...this.topNodes);
     this.run(dotScope(dataObject), 0, el);
   }
-};
-var EmbraceTextNode = class {
+}
+
+class EmbraceTextNode {
   constructor(name, exp) {
     this.name = name;
     this.exp = exp;
   }
+
   run(scope, node) {
     node.textContent = this.cb(scope);
   }
-};
-var EmbraceCommentFor = class {
+}
+
+class EmbraceCommentFor {
   constructor(name, innerRoot, varName, exp) {
     this.name = name;
     this.innerRoot = innerRoot;
@@ -388,16 +406,18 @@ var EmbraceCommentFor = class {
     this.iName = `#${varName}`;
     this.dName = `$${varName}`;
   }
+
   run(scope, node, ancestor) {
     let list = this.cb(scope) ?? [];
     const inMode = !(Symbol.iterator in list);
-    const cube = node.__cube ??= new LoopCube(this.innerRoot, inMode ? (a, b) => JSON.stringify(a) === JSON.stringify(b) : void 0);
+    const cube = node.__cube ??=
+      new LoopCube(this.innerRoot, inMode ? (a, b) => JSON.stringify(a) === JSON.stringify(b) : undefined);
     const now = inMode ? Object.entries(list) : list;
     const { embraces, removes, changed } = cube.step(now);
     for (let em of removes)
       for (let n of em.topNodes)
         n.remove();
-    for (let em of embraces)
+    for (let em of embraces) 
       node.before(...em.topNodes);
     for (let i of changed) {
       const subScope = { [this.iName]: i };
@@ -407,40 +427,47 @@ var EmbraceCommentFor = class {
       } else {
         subScope[this.varName] = now[i];
       }
-      embraces[i].run(scope(subScope), void 0, ancestor);
+      embraces[i].run(scope(subScope), undefined, ancestor);
     }
   }
-};
-var EmbraceCommentIf = class {
+}
+
+class EmbraceCommentIf {
   constructor(name, emRoot, exp) {
     this.name = name;
     this.innerRoot = emRoot;
     this.exp = exp;
   }
+
   run(argsDict, node, ancestor) {
     const em = node.__ifEmbrace ??= this.innerRoot.clone();
-    const test2 = !!this.cb(argsDict);
-    if (test2 && !em.state)
+    const test = !!this.cb(argsDict);
+    //we are adding state to the em object. instead of the node.
+    if (test && !em.state)
       node.before(...em.topNodes);
-    else if (!test2 && em.state)
+    else if (!test && em.state)
       node.append(...em.topNodes);
-    if (test2)
-      em.run(argsDict({}), void 0, ancestor);
-    em.state = test2;
+    if (test)
+      em.run(argsDict({}), undefined, ancestor);
+    em.state = test;
   }
-};
+}
+
+//PARSER
 function* flatDomNodesAll(docFrag) {
   const it = document.createNodeIterator(docFrag, NodeFilter.SHOW_ALL);
-  for (let n = it.nextNode(); n = it.nextNode(); ) {
+  for (let n = it.nextNode(); n = it.nextNode();) {
     yield n;
     if (n instanceof Element) yield* n.attributes;
   }
 }
+
 function parseTemplate(template, name = "embrace") {
   const nodes = [...flatDomNodesAll(template.content)];
   const expressions = nodes.map((n, i) => parseNode(n, name + "_" + i));
   return new EmbraceRoot(name, template.content, nodes, expressions);
 }
+
 function parseNode(n, name) {
   if (n instanceof Text || n instanceof Attr || n instanceof Comment) {
     if (n.textContent.match(/{{([^}]+)}}/))
@@ -460,22 +487,32 @@ function parseNode(n, name) {
     return emTempl;
   }
 }
+
 function extractFuncs(root, res = {}) {
   for (let { exp } of root.todos) {
-    const code = exp instanceof EmbraceTextNode ? interpretTemplateString(exp.exp) : exp instanceof EmbraceCommentFor ? extractArgs(exp.exp) : exp instanceof EmbraceCommentIf ? extractArgs(exp.exp) : void 0;
+    const code =
+      exp instanceof EmbraceTextNode ? interpretTemplateString(exp.exp) :
+        exp instanceof EmbraceCommentFor ? extractArgs(exp.exp) :
+          exp instanceof EmbraceCommentIf ? extractArgs(exp.exp) :
+            undefined;
     res[exp.name] = `(args, v) => ${code}`;
     if (exp.innerRoot)
       extractFuncs(exp.innerRoot, res);
   }
   return res;
 }
+
+//TUTORIAL
+
 function hashDebug(script, id) {
   return `Add the following script in the <head> element:
 
 <script embrace="${id}">
   (window.Embrace ??= {})["${id}"] = ${script};
-<\/script>`;
+</script>`;
 }
+
+// :embrace
 function embrace(dataObject) {
   let em = this.ownerElement.__embrace;
   if (em)
@@ -488,16 +525,15 @@ function embrace(dataObject) {
   if (window.Embrace?.[id])
     return em.runFirst(this.ownerElement, dataObject, window.Embrace[id]);
   const funcs = extractFuncs(em);
-  const script = "{\n" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(",\n") + "\n}";
-  DoubleDots.importBasedEval(script).then((funcs2) => {
+  const script = "{\n" + Object.entries(funcs).map(([k, v]) => `${k}: ${v}`).join(',\n') + "\n}";
+  DoubleDots.importBasedEval(script).then(funcs => {
     DoubleDots.log?.(":embrace production", hashDebug(script, id));
-    (window.Embrace ??= {})[id] = funcs2;
-    em.runFirst(this.ownerElement, dataObject, funcs2);
+    (window.Embrace ??= {})[id] = funcs;
+    em.runFirst(this.ownerElement, dataObject, funcs);
   });
 }
 
-// x/dotRule/dot.js
-var scopes = {
+const scopes = {
   ".": "this.",
   "e.": "window.eventLoop.event.",
   "t.": "window.eventLoop.event.target.",
@@ -506,64 +542,73 @@ var scopes = {
   // "i.": "args[0].",  //todo implement this instead of .oi
   // "i(0-9)+": "args[$1].",//todo implement this instead of .oi
   "oi.": "oi.",
-  "at.": "window.eventLoop.attribute.",
-  //useful when dash rules have moved the origin
-  "el.": "window.eventLoop.attribute.ownerElement.",
-  //todo same as this.ownerElement??
+  "at.": "window.eventLoop.attribute.", //useful when dash rules have moved the origin
+  "el.": "window.eventLoop.attribute.ownerElement.", //todo same as this.ownerElement??
   "this.": "this.",
   "window.": "window.",
   "document.": "document."
 };
+
+//todo must rename oi to i, because of the change of structures.
 function processRef(prop) {
   for (let prefix in scopes)
     if (prop.startsWith(prefix))
       return DoubleDots.kebabToPascal(scopes[prefix] + prop.slice(prefix.length));
 }
-var primitives = /^((-?\d+(\.\d+)?([eE][-+]?\d+)?)|this|window|document|i|e|true|false|undefined|null)$/;
+
+const primitives =
+  /^((-?\d+(\.\d+)?([eE][-+]?\d+)?)|this|window|document|i|e|true|false|undefined|null)$/;
+
 function textToExp(txt) {
   let [prop, ...args] = txt.split("_");
   const ref = processRef(prop);
-  args = args.map((arg) => processRef(arg) || primitives.test(arg) ? arg : `"${arg}"`);
+  args = args.map(arg => processRef(arg) || primitives.test(arg) ? arg : `"${arg}"`);
   const sargs = args.join(", ");
   const setter = !args.length ? "" : args.length === 1 ? `=${sargs}` : `=[${sargs}]`;
   return `(${ref} instanceof Function ? ${ref}(${sargs}) : (${ref}${setter}))`;
 }
+
 function DotReactionRule(fullname) {
   const exp = textToExp(fullname);
   const code = `function dotReaction(oi) { return ${exp}; }`;
   return DoubleDots.importBasedEval(code);
 }
+
+//basic filters
 function BreakOnFalseReactionRule(fullname) {
   const exp = textToExp(fullname.slice(2));
   const code = `function dotReaction(oi) { return ${exp} || EventLoop.break; }`;
   return DoubleDots.importBasedEval(code);
 }
+
 function BreakOnTrueReactionRule(fullname) {
   const exp = textToExp(fullname.slice(2));
   const code = `function dotReaction(oi) { return ${exp} && EventLoop.break; }`;
   return DoubleDots.importBasedEval(code);
 }
-var dynamicDots = {};
+
+const dynamicDots = {};
 for (let prefix in scopes)
   dynamicDots[prefix] = DotReactionRule;
 dynamicDots["x."] = BreakOnFalseReactionRule;
 dynamicDots["y."] = BreakOnTrueReactionRule;
 
-// x/er/ErAnalysis.js
-var ER = class {
+class ER {
   constructor(posts) {
     this.posts = posts;
   }
-  *parents(ref, type, prop) {
+
+  * parents(ref, type, prop) {
     for (let [k, v] of Object.entries(this.posts))
-      if (!type || k.startsWith(type)) {
+      if (!type || k.startsWith(type))
         if (prop && Array.isArray(v[prop]) && v[prop].includes(ref))
           yield k;
-      }
   }
+
   parent(ref, type, prop) {
     return this.parents(ref, type, prop).next().value;
   }
+
   //todo this can loop forever, when we have a person with a friend 
   //     that has a friend that is the first person. This won't work.
   //
@@ -579,11 +624,13 @@ var ER = class {
     const res = Object.assign({}, vars, this.posts[key]);
     for (let p in res)
       if (res[p] instanceof Array)
-        res[p] = res[p].map((k) => this.resolve(k, vars));
+        res[p] = res[p].map(k => this.resolve(k, vars));
     return res;
   }
-};
-var ErAnalysis = class _ErAnalysis extends ER {
+}
+
+class ErAnalysis extends ER {
+
   //step 1
   static entitiesToTypeValue(posts) {
     const res = {};
@@ -598,15 +645,16 @@ var ErAnalysis = class _ErAnalysis extends ER {
     }
     return res;
   }
+
   //step 2
   static extractTypeList(list) {
-    const types = [...new Set(list.map(_ErAnalysis.extractType))].sort();
+    const types = [...new Set(list.map(ErAnalysis.extractType))].sort();
     if (types.includes("text") && types.includes("textmd"))
       types.splice(types.indexOf("text"), 1);
     if (types.includes("int") && types.includes("float"))
       types.splice(types.indexOf("int"), 1);
     if (types[0].startsWith("list: ")) {
-      let refs = types.map((t) => t.slice(6).split(","));
+      let refs = types.map(t => t.slice(6).split(","));
       return [...new Set(refs.flat().filter(Boolean))];
     }
     if (types.length === 1)
@@ -614,65 +662,65 @@ var ErAnalysis = class _ErAnalysis extends ER {
     debugger;
     throw new Error("should be fixed..");
   }
+
   static isMarkDown(value) {
-    if (!/[#*_~`]/.test(value))
+    if (!(/[#*_~`]/.test(value)))
       return;
     const markdownPatterns = [
-      /\*\*.*?\*\*/,
-      // bold (**text**)
-      /\*.*?\*/,
-      // italics (*text*)
-      /~~.*?~~/,
-      // strikethrough (~~text~~)
-      /`.*?`/,
-      // inline code (`code`)
-      /#+\s+.+/,
-      // headings (# heading, ## subheading, etc.)
-      /\[.*?\]\(.*?\)/,
-      // links ([text](url))
-      /!\[.*?\]\(.*?\)/,
-      // images (![alt](url))
-      /^>\s+.+/m
-      // blockquotes (> quote)
+      /\*\*.*?\*\*/,         // bold (**text**)
+      /\*.*?\*/,             // italics (*text*)
+      /~~.*?~~/,             // strikethrough (~~text~~)
+      /`.*?`/,               // inline code (`code`)
+      /#+\s+.+/,             // headings (# heading, ## subheading, etc.)
+      /\[.*?\]\(.*?\)/,      // links ([text](url))
+      /!\[.*?\]\(.*?\)/,     // images (![alt](url))
+      /^>\s+.+/m             // blockquotes (> quote)
     ];
     for (const pattern of markdownPatterns)
       if (pattern.test(value))
         return "textmd";
   }
+
   static extractType(value) {
     if (Array.isArray(value))
-      return "list: " + [...new Set(value.map((str) => str.split("/")[0]))].join(",");
+      return "list: " + [...new Set(value.map(str => str.split("/")[0]))].join(",");
+    // if (typeof value === 'string' && !isNaN(Date.parse(value)))
+    //   return "date";
     try {
+      // only absolute urls
+      // not relative urls. so "./hello.png" is not a url... todo
       if (decodeURI(new URL(value).href) === decodeURI(value)) return "url";
-    } catch (_) {
-    }
-    if (/^#([0-9A-F]{3}){1,2}$/i.test(value))
+    } catch (_) { }
+    if ((/^#([0-9A-F]{3}){1,2}$/i).test(value))
       return "color";
     if (Number(value) + "" === value)
       return "number";
-    return _ErAnalysis.isMarkDown(value) ?? "text";
+    return ErAnalysis.isMarkDown(value) ?? "text";
   }
+
   static valuesToTypes(typeValueSchema) {
     const res = {};
     for (let type in typeValueSchema) {
       const entityType = res[type] = {};
       const propValues = typeValueSchema[type];
       for (let prop in propValues)
-        entityType[prop] = _ErAnalysis.extractTypeList(propValues[prop]);
+        entityType[prop] = ErAnalysis.extractTypeList(propValues[prop]);
     }
     return res;
   }
+
   //step 3 relations
   static topologicalSort(schemas, cp) {
     const sortedSchemas = [];
-    const visited = /* @__PURE__ */ new Set();
-    const tempMarked = /* @__PURE__ */ new Set();
+    const visited = new Set();
+    const tempMarked = new Set();
+
     function visit(schema) {
       if (tempMarked.has(schema))
         throw new Error("Cycle detected, schema relationships form a loop.");
       if (!visited.has(schema)) {
         tempMarked.add(schema);
-        const referencedSchemas = cp[schema] || /* @__PURE__ */ new Set();
+        const referencedSchemas = cp[schema] || new Set();
         for (const referred of referencedSchemas)
           visit(referred);
         tempMarked.delete(schema);
@@ -684,34 +732,36 @@ var ErAnalysis = class _ErAnalysis extends ER {
       visit(schema);
     return sortedSchemas;
   }
+
   static bottomUpRelations(schemaType) {
     const res = {};
     for (let type in schemaType)
       for (let prop in schemaType[type])
         if (schemaType[type][prop] instanceof Array)
           for (let referred of schemaType[type][prop])
-            (res[referred] ??= /* @__PURE__ */ new Set()).add(type);
+            (res[referred] ??= new Set()).add(type);
     return res;
   }
+
   static analyze(posts) {
-    const schemaTypeValues = _ErAnalysis.entitiesToTypeValue(posts);
-    const schemaTypedUnsorted = _ErAnalysis.valuesToTypes(schemaTypeValues);
-    const relationsUp = _ErAnalysis.bottomUpRelations(schemaTypedUnsorted);
-    const entitySequence = _ErAnalysis.topologicalSort(schemaTypedUnsorted, relationsUp);
-    return entitySequence.map((type) => [type, schemaTypedUnsorted[type]]);
+    const schemaTypeValues = ErAnalysis.entitiesToTypeValue(posts);
+    const schemaTypedUnsorted = ErAnalysis.valuesToTypes(schemaTypeValues);
+    const relationsUp = ErAnalysis.bottomUpRelations(schemaTypedUnsorted);
+    const entitySequence = ErAnalysis.topologicalSort(schemaTypedUnsorted, relationsUp);
+    return entitySequence.map(type => [type, schemaTypedUnsorted[type]]);
   }
+
   #schema;
   #schemaSorted;
   get schema() {
     return this.#schema ??= Object.fromEntries(this.schemaSorted);
   }
   get schemaSorted() {
-    return this.#schemaSorted ??= _ErAnalysis.analyze(this.posts);
+    return this.#schemaSorted ??= ErAnalysis.analyze(this.posts);
   }
-};
+}
 
-// x/fetch/v2.js
-var RESPONSE_TYPES = {
+const RESPONSE_TYPES = {
   json: "json",
   text: "text",
   blob: "blob",
@@ -722,41 +772,45 @@ var RESPONSE_TYPES = {
   uint8: "bytes",
   clone: "clone",
   arraybuffer: "arrayBuffer",
-  buffer: "arrayBuffer"
+  buffer: "arrayBuffer",
 };
 function parseResponseType(tail) {
   if (!tail) return "json";
   if (RESPONSE_TYPES[tail]) return RESPONSE_TYPES[tail];
   throw new SyntaxError("Unknown fetch- response type: " + tail);
 }
-var METHOD = {
-  post: "POST",
-  put: "PUT",
-  delete: "DELETE",
-  patch: "PATCH"
+
+const METHOD = {
+  post: 'POST',
+  put: 'PUT',
+  delete: 'DELETE',
+  patch: 'PATCH',
 };
-var dotMETHOD = {
-  get: "GET",
-  head: "HEAD"
+const dotMETHOD = {
+  get: 'GET',
+  head: 'HEAD',
 };
-var HEADERS = {
-  auth: ["credentials", "include"],
-  omit: ["credentials", "omit"],
-  nocache: ["cache", "no-cache"],
-  nostore: ["cache", "no-store"],
-  reload: ["cache", "reload"],
-  forcecache: ["cache", "force-cache"],
-  onlyifcached: ["cache", "only-if-cached"],
-  cors: ["mode", "cors"],
-  nocors: ["mode", "no-cors"],
-  sameorigin: ["mode", "same-origin"],
-  noreferrer: ["referrerPolicy", "no-referrer"],
-  origin: ["referrerPolicy", "origin"],
-  originwhencross: ["referrerPolicy", "origin-when-cross-origin"],
-  strictorigin: ["referrerPolicy", "strict-origin"],
-  strictorigincross: ["referrerPolicy", "strict-origin-when-cross-origin"],
-  unsafe: ["referrerPolicy", "unsafe-url"],
-  refsameorigin: ["referrerPolicy", "same-origin"]
+const HEADERS = {
+  auth: ["credentials", 'include'],
+  omit: ["credentials", 'omit'],
+
+  nocache: ["cache", 'no-cache'],
+  nostore: ["cache", 'no-store'],
+  reload: ["cache", 'reload'],
+  forcecache: ["cache", 'force-cache'],
+  onlyifcached: ["cache", 'only-if-cached'],
+
+  cors: ["mode", 'cors'],
+  nocors: ["mode", 'no-cors'],
+  sameorigin: ["mode", 'same-origin'],
+
+  noreferrer: ["referrerPolicy", 'no-referrer'],
+  origin: ["referrerPolicy", 'origin'],
+  originwhencross: ["referrerPolicy", 'origin-when-cross-origin'],
+  strictorigin: ["referrerPolicy", 'strict-origin'],
+  strictorigincross: ["referrerPolicy", 'strict-origin-when-cross-origin'],
+  unsafe: ["referrerPolicy", 'unsafe-url'],
+  refsameorigin: ["referrerPolicy", 'same-origin'],
 };
 function parseSegments(name, splitter, methodMap) {
   const [, ...segments] = name.toLowerCase().split(splitter);
@@ -779,70 +833,71 @@ function parseSegments(name, splitter, methodMap) {
   }
   return { method, responseType, headers };
 }
+
+//Att! fetch defaults to .json(), not .text()!
 async function basicFetch() {
-  return (await fetch(this.value)).json();
+  const v = this.value;
+  const res = await fetch(v);
+  return res.json();
 }
+
 function fetchDashRule(name) {
   const [head, type, tail] = name.split(/([._])/);
   const responseType = parseResponseType(tail);
   const m = type === "." ? "GET" : "POST";
   const { headers, method = m } = parseSegments(head, "-", type === "." ? dotMETHOD : METHOD);
-  return type === "." ? async function fetchDash() {
-    return (await fetch(this.value, { method, headers }))[responseType]();
-  } : async function fetchDash_(body) {
-    return (await fetch(this.value, { method, headers, body }))[responseType]();
-  };
+  return type === "." ?
+    async function fetchDash() {
+      return (await fetch(this.value, { method, headers }))[responseType]();
+    } :
+    async function fetchDash_(body) {
+      //todo should we check the body?? nah, dont think so..
+      return (await fetch(this.value, { method, headers, body }))[responseType]();
+    };
 }
+
+//fetch.
 function fetchDotRule(name) {
   const [, tail] = name.split(".");
   const responseType = parseResponseType(tail);
   return async function fetchDash() {
     return (await fetch(this.value, { method: "GET" }))[responseType]();
-  };
+  }
 }
+
+//fetch_
 function fetch_Rule(name) {
   const [, tail] = name.split("_");
   const responseType = parseResponseType(tail);
   return async function fetch_(body) {
+    //todo should we check the body?? nah, dont think so..
     return (await fetch(this.value, { method: "POST", body }))[responseType]();
   };
 }
 
-// x/PropagationSimple/prop.js
-var WindowTrigger = class extends AttrListener {
-  get target() {
-    return window;
-  }
-};
-var DocumentTrigger = class extends AttrListener {
-  get target() {
-    return document;
-  }
-};
-var DCLTrigger = class extends DocumentTrigger {
-  get type() {
-    return "DOMContentLoaded";
-  }
-};
-var PrePropTrigger = class extends WindowTrigger {
-  //global _click
-  get type() {
-    return this.trigger.slice(1);
-  }
-  //remove prefix so returns "click"
-  get options() {
-    return true;
-  }
-};
-var PostPropTrigger = class extends WindowTrigger {
-  //global click_
-  get type() {
-    return this.trigger.slice(-1);
-  }
-  //remove postfix so returns "click"
-};
+class WindowTrigger extends AttrListener {
+  get target() { return window; }
+}
+
+class DocumentTrigger extends AttrListener {
+  get target() { return document; }
+}
+
+class DCLTrigger extends DocumentTrigger {
+  get type() { return "DOMContentLoaded"; }
+}
+
+class PrePropTrigger extends WindowTrigger { //global _click
+  get type() { return this.trigger.slice(1); } //remove prefix so returns "click"
+  get options() { return true; }
+}
+
+class PostPropTrigger extends WindowTrigger { //global click_
+  get type() { return this.trigger.slice(-1); } //remove postfix so returns "click"
+}
+
 function makeAll() {
-  const upCase = (s) => s[0].toUpperCase() + s.slice(1);
+  const upCase = s => s[0].toUpperCase() + s.slice(1);
   const res = {};
   for (let type of DoubleDots.nativeEvents.element) {
     type = upCase(type);
@@ -858,30 +913,29 @@ function makeAll() {
   res["Domcontentloaded"] = DCLTrigger;
   return res;
 }
-var dynamicSimpleProp = makeAll();
+const dynamicSimpleProp = makeAll();
 
-// x/formdata/v1.js
 function formdata_(rule) {
   const [, type] = rule.split("_");
   if (type === "json")
     return function formdata_json(form) {
-      const obj = /* @__PURE__ */ Object.create(null);
+      const obj = Object.create(null);
       for (const [key, value] of new FormData(form))
-        !(key in obj) ? obj[key] = value : Array.isArray(obj[key]) ? obj[key].push(value) : obj[key] = [obj[key], value];
+        !(key in obj) ? obj[key] = value :
+          Array.isArray(obj[key]) ? obj[key].push(value) :
+            obj[key] = [obj[key], value];
       return obj;
     };
   if (type === "urlencoded")
-    return (form) => new URLSearchParams(new FormData(form));
-  if (type === "multipart")
-    return (form) => new FormData(form);
-  if (type === "blob")
-    return (form) => new Blob([new URLSearchParams(new FormData(form))], { type: "application/x-www-form-urlencoded" });
+    return form => new URLSearchParams(new FormData(form));
+  if(type === "multipart")
+    return form => new FormData(form);
+  if(type === "blob")
+    return form => new Blob([new URLSearchParams(new FormData(form))], { type: "application/x-www-form-urlencoded" });
   throw new SyntaxError(`Invalid formdata type: ${type}. Must be "json" or "urlencoded".`);
 }
 
-// x/css/v1.js
-import { SheetWrapper } from "https://cdn.jsdelivr.net/gh/orstavik/csss@1.0.9/src/engine.js";
-var sheetWrapper;
+let sheetWrapper;
 function makeSheetWrapper() {
   let style = document.querySelector("style[csss]");
   if (!style) {
@@ -891,14 +945,18 @@ function makeSheetWrapper() {
   }
   return sheetWrapper = new SheetWrapper(style.sheet);
 }
-var active2;
+
+let active;
 function updateTextContent() {
-  active2 ||= setTimeout(() => (sheetWrapper.cleanup(), active2 = void 0), 500);
+  active ||= setTimeout(() => (sheetWrapper.cleanup(), (active = undefined)), 500);
 }
-var Class = class extends AttrCustom {
+
+class Class extends AttrCustom {
+
   upgrade() {
     this.__previousClasses = {};
   }
+
   set value(v) {
     super.value = v;
     sheetWrapper ??= makeSheetWrapper();
@@ -921,43 +979,9 @@ var Class = class extends AttrCustom {
       updateTextContent();
     }
   }
-  get value() {
-    return super.value;
-  }
-};
-export {
-  Class,
-  DCLTrigger,
-  DocumentTrigger,
-  ER,
-  ErAnalysis,
-  Nav,
-  PostPropTrigger,
-  PrePropTrigger,
-  State,
-  State_,
-  WindowTrigger,
-  basicFetch,
-  classDot,
-  classList,
-  class_,
-  clazz,
-  dynamicSimpleProp,
-  dynamicDots as dynamicsDots,
-  eDot,
-  e_,
-  embrace,
-  fetchDashRule,
-  fetchDotRule,
-  fetch_Rule,
-  formdata_,
-  gatRule,
-  nav,
-  rat_Rule,
-  sat_Rule,
-  state,
-  state_,
-  tat_Rule,
-  toggleClass_
-};
+
+  get value() { return super.value; }
+}
+
+export { Class, DCLTrigger, DocumentTrigger, ER, ErAnalysis, Nav, PostPropTrigger, PrePropTrigger, State, State_, WindowTrigger, classDot, classList, class_, clazz, dynamicSimpleProp, dynamicDots as dynamicsDots, eDot, e_, embrace, basicFetch as fetch, fetchDashRule as "fetch-", fetchDotRule as "fetch.", fetch_Rule as fetch_, formdata_, gatRule, nav, rat_Rule, sat_Rule, state, state_, tat_Rule, toggleClass_ };
 //# sourceMappingURL=ddx.js.map
