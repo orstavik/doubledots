@@ -29,17 +29,17 @@ export class Class extends AttrCustom {
     for (let clz of this.ownerElement.classList) {
       if (clz.includes("$")) {
         const ruleAndPos = sheetWrapper.addRule(clz, this.ownerElement);
-        const { pos, rule } = ruleAndPos;
-        positions[pos] = ruleAndPos;
-        if (pos < last) {
-          const potentialErrors = positions.filter((_, i) => i > pos);
-          for (let potential of potentialErrors) {
-            const doubleKey = overlap(ruleAndPos, potential);
-            if (doubleKey)
-              console.warn(`Wrong sequence!! ${clz} should be positioned before ${potential}.`);
-          }
-        } else
-          last = pos;
+        // const { pos, rule } = ruleAndPos;
+        // positions[pos] = ruleAndPos;
+        // if (pos < last) {
+        //   const potentialErrors = positions.filter((_, i) => i > pos);
+        //   for (let potential of potentialErrors) {
+        //     const doubleKey = overlap(ruleAndPos, potential);
+        //     if (doubleKey)
+        //       console.warn(`Wrong sequence!! ${clz} should be positioned before ${potential}.`);
+        //   }
+        // } else
+        //   last = pos;
       }
       updateTextContent();
     }
