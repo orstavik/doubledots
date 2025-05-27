@@ -2,9 +2,18 @@ const triggers = new DoubleDots.AttrWeakSet();
 let active;
 
 const LocationEvent = _ => Object.assign(new Event("location"), { [Event.data]: new URL(location) });
+let specNav;
+function external(url) {
+  if (link.origin !== window.location.origin) return true;
+  const [whitelist, ...blacklist] = specNav?.value?.split(";");// slightly inefficient
+  if (whitelist && !url.pathname.startsWith(whitelist)) return true;
+  return blacklist.some(p => url.startsWith(p));
+}
 
 export class Nav extends AttrCustom {
   upgrade() {
+    if (!this.reactions.length && this.value) //naive, no check of overlaps
+      return specNav = this;
     if (!active) {
       for (let e of ["click", "popstate"])
         document.documentElement.setAttribute(`${e}:${this.trigger}`);
@@ -21,6 +30,8 @@ export class Nav extends AttrCustom {
 export function nav(e) {
   if (typeof e === "string") {
     const url = new URL(e, location.href);
+    if (external(url))
+      return;
     history.pushState(null, null, url.href);
     return eventLoop.dispatchBatch(LocationEvent(), triggers);
   }
@@ -40,7 +51,7 @@ export function nav(e) {
     if (!a)
       return;
     const link = new URL(a.href, location.href);
-    if (link.origin !== window.location.origin)
+    if (external(link))
       return;
     history.pushState(null, null, link);
     e.preventDefault();
