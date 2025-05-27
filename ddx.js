@@ -170,7 +170,7 @@ let active$1;
 const LocationEvent = _ => Object.assign(new Event("location"), { [Event.data]: new URL(location) });
 let specNav;
 function external(url) {
-  if (link.origin !== window.location.origin) return true;
+  if (url.origin !== window.location.origin) return true;
   const [whitelist, ...blacklist] = specNav?.value?.split(";");// slightly inefficient
   if (whitelist && !url.pathname.startsWith(whitelist)) return true;
   return blacklist.filter(Boolean).some(p => url.startsWith(p));
@@ -216,10 +216,10 @@ function nav(e) {
     const a = e.target.closest("a[href]");
     if (!a)
       return;
-    const link = new URL(a.href, location.href);
-    if (external(link))
+    const url = new URL(a.href, location.href);
+    if (external(url))
       return;
-    history.pushState(null, null, link);
+    history.pushState(null, null, url);
     e.preventDefault();
   }
   eventLoop.dispatchBatch(LocationEvent(), triggers);
