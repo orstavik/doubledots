@@ -28,7 +28,7 @@ export class Class extends AttrCustom {
     let positions = [], last = -1;
     for (let clz of this.ownerElement.classList) {
       if (clz.includes("$")) {
-        const ruleAndPos = sheetWrapper.addRule(clz);
+        const ruleAndPos = sheetWrapper.addRule(clz, this.ownerElement);
         const { pos, rule } = ruleAndPos;
         positions[pos] = ruleAndPos;
         if (pos < last) {

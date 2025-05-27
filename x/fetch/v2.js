@@ -72,9 +72,13 @@ function parseSegments(name, splitter, methodMap) {
 }
 
 //Att! fetch defaults to .json(), not .text()!
-export async function basicFetch() { return (await fetch(this.value)).json(); }
+async function basicFetch() {
+  const v = this.value;
+  const res = await fetch(v);
+  return res.json();
+}
 
-export function fetchDashRule(name) {
+function fetchDashRule(name) {
   const [head, type, tail] = name.split(/([._])/);
   const responseType = parseResponseType(tail);
   const m = type === "." ? "GET" : "POST";
@@ -90,7 +94,7 @@ export function fetchDashRule(name) {
 }
 
 //fetch.
-export function fetchDotRule(name) {
+function fetchDotRule(name) {
   const [, tail] = name.split(".");
   const responseType = parseResponseType(tail);
   return async function fetchDash() {
@@ -99,11 +103,18 @@ export function fetchDotRule(name) {
 }
 
 //fetch_
-export function fetch_Rule(name) {
+function fetch_Rule(name) {
   const [, tail] = name.split("_");
   const responseType = parseResponseType(tail);
   return async function fetch_(body) {
     //todo should we check the body?? nah, dont think so..
     return (await fetch(this.value, { method: "POST", body }))[responseType]();
   };
+}
+
+export {
+  fetchDashRule as "fetch-",
+  fetchDotRule as "fetch.",
+  fetch_Rule as fetch_,
+  basicFetch as fetch,
 }
