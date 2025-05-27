@@ -7,7 +7,7 @@ function external(url) {
   if (link.origin !== window.location.origin) return true;
   const [whitelist, ...blacklist] = specNav?.value?.split(";");// slightly inefficient
   if (whitelist && !url.pathname.startsWith(whitelist)) return true;
-  return blacklist.some(p => url.startsWith(p));
+  return blacklist.filter(Boolean).some(p => url.startsWith(p));
 }
 
 export class Nav extends AttrCustom {
