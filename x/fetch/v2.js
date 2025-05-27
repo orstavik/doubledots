@@ -73,9 +73,7 @@ function parseSegments(name, splitter, methodMap) {
 
 //Att! fetch defaults to .json(), not .text()!
 async function basicFetch() {
-  const v = this.value;
-  const res = await fetch(v);
-  return res.json();
+  return (await fetch(this.value)).json();
 }
 
 function fetchDashRule(name) {
@@ -88,7 +86,6 @@ function fetchDashRule(name) {
       return (await fetch(this.value, { method, headers }))[responseType]();
     } :
     async function fetchDash_(body) {
-      //todo should we check the body?? nah, dont think so..
       return (await fetch(this.value, { method, headers, body }))[responseType]();
     };
 }
@@ -107,7 +104,6 @@ function fetch_Rule(name) {
   const [, tail] = name.split("_");
   const responseType = parseResponseType(tail);
   return async function fetch_(body) {
-    //todo should we check the body?? nah, dont think so..
     return (await fetch(this.value, { method: "POST", body }))[responseType]();
   };
 }
