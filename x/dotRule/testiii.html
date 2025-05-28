@@ -1,0 +1,13 @@
+<script src="/dd.js"></script>
+
+<script type="module" src="dot.js?i.~&i1.~&i2.~" _:define></script>
+
+<script>
+  document.Triggers.define("test", class TestTrigger extends AttrCustom {
+    upgrade() {
+      this.dispatchEvent(Object.assign(new Event("test"), { alice: "alice", bob: "bob" }));
+    }
+  });
+</script>
+
+<div test:i.alice:i1.bob:i2.cat:log></div>
