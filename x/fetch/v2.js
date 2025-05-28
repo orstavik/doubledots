@@ -11,16 +11,17 @@ const RESPONSE_TYPES = {
   arraybuffer: "arrayBuffer",
   buffer: "arrayBuffer",
 };
+async function safeJsonResponse(res) {
+  const text = await res.text();
+  return text ? JSON.parse(text) : undefined;
+}
 function parseResponseType(tail = "json") {
   if (!(tail in RESPONSE_TYPES))
     throw new SyntaxError("Unknown fetch- response type: " + tail);
-  if (tail === "json")
-    return async function jsonResponse(res) {
-      const text = await res.text();
-      return text ? JSON.parse(text) : undefined;
-    };
   tail = RESPONSE_TYPES[tail];
-  return function response(resp) { return resp[tail](); }
+  return tail === "json" ?
+    safeJsonResponse :
+    function response(resp) { return resp[tail](); }
 }
 
 const METHOD = {
@@ -77,12 +78,9 @@ function parseSegments(name, splitter, methodMap) {
   return { method, responseType, headers };
 }
 
-//Att! fetch defaults to .json(), not .text()!
+//Att! :fetch* defaults to .json()
 async function basicFetch() {
-  const resp = await fetch(this.value);
-  let res;
-  try { res = resp.json(); } catch (e) { res = undefined; }
-  return res;
+  return await safeJsonResponse(await fetch(this.value));
 }
 
 function fetchDashRule(name) {
