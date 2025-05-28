@@ -11,10 +11,16 @@ const RESPONSE_TYPES = {
   arraybuffer: "arrayBuffer",
   buffer: "arrayBuffer",
 };
-function parseResponseType(tail) {
-  if (!tail) return "json";
-  if (RESPONSE_TYPES[tail]) return RESPONSE_TYPES[tail];
-  throw new SyntaxError("Unknown fetch- response type: " + tail);
+function parseResponseType(tail = "json") {
+  if (!(tail in RESPONSE_TYPES))
+    throw new SyntaxError("Unknown fetch- response type: " + tail);
+  if (tail === "json")
+    return async function jsonResponse(res) {
+      const text = await res.text();
+      return text ? JSON.parse(text) : undefined;
+    };
+  tail = RESPONSE_TYPES[tail];
+  return function response(resp) { return resp[tail](); }
 }
 
 const METHOD = {
@@ -73,38 +79,41 @@ function parseSegments(name, splitter, methodMap) {
 
 //Att! fetch defaults to .json(), not .text()!
 async function basicFetch() {
-  return (await fetch(this.value)).json();
+  const resp = await fetch(this.value);
+  let res;
+  try { res = resp.json(); } catch (e) { res = undefined; }
+  return res;
 }
 
 function fetchDashRule(name) {
   const [head, type, tail] = name.split(/([._])/);
-  const responseType = parseResponseType(tail);
+  const responder = parseResponseType(tail);
   const m = type === "." ? "GET" : "POST";
   const { headers, method = m } = parseSegments(head, "-", type === "." ? dotMETHOD : METHOD);
   return type === "." ?
     async function fetchDash() {
-      return (await fetch(this.value, { method, headers }))[responseType]();
+      return responder(await fetch(this.value, { method, headers }));
     } :
     async function fetchDash_(body) {
-      return (await fetch(this.value, { method, headers, body }))[responseType]();
+      return responder(await fetch(this.value, { method, headers, body }));
     };
 }
 
 //fetch.
 function fetchDotRule(name) {
   const [, tail] = name.split(".");
-  const responseType = parseResponseType(tail);
+  const responder = parseResponseType(tail);
   return async function fetchDash() {
-    return (await fetch(this.value, { method: "GET" }))[responseType]();
+    return responder((await fetch(this.value, { method: "GET" })));
   }
 }
 
 //fetch_
 function fetch_Rule(name) {
   const [, tail] = name.split("_");
-  const responseType = parseResponseType(tail);
+  const responder = parseResponseType(tail);
   return async function fetch_(body) {
-    return (await fetch(this.value, { method: "POST", body }))[responseType]();
+    return await responder(await fetch(this.value, { method: "POST", body }));
   };
 }
 
