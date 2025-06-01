@@ -18,7 +18,7 @@ export function class_(name) {
 }
 
 export function toggleClass_(name) {
-  const segs = name.split("_")[1];
+  const segs = name.split("_");
   const name2 = segs[1];
   let previous;
   if (!name2) {
