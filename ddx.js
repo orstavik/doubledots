@@ -219,8 +219,11 @@ function nav(e) {
     const url = new URL(a.href, location.href);
     if (external(url))
       return;
-    history.pushState(null, null, url);
     e.preventDefault();
+    const target = a.getAttribute("target");
+    if (target.toLowerCase() === "_blank")// todo fix the logic here so all the target values are handled correctly.  && target !== "_self" && target !== "_top") //todo 
+      return window.open(url.href, target);
+    history.pushState(null, null, url);
   }
   eventLoop.dispatchBatch(LocationEvent(), triggers);
 }
