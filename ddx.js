@@ -103,6 +103,35 @@ function class_(rule) {
 // class? gives the classlist as a string.
 // class. gives the classlist object.
 
+const PREFIX = "doubledots-250606-";
+function broadcast_(rule) {
+  const name = PREFIX + (rule.split("_")[1] || "");
+  return function broadcast_name(input) {
+    return (this.__broadcast ??= new BroadcastChannel(name)).postMessage(input), input;
+  };
+}
+
+function Broadcast_(rule) {
+  const name = PREFIX + (rule.split("_")[1] || "");
+
+  return class Broadcast_name extends AttrCustom {
+    upgrade() {
+      this.__broadcast ??= new BroadcastChannel(name);
+      this.__broadcast.addEventListener("message", this.__listener = this.onmessage.bind(this));
+    }
+
+    onmessage({ data }) {
+      this.dispatchEvent(Object.assign(new Event("broadcast"), { [Event.data]: data }));
+    }
+
+    remove() {
+      this.__broadcast.removeEventListener("message", this.__listener);
+      this.__broadcast.close();
+      super.remove();
+    }
+  }
+}
+
 function matchesPath(observedPaths, path) {
   for (let observedPath of observedPaths)
     if (path.startsWith(observedPath))
@@ -1048,5 +1077,5 @@ class Class extends AttrCustom {
   get value() { return super.value; }
 }
 
-export { Class, DCLTrigger, DocumentTrigger, ER, ErAnalysis, Nav, PostPropTrigger, PrePropTrigger, State, State_, WindowTrigger, classDot, class_, clazz, dynamicSimpleProp, dynamicDots as dynamicsDots, eDot, e_, embrace, basicFetch as fetch, fetchDashRule as "fetch-", fetchDotRule as "fetch.", fetch_Rule as fetch_, formdata_, gatRule, nav, rat_Rule, sat_Rule, state, state_, tat_Rule };
+export { Broadcast_, Class, DCLTrigger, DocumentTrigger, ER, ErAnalysis, Nav, PostPropTrigger, PrePropTrigger, State, State_, WindowTrigger, broadcast_, classDot, class_, clazz, dynamicSimpleProp, dynamicDots as dynamicsDots, eDot, e_, embrace, basicFetch as fetch, fetchDashRule as "fetch-", fetchDotRule as "fetch.", fetch_Rule as fetch_, formdata_, gatRule, nav, rat_Rule, sat_Rule, state, state_, tat_Rule };
 //# sourceMappingURL=ddx.js.map

@@ -1,0 +1,10 @@
+<script src="/dd.js"></script>
+<script type="module" src="v1.js?BROADCAST_~" _:define></script>
+
+<iframe src="iframe.html"></iframe>
+
+<div _:make-msg:wait_1000:broadcast_bob></div>
+
+<script type="module">
+  document.Reactions.define("make-msg", e => ({ alice: "bob" }));
+</script>

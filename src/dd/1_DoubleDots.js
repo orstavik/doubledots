@@ -40,11 +40,11 @@ class AttrWeakSet extends Set {
   static #key;
   static GC = 10_000;
 
-  static gc() {
-    let active, l;
+  static gc() {                               //todo we can no longer rely on isConnected to determine activity..
+    let active, l;                            //todo we should also have an iterator here i think. the current iterator doesn't deref?
     for (let wr of AttrWeakSet.#bigSet) {
       if (l = wr.deref())
-        for (let a of l)
+        for (let a of l)  
           a.isConnected ? (active = true) : (l.delete(a), a.remove());
       else
         AttrWeakSet.#bigSet.delete(wr);
@@ -114,6 +114,7 @@ async function importBasedEval(codeString) {
 }
 
 /**
+ * todo this concept is now being replaced by more use of portals? a better structure?
  * miniQuerySelector
  * 
  * Converts miniQuerySelector given in super limited DoubleDots notation
