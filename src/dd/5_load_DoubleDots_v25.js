@@ -100,8 +100,7 @@
     if (!this.isConnected) return og.call(this, ...args);
     const n = args[0];
     const res = og.call(this, ...args);
-    if (n instanceof Element && !n.isConnected)
-      dGrade.add(n);
+    n instanceof Element && !n.isConnected && dGrade.add(n);
     return res;
   }
   function removesArgs1(og, ...args) {
@@ -110,8 +109,7 @@
     if (!this.isConnected) return og.call(this, ...args);
     const n = args[1];
     const res = og.call(this, ...args);
-    if (n instanceof Element && !n.isConnected)
-      dGrade.add(n);
+    n instanceof Element && !n.isConnected && dGrade.add(n);
     return res;
   }
   function range_surroundContent(og, ...args) {
@@ -120,9 +118,9 @@
     const toBeUpgraded = upgradeables(this, args[0]); //needed to validate the args[0]
     if (!this.isConnected)
       return og.call(this, ...args);
-    const removables = [...args[0].children];
+    const removables = args[0].children.length && [...args[0].children];
     const res = og.call(this, ...args);
-    dGrade.add(...removables.filter(n => !n.isConnected));
+    removables && dGrade.add(...removables.filter(n => !n.isConnected));
     AttrCustom.upgradeBranch(...toBeUpgraded);
     return res;
   }
@@ -138,9 +136,9 @@
     if (dGrade.has(this.getRootNode({ composed: true })))
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     if (!this.isConnected) return og.call(this, ...args);
-    const removables = [...this.children];
+    const removables = this.children.length && [...this.children];
     const res = og.call(this, ...args);
-    dGrade.add(...removables.filter(n => !n.isConnected));
+    removables && dGrade.add(...removables.filter(n => !n.isConnected));
     return res;
   }
   function element_replaceWith(og, ...args) {
@@ -159,10 +157,9 @@
     if (dGrade.has(this.getRootNode({ composed: true })))
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     const toBeUpgraded = upgradeables(this, ...args);
-    const removables = this.isConnected && [...this.children];
+    const removables = this.isConnected && this.children.length && [...this.children];
     const res = og.call(this, ...args);
-    if (removables)
-      dGrade.add(...removables.filter(n => !n.isConnected));
+    removables && dGrade.add(...removables.filter(n => !n.isConnected));
     AttrCustom.upgradeBranch(...toBeUpgraded);
     return res;
   }
@@ -170,9 +167,9 @@
     if (dGrade.has(this.getRootNode({ composed: true })))
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     if (!this.isConnected) return og.call(this, ...args);
-    const removables = [...this.children];
+    const removables = this.children.length && [...this.children];
     const res = og.call(this, ...args);
-    dGrade.add(...removables);
+    removables && dGrade.add(...removables);
     AttrCustom.upgradeBranch(...this.children);
     return res;
   }
@@ -191,9 +188,9 @@
     if (dGrade.has(this.getRootNode({ composed: true })))
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     if (!this.isConnected) return og.call(this, ...args);
-    const removables = [...this.children];
+    const removables = this.children.length && [...this.children];
     const res = og.call(this, ...args);
-    dGrade.add(...removables);
+    removables && dGrade.add(...removables);
     return res;
   }
   function insertAdjacentHTML_DD(og, position, ...args) {
