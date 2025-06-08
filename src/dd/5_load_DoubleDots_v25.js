@@ -1,6 +1,6 @@
 (function () {
 
-  const ElementProtoDeprecations = [
+  const Deprecations = [
     "hasAttributeNS",
     "getAttributeNS",
     "setAttributeNS",
@@ -11,7 +11,7 @@
     "removeAttributeNode",
   ];
 
-  for (const prop of ElementProtoDeprecations) {
+  for (const prop of Deprecations) {
     const og = Object.getOwnPropertyDescriptor(Element.prototype, prop);
     const desc = Object.assign({}, og, {
       value: function () {
@@ -209,10 +209,11 @@
     else if (position === "afterend")
       root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this) + 1;
     const childCount = root.children.length;
-    og.call(this, position, ...args);
+    const res = og.call(this, position, ...args);
     const addCount = root.children.length - childCount;
     const newRoots = Array.from(root.children).slice(index, index + addCount);
     AttrCustom.upgradeBranch(...newRoots);
+    return res;
   }
 
   const map = [
@@ -249,8 +250,7 @@
     [Range.prototype, "surroundContents", range_surroundContent],
 
     [Element.prototype, "insertAdjacentHTML", insertAdjacentHTML_DD],
-  ];
-  const mapSet = [
+
     [Element.prototype, "innerHTML", innerHTMLsetter],
     [ShadowRoot.prototype, "innerHTML", innerHTMLsetter],
     [Element.prototype, "outerHTML", outerHTMLsetter],
@@ -258,26 +258,15 @@
     [HTMLElement.prototype, "innerText", innerTextContentSetter],
   ];
 
-  function monkeyPatchValue(obj, prop, monkey) {
-    const ogDesc = Object.getOwnPropertyDescriptor(obj, prop);
-    const og = ogDesc.value;
-    function monkey2(...args) { return monkey.call(this, og, ...args); }
-    const desc = Object.assign({}, ogDesc, { value: monkey2 });
-    Object.defineProperty(obj, prop, desc);
+  for (const [obj, prop, monkey] of map) {
+    const d = Object.getOwnPropertyDescriptor(obj, prop);
+    const og = d.value || d.set;
+    function monkey2(...args) {
+      return monkey.call(this, og, ...args);
+    }
+    Object.defineProperty(obj, prop,
+      Object.assign({}, d, { [d.set ? "set" : "value"]: monkey2 }));
   }
-  for (const [obj, prop, monkey] of map)
-    monkeyPatchValue(obj, prop, monkey);
-
-  function monkeyPatchSet(obj, prop, monkey) {
-    const ogDesc = Object.getOwnPropertyDescriptor(obj, prop);
-    const og = ogDesc.set;
-    function monkey2(...args) { return monkey.call(this, og, ...args); }
-    const desc = Object.assign({}, ogDesc, { set: monkey2 });
-    Object.defineProperty(obj, prop, desc);
-  }
-
-  for (const [obj, prop, monkey] of mapSet)
-    monkeyPatchSet(obj, prop, monkey);
 })();
 
 export function loadDoubleDots(aelOG) {
