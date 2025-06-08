@@ -1089,336 +1089,273 @@ Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
 DoubleDots.EventLoopError = EventLoopError;
 window.EventLoop = EventLoop;
 
-const dGrade = new WeakSet();
+(function () {
 
-function upgradeables(parent, ...args) {
-  if (dGrade.has(parent.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot get new objects. Is pointless.");
+  const Deprecations = [
+    "hasAttributeNS",
+    "getAttributeNS",
+    "setAttributeNS",
+    "removeAttributeNS",
+    "getAttributeNodeNS",
+    "setAttributeNodeNS",
+    "setAttributeNode",
+    "removeAttributeNode",
+  ];
 
-  const res = [];
-  if (!parent.isConnected) {
-    for (const a of args) {
-      if (a.isConnected)
-        throw new Error("Downgraded objects cannot be reinjected. Here, you are taking an upgraded object and trying to add it in a notYetUpgraded element branch.");
-      if (dGrade.has(a.getRootNode({ composed: true })))
-        throw new Error("Downgraded objects cannot be reinjected.");
-    }
-    return res;
+  for (const prop of Deprecations) {
+    const og = Object.getOwnPropertyDescriptor(Element.prototype, prop);
+    const desc = Object.assign({}, og, {
+      value: function () {
+        throw new Error(`Element.prototype.${prop} is deprecated in DoubleDots strict. setAttribute(name,str)/getAttribute(name) instead.`);
+      }
+    });
+    Object.defineProperty(Element.prototype, prop, desc);
   }
-  const ctx = parent.getRootNode();
-  for (const a of args) {
-    if (a.isConnected) {
-      if (a.getRootNode() !== ctx)
-        throw new Error("Adoption is illegal in DD.");
 
-    } else {
-      if (dGrade.has(a.getRootNode({ composed: true })))
-        throw new Error("Downgraded objects cannot be reinjected.");
-      res.push(a);
-    }
-  }
-  return res;
-}
+  const dGrade = new WeakSet();
 
-function insertArgs(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  const toBeUpgraded = upgradeables(this, ...args);
-  const res = og.call(this, ...args);
-  AttrCustom.upgradeBranch(...toBeUpgraded);
-  return res;
-}
-function insertArgs0(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  const toBeUpgraded = upgradeables(this, args[0]);
-  const res = og.call(this, ...args);
-  AttrCustom.upgradeBranch(...toBeUpgraded);
-  return res;
-}
-function insertArgs1(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  const toBeUpgraded = upgradeables(this, args[1]);
-  const res = og.call(this, ...args);
-  AttrCustom.upgradeBranch(...toBeUpgraded);
-  return res;
-}
-function removesArgs0(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  if (!this.isConnected) return og.call(this, ...args);
-  const n = args[0];
-  const res = og.call(this, ...args);
-  if (n instanceof Element && !n.isConnected)
-    dGrade.add(n);
-  return res;
-}
-function removesArgs1(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  if (!this.isConnected) return og.call(this, ...args);
-  const n = args[1];
-  const res = og.call(this, ...args);
-  if (n instanceof Element && !n.isConnected)
-    dGrade.add(n);
-  return res;
-}
-function range_surroundContent(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  const toBeUpgraded = upgradeables(this, args[0]); //needed to validate the args[0]
-  if (!this.isConnected)
-    return og.call(this, ...args);
-  const removables = [...args[0].children];
-  const res = og.call(this, ...args);
-  dGrade.add(...removables.filter(n => !n.isConnected));
-  AttrCustom.upgradeBranch(...toBeUpgraded);
-  return res;
-}
-function removeThis(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  if (!this.isConnected) return og.call(this, ...args);
-  const res = og.call(this, ...args);
-  dGrade.add(this);
-  return res;
-}
-function removeChildren() {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  if (!this.isConnected) return og.call(this, ...args);
-  const removables = [...this.children];
-  const res = og.call(this, ...args);
-  dGrade.add(...removables.filter(n => !n.isConnected));
-  return res;
-}
-function element_replaceWith(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  const toBeUpgraded = upgradeables(this, ...args);
-  const wasConnected = this.isConnected;
-  const res = og.call(this, ...args);
-  if (wasConnected) {
-    dGrade.add(this);
-    AttrCustom.upgradeBranch(...toBeUpgraded);
-  }
-  return res;
-}
-function parentnode_replaceChildren(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  const toBeUpgraded = upgradeables(this, ...args);
-  const removables = this.isConnected && [...this.children];
-  const res = og.call(this, ...args);
-  if (removables)
-    dGrade.add(...removables.filter(n => !n.isConnected));
-  AttrCustom.upgradeBranch(...toBeUpgraded);
-  return res;
-}
-function innerHTMLsetter(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  if (!this.isConnected) return og.call(this, ...args);
-  const removables = [...this.children];
-  const res = og.call(this, ...args);
-  dGrade.add(...removables);
-  AttrCustom.upgradeBranch(...this.children);
-  return res;
-}
-function outerHTMLsetter(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  if (!this.isConnected || !this.parentNode) return og.call(this, ...args);
-  const sibs = [...this.parentNode.children];
-  const res = og.call(this, ...args);
-  dGrade.add(this);
-  const sibs2 = [...this.parentNode.children].filter(n => !sibs.includes(n));
-  AttrCustom.upgradeBranch(...sibs2);
-  return res;
-}
-function innerTextContentSetter(og, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  if (!this.isConnected) return og.call(this, ...args);
-  const removables = [...this.children];
-  const res = og.call(this, ...args);
-  dGrade.add(...removables);
-  return res;
-}
-function insertAdjacentHTML_DD(og, position, ...args) {
-  if (dGrade.has(this.getRootNode({ composed: true })))
-    throw new Error("Downgraded objects cannot be changed. Is pointless.");
-  let root, index;
-  if (position === "afterbegin")
-    root = this, index = 0;
-  else if (position === "beforeend")
-    root = this, index = this.children.length;
-  else if (position === "beforebegin")
-    root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this);
-  else if (position === "afterend")
-    root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this) + 1;
-  const childCount = root.children.length;
-  og.call(this, position, ...args);
-  const addCount = root.children.length - childCount;
-  const newRoots = Array.from(root.children).slice(index, index + addCount);
-  AttrCustom.upgradeBranch(...newRoots);
-}
-
-const map = [
-  [Element.prototype, "append", insertArgs],
-  [Element.prototype, "prepend", insertArgs],
-  [Element.prototype, "before", insertArgs],
-  [Element.prototype, "after", insertArgs],
-  [Document.prototype, "append", insertArgs],
-  [Document.prototype, "prepend", insertArgs],
-  [DocumentFragment.prototype, "append", insertArgs],
-  [DocumentFragment.prototype, "prepend", insertArgs],
-
-  [Node.prototype, "appendChild", insertArgs0],
-  [Node.prototype, "insertBefore", insertArgs0],
-  [Node.prototype, "replaceChild", insertArgs0],
-  [Range.prototype, "insertNode", insertArgs0],
-
-  [Element.prototype, "insertAdjacentElement", insertArgs1],
-
-  [Node.prototype, "removeChild", removesArgs0],
-  [Node.prototype, "replaceChild", removesArgs1],
-  [Range.prototype, "deleteContents", removeChildren],
-  [Range.prototype, "extractContents", removeChildren],
-  [Element.prototype, "remove", removeThis],
-
-  [Element.prototype, "replaceWith", element_replaceWith],
-  [Element.prototype, "replaceChildren", parentnode_replaceChildren],
-  [Document.prototype, "replaceChildren", parentnode_replaceChildren],
-  [DocumentFragment.prototype, "replaceChildren", parentnode_replaceChildren],
-
-  [Range.prototype, "surroundContents", range_surroundContent],
-
-  [Element.prototype, "insertAdjacentHTML", insertAdjacentHTML_DD],
-  // [ShadowRoot.prototype, "insertAdjacentHTML", insertAdjacentHTML_DD],
-];
-const mapSet = [
-  [Element.prototype, "innerHTML", innerHTMLsetter],
-  [ShadowRoot.prototype, "innerHTML", innerHTMLsetter],
-  [Element.prototype, "outerHTML", outerHTMLsetter],
-  [Node.prototype, "textContent", innerTextContentSetter],
-  [HTMLElement.prototype, "innerText", innerTextContentSetter],
-];
-
-function monkeyPatchValue(obj, prop, monkey) {
-  const ogDesc = Object.getOwnPropertyDescriptor(obj, prop);
-  const og = ogDesc.value;
-  function monkey2(...args) { return monkey.call(this, og, ...args); }
-  const desc = Object.assign({}, ogDesc, { value: monkey2 });
-  Object.defineProperty(obj, prop, desc);
-}
-debugger //check the desc is correct
-for (const [obj, prop, monkey] of map)
-  monkeyPatchValue(obj, prop, monkey);
-
-function monkeyPatchSet(obj, prop, monkey) {
-  const ogDesc = Object.getOwnPropertyDescriptor(obj, prop);
-  const og = ogDesc.set;
-  function monkey2(...args) { return monkey.call(this, og, ...args); }
-  const desc = Object.assign({}, ogDesc, { set: monkey2 });
-  debugger //check the desc is correct
-  Object.defineProperty(obj, prop, desc);
-}
-
-debugger //check the desc is correct
-for (const [obj, prop, monkey] of mapSet)
-  monkeyPatchSet(obj, prop, monkey);
-
-(function (Element_p, ShadowRoot_p) {
-
-  const setAttributeOG = Element_p.setAttribute;
-  const getAttributeNodeOG = Element_p.getAttributeNode;
-  function setAttribute_DD(name, value) {
-    //0. syntax error for "override-"
+  function setAttribute_DD(og, name, value) {
     if (name.startsWith("override-"))
       throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
-    //1. treat the normal normal
-    // if (!name.includes(":"))
-    // return setAttributeOG.call(this, name, value);
-    //2. if the name is DoubleDots
-    let at = getAttributeNodeOG.call(this, name);
+    const at = this.getAttributeNode(name);
     if (at) {
       at.value !== value && (at.value = value);
       return;
     }
-    setAttributeOG.call(this, name, value);
-    at = getAttributeNodeOG.call(this, name);
-    AttrCustom.upgrade(at);
+    const res = og.call(this, name, value);
+    this.isConnected && AttrCustom.upgrade(this.getAttributeNode(name));
+    return res;
   }
-  const mainOverrides = {
-    "Element.prototype.innerHTML": innerHTML_DD_el,
-    "ShadowRoot.prototype.innerHTML": innerHTML_DD_sr,
-    "Element.prototype.insertAdjacentHTML": insertAdjacentHTML_DD,
-    "Element.prototype.setAttribute": setAttribute_DD,
-  };
-  for (let [path, func] of Object.entries(mainOverrides))
-    monkeyPatch(path, func);
-})(Element.prototype, ShadowRoot.prototype);
 
-// (function () {
-//   //todo we need the innerHTML and insertAdjacentHTML and setAttribute to be added to the nativeMethods.
+  function removeAttribute_DD(og, name) {
+    this.getAttributeNode(name)?.remove?.();
+    return og.call(this, name);
+  }
 
-//   const EMPTY = [];
-//   //JS injections is allowed when we
-//   //1) move elements within the same rootNode (no upgrade of AttrCustom)
-//   //2) move elements from one DocumentFragment to another (no upgrade of AttrCustom)
-//   //3) inject elements *from* DocumentFragments to an .isConnected element (DO upgrade of AttrCustom)
-//   //* otherwise just fail.
-//   function checkRoot(root, child, r = root.getRootNode(), cr = child?.getRootNode()) {
-//     if (root.isConnected && child instanceof DocumentFragment)
-//       return [...child.children];
-//     if (root.isConnected && (child instanceof Element) && (cr instanceof DocumentFragment))
-//       return [child];
-//     if (!(child instanceof Element) || cr === r || (cr instanceof DocumentFragment && r instanceof DocumentFragment))
-//       return EMPTY;
-//     throw new DoubleDots.InsertElementFromJSError(root, child);
-//   }
+  function upgradeables(parent, ...args) {
+    if (dGrade.has(parent.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot get new objects. Is pointless.");
 
-//   function sameRootFirstArg(child) {
-//     return checkRoot(this, child);
-//   }
-//   function sameRootSecond(_, child) {
-//     return checkRoot(this, child);
-//   }
-//   function sameRootSpreadArg(...args) {
-//     const r = this.getRootNode();
-//     return args.map(child => checkRoot(this, child, r)).flat();
-//   }
+    const res = [];
+    if (!parent.isConnected) {
+      for (const a of args) {
+        if (a.isConnected)
+          throw new Error("Downgraded objects cannot be reinjected. Here, you are taking an upgraded object and trying to add it in a notYetUpgraded element branch.");
+        if (dGrade.has(a.getRootNode({ composed: true })))
+          throw new Error("Downgraded objects cannot be reinjected.");
+      }
+      return res;
+    }
+    const ctx = parent.getRootNode();
+    for (const a of args) {
+      if (a.isConnected) {
+        if (a.getRootNode() !== ctx)
+          throw new Error("Adoption is illegal in DD.");
 
-//   function verifyAndUpgrade(OG, verify) {
-//     return function (...args) {
-//       const upgrades = verify.call(this, ...args);
-//       const res = OG.apply(this, args);
-//       upgrades.length && AttrCustom.upgradeBranch(...upgrades);
-//       return res;
-//     };
-//   }
+      } else {
+        if (dGrade.has(a.getRootNode({ composed: true })))
+          throw new Error("Downgraded objects cannot be reinjected.");
+        res.push(a);
+      }
+    }
+    return res;
+  }
 
-//   const Mask = {
-//     "Node.prototype.insertBefore": sameRootFirstArg,
-//     "Node.prototype.appendChild": sameRootFirstArg,
-//     "Element.prototype.after": sameRootSpreadArg,
-//     "Element.prototype.before": sameRootSpreadArg,
-//     "Element.prototype.insertAdjacentElement": sameRootSecond,
-//     "Element.prototype.append": sameRootSpreadArg,
-//     "Element.prototype.prepend": sameRootSpreadArg,
-//     "Document.prototype.append": sameRootSpreadArg,
-//     "Document.prototype.prepend": sameRootSpreadArg,
-//     "DocumentFragment.prototype.append": sameRootSpreadArg,
-//     "DocumentFragment.prototype.prepend": sameRootSpreadArg,
-//     //replaceChild
-//   };
+  function insertArgs(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    const toBeUpgraded = upgradeables(this, ...args);
+    const res = og.call(this, ...args);
+    AttrCustom.upgradeBranch(...toBeUpgraded);
+    return res;
+  }
+  function insertArgs0(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    const toBeUpgraded = upgradeables(this, args[0]);
+    const res = og.call(this, ...args);
+    AttrCustom.upgradeBranch(...toBeUpgraded);
+    return res;
+  }
+  function insertArgs1(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    const toBeUpgraded = upgradeables(this, args[1]);
+    const res = og.call(this, ...args);
+    AttrCustom.upgradeBranch(...toBeUpgraded);
+    return res;
+  }
+  function removesArgs0(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    if (!this.isConnected) return og.call(this, ...args);
+    const n = args[0];
+    const res = og.call(this, ...args);
+    n instanceof Element && !n.isConnected && dGrade.add(n);
+    return res;
+  }
+  function removesArgs1(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    if (!this.isConnected) return og.call(this, ...args);
+    const n = args[1];
+    const res = og.call(this, ...args);
+    n instanceof Element && !n.isConnected && dGrade.add(n);
+    return res;
+  }
+  function range_surroundContent(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    const toBeUpgraded = upgradeables(this, args[0]); //needed to validate the args[0]
+    if (!this.isConnected)
+      return og.call(this, ...args);
+    const removables = args[0].children.length && [...args[0].children];
+    const res = og.call(this, ...args);
+    removables && dGrade.add(...removables.filter(n => !n.isConnected));
+    AttrCustom.upgradeBranch(...toBeUpgraded);
+    return res;
+  }
+  function removeThis(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    if (!this.isConnected) return og.call(this, ...args);
+    const res = og.call(this, ...args);
+    dGrade.add(this);
+    return res;
+  }
+  function removeChildren() {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    if (!this.isConnected) return og.call(this, ...args);
+    const removables = this.children.length && [...this.children];
+    const res = og.call(this, ...args);
+    removables && dGrade.add(...removables.filter(n => !n.isConnected));
+    return res;
+  }
+  function element_replaceWith(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    const toBeUpgraded = upgradeables(this, ...args);
+    const wasConnected = this.isConnected;
+    const res = og.call(this, ...args);
+    if (wasConnected) {
+      dGrade.add(this);
+      AttrCustom.upgradeBranch(...toBeUpgraded);
+    }
+    return res;
+  }
+  function parentnode_replaceChildren(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    const toBeUpgraded = upgradeables(this, ...args);
+    const removables = this.isConnected && this.children.length && [...this.children];
+    const res = og.call(this, ...args);
+    removables && dGrade.add(...removables.filter(n => !n.isConnected));
+    AttrCustom.upgradeBranch(...toBeUpgraded);
+    return res;
+  }
+  function innerHTMLsetter(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    if (!this.isConnected) return og.call(this, ...args);
+    const removables = this.children.length && [...this.children];
+    const res = og.call(this, ...args);
+    removables && dGrade.add(...removables);
+    AttrCustom.upgradeBranch(...this.children);
+    return res;
+  }
+  function outerHTMLsetter(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    if (!this.isConnected || !this.parentNode) return og.call(this, ...args);
+    const sibs = [...this.parentNode.children];
+    const res = og.call(this, ...args);
+    dGrade.add(this);
+    const sibs2 = [...this.parentNode.children].filter(n => !sibs.includes(n));
+    AttrCustom.upgradeBranch(...sibs2);
+    return res;
+  }
+  function innerTextContentSetter(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    if (!this.isConnected) return og.call(this, ...args);
+    const removables = this.children.length && [...this.children];
+    const res = og.call(this, ...args);
+    removables && dGrade.add(...removables);
+    return res;
+  }
+  function insertAdjacentHTML_DD(og, position, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    let root, index;
+    if (position === "afterbegin")
+      root = this, index = 0;
+    else if (position === "beforeend")
+      root = this, index = this.children.length;
+    else if (position === "beforebegin")
+      root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this);
+    else if (position === "afterend")
+      root = this.parentNode, index = Array.prototype.indexOf.call(root.children, this) + 1;
+    const childCount = root.children.length;
+    const res = og.call(this, position, ...args);
+    const addCount = root.children.length - childCount;
+    const newRoots = Array.from(root.children).slice(index, index + addCount);
+    AttrCustom.upgradeBranch(...newRoots);
+    return res;
+  }
 
-//   for (let [path, verify] of Object.entries(Mask))
-//     monkeyPatch(path,
-//       verifyAndUpgrade(path.split(".").reduce((o, p) => o[p], window), verify));
-// })();
+  const map = [
+    [Element.prototype, "setAttribute", setAttribute_DD],
+    [Element.prototype, "removeAttribute", removeAttribute_DD],
+
+    [Element.prototype, "append", insertArgs],
+    [Element.prototype, "prepend", insertArgs],
+    [Element.prototype, "before", insertArgs],
+    [Element.prototype, "after", insertArgs],
+    [Document.prototype, "append", insertArgs],
+    [Document.prototype, "prepend", insertArgs],
+    [DocumentFragment.prototype, "append", insertArgs],
+    [DocumentFragment.prototype, "prepend", insertArgs],
+
+    [Node.prototype, "appendChild", insertArgs0],
+    [Node.prototype, "insertBefore", insertArgs0],
+    [Node.prototype, "replaceChild", insertArgs0],
+    [Range.prototype, "insertNode", insertArgs0],
+
+    [Element.prototype, "insertAdjacentElement", insertArgs1],
+
+    [Node.prototype, "removeChild", removesArgs0],
+    [Node.prototype, "replaceChild", removesArgs1],
+    [Range.prototype, "deleteContents", removeChildren],
+    [Range.prototype, "extractContents", removeChildren],
+    [Element.prototype, "remove", removeThis],
+
+    [Element.prototype, "replaceWith", element_replaceWith],
+    [Element.prototype, "replaceChildren", parentnode_replaceChildren],
+    [Document.prototype, "replaceChildren", parentnode_replaceChildren],
+    [DocumentFragment.prototype, "replaceChildren", parentnode_replaceChildren],
+
+    [Range.prototype, "surroundContents", range_surroundContent],
+
+    [Element.prototype, "insertAdjacentHTML", insertAdjacentHTML_DD],
+
+    [Element.prototype, "innerHTML", innerHTMLsetter],
+    [ShadowRoot.prototype, "innerHTML", innerHTMLsetter],
+    [Element.prototype, "outerHTML", outerHTMLsetter],
+    [Node.prototype, "textContent", innerTextContentSetter],
+    [HTMLElement.prototype, "innerText", innerTextContentSetter],
+  ];
+
+  for (const [obj, prop, monkey] of map) {
+    const d = Object.getOwnPropertyDescriptor(obj, prop);
+    const og = d.value || d.set;
+    function monkey2(...args) {
+      return monkey.call(this, og, ...args);
+    }
+    Object.defineProperty(obj, prop,
+      Object.assign({}, d, { [d.set ? "set" : "value"]: monkey2 }));
+  }
+})();
 
 function loadDoubleDots(aelOG) {
   if (document.readyState !== "loading")
@@ -1494,20 +1431,12 @@ function define() {
   defineImpl(new URL(this.value, base), this.ownerDocument);
 }
 
-// (function () {
-const ElAppendOG = DoubleDots.nativeMethods("Element.prototype.append");
-const DocfragAppendOG = DoubleDots.nativeMethods("DocumentFragment.prototype.append");
-const CommentAfterOG = DoubleDots.nativeMethods("Comment.prototype.after");
-const cloneNodeOG = DoubleDots.nativeMethods("Node.prototype.cloneNode");
-const docCreateElOG = DoubleDots.nativeMethods("Document.prototype.createElement");
-const setAttributeOG = DoubleDots.nativeMethods("Element.prototype.setAttribute");
-
 function setAttributes(el, txt) {
   const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
   pieces.forEach((unit, i) => {
     if (i % 2 === 1) {
       const [_, name, value] = unit.match(/^([_a-zA-Z][a-zA-Z0-9.:_-]*)="([^"]*)"$/);
-      setAttributeOG.call(el, name, value);
+      el.setAttribute(name, value);
     } else if (unit.trim() !== "") {
       throw new SyntaxError(`<!--<template ${txt}>-->` + ' has an incorrect name="value"');
     }
@@ -1516,35 +1445,21 @@ function setAttributes(el, txt) {
 
 function subsumeNodes(at) {
   const el = at.ownerElement;
-  const t = docCreateElOG.call(document, "template");
+  const t = document.createElement("template");
   setAttributes(t, at.value);
-  DocfragAppendOG.call(t.content, ...el.childNodes);
-  ElAppendOG.call(el, t);
+  const nodes = [...el.childNodes];
+  t.content.append(...nodes.map(n => n.cloneNode?.(true) ?? n));
+  nodes.forEach(n => n.remove());
+  el.append(t);
   return t;
 }
 
-function subsumeHtml(at) {
-  const el = at.ownerElement;
-  el.innerHTML = `<template ${at.value}>${el.innerHTML}</template>`;
-  return el.children[0];
-}
-
 function absorbNodes({ start, nodes, txt, end }) {
-  const t = docCreateElOG.call(document, "template");
+  const t = document.createElement("template");
   setAttributes(t, txt);
-    //todo instead of doing this, we could just add the STR = `<template {txt}></template>` and add it and then check that the outerHTML of the element added === STR ??
-  DocfragAppendOG.call(t.content, ...nodes);
-  CommentAfterOG.call(start, t);
-  start.remove(), end?.remove();
-}
-
-function absorbHtml({ start, nodes, txt, end }) {
-  let content = "";
-  for (let n of nodes) {
-    content += n.outerHTML ?? n instanceof Comment ? `<!--${n.textContent}-->` : n.textContent;
-    n.remove();
-  }
-  start.insertAdjacentHTML("afterend", `<template ${txt}>${content}</template>`);
+  t.content.append(...nodes.map(n => n.cloneNode?.(true) ?? n));
+  nodes.forEach(n => n.remove());
+  start.after(t);
   start.remove(), end?.remove();
 }
 
@@ -1584,36 +1499,22 @@ function hashDebug(el) {
 }
 
 class Template extends AttrCustom {
-  upgrade(dynamic) {
+  upgrade() {
     const el = this.ownerElement;
     if (el instanceof HTMLTemplateElement)
       throw new Error("template trigger cannot be applied to template elements.");
     if (!el.childNodes.length === 0 || el.children.length === 1 && el.children[0] instanceof HTMLTemplateElement)
       return;
-    const subsume = dynamic ? subsumeHtml : subsumeNodes;
-    const absorb = dynamic ? absorbHtml : absorbNodes;
 
     const attributes = [...templateTriggers(el, this.trigger + ":")].reverse();
-    const templates = attributes.map(subsume);
+    const templates = attributes.map(subsumeNodes);
     for (let t of templates)
       for (let comment of [...templateCommentStarts(t.content)].reverse())
-        absorb(gobble(comment));
+        absorbNodes(gobble(comment));
 
     DoubleDots.log?.('template: production tutorial', hashDebug(el));
-    //todo now we don't have any events coming from the template: trigger.
-    //todo below is what it looks like if we upgrade and dispatch an event using downward propagation.
-    // for (let a of attributes)
-    //   AttrCustom.upgrade(a);
-    // eventLoop.dispatchBatch(new Event("template"), [attributes]);
   }
 }
-
-
-// todo this is no longer needed. We can now just use el.children.0
-function template() {
-  return this.ownerElement.children[0];
-}
-// })();
 
 function wait_(rule) {
   const [_, ms] = rule.split("_");
@@ -1624,7 +1525,7 @@ function wait_(rule) {
 //Wait_100:do-something:at.repeat //which would enable us to have a set timeout
 
 document.Triggers.define("template", Template);
-document.Reactions.define("template", template);
+// document.Reactions.define("template", template);
 document.Reactions.define("define", define);
 document.Reactions.defineRule("wait_", wait_);
 document.Reactions.define("prevent-default",

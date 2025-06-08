@@ -12,24 +12,34 @@ function eDot(name) {
   }
 }
 
+function parseStringValue(input) {
+  return input?.toString instanceof Function ? input = input.toString() :
+    input?.toJSON instanceof Function ? input = input.toJSON() :
+    input && input instanceof Object ? input = JSON.stringify(input) :
+    input;
+}
+
 function gatRule(name) {
   name = name.split(".")[1];
   return function gat() { return this.ownerElement.getAttribute(name); };
 }
+
 function sat_Rule(name) {
-  name = name.split(".")[1];
+  name = name.split("_")[1];
   if (!name)
     return function sat_(input) { return this.value = parseStringValue(input); }
   return function sat_(input) { return this.ownerElement.setAttribute(name, parseStringValue(input)); };
 }
+
 function tat_Rule(name) {
-  name = name.split(".")[1];
+  name = name.split("_")[1];
   if (!name)
     throw new SyntaxError("In :DD you can't do tat_ on the current attribute.");
   return function tat_(input) { return this.ownerElement.toggleAttribute(name); };
 }
+
 function rat_Rule(name) {
-  name = name.split(".")[1];
+  name = name.split("_")[1];
   return function rat_(input) { return this.ownerElement.removeAttribute(name); };
 }
 
@@ -280,7 +290,7 @@ function nav(e) {
       return;
     e.preventDefault();
     const target = a.getAttribute("target");
-    if (target.toLowerCase() === "_blank")// todo fix the logic here so all the target values are handled correctly.  && target !== "_self" && target !== "_top") //todo 
+    if (target?.toLowerCase() === "_blank")// todo fix the logic here so all the target values are handled correctly.  && target !== "_self" && target !== "_top") //todo
       return window.open(url.href, target);
     history.pushState(null, null, url);
   }
@@ -490,7 +500,7 @@ class EmbraceCommentFor {
     for (let em of removes)
       for (let n of em.topNodes)
         n.remove();
-    for (let em of embraces) 
+    for (let em of embraces)
       node.before(...em.topNodes);
     for (let i of changed) {
       const subScope = { [this.iName]: i };
@@ -1077,5 +1087,5 @@ class Class extends AttrCustom {
   get value() { return super.value; }
 }
 
-export { Broadcast_, Class, DCLTrigger, DocumentTrigger, ER, ErAnalysis, Nav, PostPropTrigger, PrePropTrigger, State, State_, WindowTrigger, broadcast_, classDot, class_, clazz, dynamicSimpleProp, dynamicDots as dynamicsDots, eDot, e_, embrace, basicFetch as fetch, fetchDashRule as "fetch-", fetchDotRule as "fetch.", fetch_Rule as fetch_, formdata_, gatRule, nav, rat_Rule, sat_Rule, state, state_, tat_Rule };
+export { Broadcast_, Class, DCLTrigger, DocumentTrigger, ER, ErAnalysis, Nav, PostPropTrigger, PrePropTrigger, State, State_, WindowTrigger, broadcast_, classDot, class_, clazz, dynamicSimpleProp, dynamicDots as dynamicsDots, eDot, e_, embrace, basicFetch as fetch, fetchDashRule as "fetch-", fetchDotRule as "fetch.", fetch_Rule as fetch_, formdata_, gatRule as "gat.", nav, rat_Rule as rat_, sat_Rule as sat_, state, state_, tat_Rule as tat_ };
 //# sourceMappingURL=ddx.js.map

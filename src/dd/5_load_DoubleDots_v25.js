@@ -32,7 +32,7 @@
       return;
     }
     const res = og.call(this, name, value);
-    AttrCustom.upgrade(this.getAttributeNode(name));
+    this.isConnected && AttrCustom.upgrade(this.getAttributeNode(name));
     return res;
   }
 
