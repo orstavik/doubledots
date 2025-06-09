@@ -1,0 +1,15 @@
+<head>
+  <script src="/dd.js"></script>
+  <script type="module" src="v1.js?gat.~" _:define></script>
+  <script>
+    document.Reactions.define("append-text", function(input) {
+      this.ownerElement.textContent = this.ownerElement.textContent + " " + input;
+    });
+  </script>
+</head>
+
+<body>
+  <p name="Peter" _:gat.name:show-text>My name is</p>
+</body>
+
+</html>

@@ -1,0 +1,18 @@
+<head>
+  <script src="/dd.js"></script>
+  <script type="module" src="v1.js?sat_~" _:define></script>
+  <script>
+    document.Reactions.define("get-random-type", () => ["text", "date", "color"][Math.floor(Math.random() * 3)]);
+    document.Reactions.define("random-value", () => Math.random() * 100);
+    document.Reactions.define("append-text", function(input) {
+      this.ownerElement.textContent = this.ownerElement.textContent + " " + input;
+    });
+  </script>
+</head>
+
+<body>
+  Random Input Type: <input _:get-random-type:sat_type/>
+  <div _:random-value:sat_:append-text>My value is </div>
+</body>
+
+</html>
