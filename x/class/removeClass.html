@@ -1,0 +1,14 @@
+<head>
+  <script src="/dd.js"></script>
+  <script type="module" src="v1.js?class_~" _:define></script>
+  <script>
+    document.Reactions.define("get-class", () => "it");
+    document.Reactions.define("show-class", function() {
+      this.ownerElement.textContent = this.ownerElement.className;
+    });
+  </script>
+</head>
+<body>
+  <div class="class is it removed" _:class_it_0:show-class></div>  
+  <div class="class is it removed" _:get-class:class__0:show-class></div>
+</body>

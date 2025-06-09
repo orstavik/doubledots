@@ -1,0 +1,15 @@
+<head>
+  <script src="/dd.js"></script>
+  <script type="module" src="v1.js?class_~" _:define></script>
+  <script>
+    document.Reactions.define("get-class", () => "active");
+    document.Reactions.define("show-class", function() {
+      this.ownerElement.textContent = this.ownerElement.className;
+    });
+  </script>
+</head>
+<body>
+  <div class="i am not active" _:class_active_2:show-class></div>  
+  <div class="i am not" _:get-class:class__2:show-class></div>
+</body>
+
