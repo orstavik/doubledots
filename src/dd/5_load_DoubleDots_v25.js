@@ -167,7 +167,7 @@
     if (dGrade.has(this.getRootNode({ composed: true })))
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     if (!this.isConnected) return og.call(this, ...args);
-    const removables = this.children.length && [...this.children];
+    const removables = this.children?.length && [...this.children];
     const res = og.call(this, ...args);
     removables && dGrade.add(...removables);
     AttrCustom.upgradeBranch(...this.children);
@@ -184,7 +184,18 @@
     AttrCustom.upgradeBranch(...sibs2);
     return res;
   }
-  function innerTextContentSetter(og, ...args) {
+  function innerTextSetter(og, ...args) {
+    if (dGrade.has(this.getRootNode({ composed: true })))
+      throw new Error("Downgraded objects cannot be changed. Is pointless.");
+    if (!this.isConnected) return og.call(this, ...args);
+    const removables = this.children.length && [...this.children];
+    const res = og.call(this, ...args);
+    removables && dGrade.add(...removables.filter(n => !n.isConnected));
+    return res;
+  }
+  function textContentSetter(og, ...args) {
+    if (this.nodeType !== Node.ELEMENT_NODE && this.nodeType !== Node.DOCUMENT_FRAGMENT_NODE)
+      return og.call(this, ...args);
     if (dGrade.has(this.getRootNode({ composed: true })))
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     if (!this.isConnected) return og.call(this, ...args);
@@ -251,8 +262,8 @@
     [Element.prototype, "innerHTML", innerHTMLsetter],
     [ShadowRoot.prototype, "innerHTML", innerHTMLsetter],
     [Element.prototype, "outerHTML", outerHTMLsetter],
-    [Node.prototype, "textContent", innerTextContentSetter],
-    [HTMLElement.prototype, "innerText", innerTextContentSetter],
+    [Node.prototype, "textContent", textContentSetter],
+    [HTMLElement.prototype, "innerText", innerTextSetter],
   ];
 
   for (const [obj, prop, monkey] of map) {

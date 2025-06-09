@@ -4,7 +4,7 @@ export * from "./class/v1.js";
 export * from "./broadcast/v1.js";
 export * from "./state/v1.js";
 export * from "./nav/v1.js";
-export * from "./embrace/v1.js";
+export * from "./embrace/v25.js";
 export * from "./dotRule/dot.js";
 export * from "./er/ErAnalysis.js";
 export * from "./fetch/v2.js";

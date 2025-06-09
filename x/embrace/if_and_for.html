@@ -1,8 +1,8 @@
-<script src="/dd_dev.js"></script>
-<script type="module" src="/ddx.js?el.~&fetch_json" _:define></script>
+<script src="/dd.js"></script>
+<script type="module" src="/ddx.js?el.~&fetch" _:define></script>
 <script type="module" src="v1.js?embrace" _:define></script>
 
-<div template: _::fetch_json:embrace="SerSeaEpi.json">
+<div template: _::fetch:embrace="SerSeaEpi.json">
   <h2>List of Series ("series" is an array? {{series instanceof Array}})</h2>
   <ol>
     <!-- <template for="serie of series" > -->

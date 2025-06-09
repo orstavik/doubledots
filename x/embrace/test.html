@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+  <test-e2e name="ifAndFor" page="if_and_for.html">
+    <script type="module" test>
+      window.testIfAndFor = async function (frame) {
+        return frame.document().body.innerHTML;
+      }
+    </script>
+
+    <template expected>
+      <div template:="" _::fetch:embrace="SerSeaEpi.json">
+        <h2>List of Series ("series" is an array? true)</h2>
+        <ol>
+
+          <li>
+            <h3>Batman The Series is the no. 0 in your play list.</h3>
+            <ul>
+
+              <li>
+                <h4>Hjelp! Batman is the no. 0 in series Batman The Series.</h4>
+
+                <ol>
+
+
+                  <!-- 
+              {
+  "type": "season",
+  "title": "Hjelp! Batman",
+  "episodes": [
+    "episode_pilot"
+  ]
+} 
+            -->
+                  <li>episode #0: episode_pilot produced by DC Comics.</li>
+                  <template for="episode of season.episodes">
+
+                    <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
+                    <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
+                  </template>
+                </ol>
+                <template if="(#season % 2) === 0">
+                  <ol>
+                    <template for="episode of season.episodes">
+
+                      <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
+                      <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
+                    </template>
+                  </ol>
+                </template>
+              </li>
+
+              <li>
+                <h4>Hjelp! Bat2 is the no. 1 in series Batman The Series.</h4>
+                <template if="(#season % 2) === 0">
+                  <ol>
+                    <template for="episode of season.episodes">
+
+                      <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
+                      <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
+                    </template>
+                  </ol>
+                </template>
+              </li>
+
+              <li>
+                <h4>Wat will be is the no. 2 in series Batman The Series.</h4>
+
+                <ol>
+
+
+                  <!-- 
+              {
+  "type": "season",
+  "title": "Wat will be",
+  "episodes": [
+    "episode_whatever",
+    "episode_whatever-batman-does"
+  ]
+} 
+            -->
+                  <li>episode #0: episode_whatever produced by DC Comics.</li>
+
+
+                  <!-- 
+              {
+  "type": "season",
+  "title": "Wat will be",
+  "episodes": [
+    "episode_whatever",
+    "episode_whatever-batman-does"
+  ]
+} 
+            -->
+                  <li>episode #1: episode_whatever-batman-does produced by DC Comics.</li>
+                  <template for="episode of season.episodes">
+
+                    <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
+                    <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
+                  </template>
+                </ol>
+                <template if="(#season % 2) === 0">
+                  <ol>
+                    <template for="episode of season.episodes">
+
+                      <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
+                      <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
+                    </template>
+                  </ol>
+                </template>
+              </li>
+
+              <li>
+                <h4>Hjelp! Wat! is the no. 3 in series Batman The Series.</h4>
+                <template if="(#season % 2) === 0">
+                  <ol>
+                    <template for="episode of season.episodes">
+
+                      <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
+                      <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
+                    </template>
+                  </ol>
+                </template>
+              </li>
+              <template for="season of serie.seasons">
+                <li>
+                  <h4>{{season.title}} is the no. {{#season}} in series {{serie.title}}.</h4>
+                  <template if="(#season % 2) === 0">
+                    <ol>
+                      <template for="episode of season.episodes">
+
+                        <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
+                        <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
+                      </template>
+                    </ol>
+                  </template>
+                </li>
+              </template>
+            </ul>
+          </li>
+          <template for="serie of series">
+            <li>
+              <h3>{{serie.title}} is the no. {{#serie}} in your play list.</h3>
+              <ul>
+                <template for="season of serie.seasons">
+                  <li>
+                    <h4>{{season.title}} is the no. {{#season}} in series {{serie.title}}.</h4>
+                    <template if="(#season % 2) === 0">
+                      <ol>
+                        <template for="episode of season.episodes">
+
+                          <!-- 
+              {{JSON.stringify(season, null, 2)}} 
+            -->
+                          <li>episode #{{#episode}}: {{episode}} produced by {{producer}}.</li>
+                        </template>
+                      </ol>
+                    </template>
+                  </li>
+                </template>
+              </ul>
+            </li>
+          </template>
+        </ol>
+        <template></template>
+      </div>
+    </template>
+  </test-e2e>
+  <!-- <test-e2e name="addPost" page="/" auto-off>
+    <script type="module" test>
+      window.testAddPost = async function (frame) {
+        let result = await frame.click("a[href='/auth/checkLogin']", "#result");
+        if (!result.textContent.startsWith("ok."))
+          throw new Error("login failed");
+        const document = frame.document();
+        const list = JSON.parse(document.querySelector("#list").textContent || '{"value": []}');
+        const initialPostsLength = Object.values(list.value).length;
+        document.querySelector("input[name='title']").value = "TEST";
+        document.querySelector("textarea[name='content']").value = "TEST";
+        document.querySelector("input[name='tags']").value = "#test";
+        result = await frame.click("button[type='submit']", "#result");
+        let [msg, ...data] = result.textContent.split(/\s/);
+        if (msg !== "ok.")
+          throw new Error("adding post failed: " + result.textContent);
+        data = data.join(" ");
+        const newPostsLength = Object.values(JSON.parse(data)).length;
+        if (initialPostsLength === newPostsLength)
+          throw new Error("no post added.");
+        return "hello autobots";
+      }
+    </script>
+    <script expected>"hello autobots"</script>
+  </test-e2e>
+  <test-e2e name="upBackRoll" page="/">
+    <script test>
+      window.testUpBackRoll = async function (frame) {
+        let result = await frame.click("a[href='/auth/checkLogin']", "#result");
+        if (!result.textContent.startsWith("ok."))
+          throw new Error("login failed");
+        result = await frame.click("a[href='/api/backup']", "#result");
+        if (!result.textContent.startsWith("ok."))
+          throw new Error("backup failed");
+
+        const jsonBlob = await (await fetch("data/tegntv_data4.json")).blob();
+        const jsonFile = new File([jsonBlob], "tegntv_data4.json", { type: "application/json" });
+        frame.transferFile('#requestRollback input[type="file"]', jsonFile);
+        result = await frame.click("#requestRollback button[type='submit']", "#result");
+        if (!result.textContent.startsWith("ok."))
+          throw new Error("rollback request failed");
+        await new Promise(r => setTimeout(r, 2000));
+        await frame.openExternal("https://mail.google.com/mail/u/0");
+        result = await frame.click('button[href="/api/events"]', "#result");
+        const data = result.textContent;
+        const shouldBe = await jsonBlob.text();
+        if (JSON.stringify(JSON.parse(shouldBe)) !== JSON.stringify(JSON.parse(data)))
+          throw new Error("data on server is not the same as the data in the rollback file.");
+        return "olleh dlrow";
+      }
+    </script>
+    <script expected>"olleh dlrow"</script>
+  </test-e2e>
+  <test-e2e name="addExistingImage" page="/">
+    <script test>
+
+      window.testAddExistingImage = async function (frame) {
+
+        async function getExistingImageFile(url) {
+          const blob = await (await fetch(url)).blob();
+          return new File([blob], "tempFile.png", { type: blob.type || "image/png" });
+        }
+
+        const file = await getExistingImageFile(`https://imagedelivery.net/Ckr7BDu4VxTAuei58W1b7Q/6aVXVjlw50jGYKNv_5e5lV0rLM9hh5yeen0VpHwtwc4/public`);
+        const hashEl = frame.observeChange("#addImage [type='hidden']");
+        await frame.transferFile('#addImage input[type="file"]', file);
+        return (await hashEl).value;
+      }
+    </script>
+    <script expected>"6aVXVjlw50jGYKNv_5e5lV0rLM9hh5yeen0VpHwtwc4"</script>
+  </test-e2e>
+  <test-e2e name="addNewImage" page="/">
+    <script type="module" test>
+      window.testAddNewImage = async function (frame) {
+
+        async function generateSimpleSVG(color = Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0')) {
+          const svg = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="50" fill="#${color}" /></svg>`;
+          const dataLink = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg).replace(/'/g, '%27').replace(/"/g, '%22')}`
+          const blob = await (await fetch(dataLink)).blob();
+          return new File([blob], "tempFile.png", { type: blob.type || "image/png" });
+        }
+
+        const file = await generateSimpleSVG();
+        const hashEl = frame.observeChange("#addImage [type='hidden']");
+        await frame.transferFile('#addImage input[type="file"]', file);
+        await hashEl;
+        return frame.document().querySelector("#addImage input[name='imageExists']").checked;
+      }
+    </script>
+    <script expected>false</script>
+  </test-e2e>
+
+  <test-e2e name="addImage" page="/">
+    <script type="module" test>
+      async function generateSimpleSVG(color = Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0')) {
+        const svg = `<svg width="200" height="200" xmlns="http://www.w3.org/2000/svg"><circle cx="100" cy="100" r="50" fill="#${color}" /></svg>`;
+        const dataLink = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg).replace(/'/g, '%27').replace(/"/g, '%22')}`
+        const blob = await (await fetch(dataLink)).blob();
+        return new File([blob], "tempFile.png", { type: blob.type || "image/png" });
+      }
+
+      window.testAddImage = async function (frame) {
+        let result = await frame.click("a[href='/auth/checkLogin']", "#result");
+        if (!result.textContent.startsWith("ok."))
+          throw new Error("login failed");
+        const file = await generateSimpleSVG();
+        result = frame.observeChange("#result");
+        await frame.transferFile('#addImage input[type="file"]', file);
+        result = await result;
+        if (frame.document().querySelector("#addImage input[name='imageExists']").checked)
+          throw new Error("image already exists.");
+        result = await frame.click("#addImage button[type='submit']", "#result");
+        if (!result.textContent.startsWith("ok."))
+          throw new Error("adding image failed");
+        return "hallo e-mage";
+      } 
+    </script>
+    <script expected>"hallo e-mage"</script>
+  </test-e2e> -->
+  <script type="module" src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@25.06.09.09/TestE2E.js"></script>
+</body>
+
+</html>
