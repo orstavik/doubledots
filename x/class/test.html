@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+
+  <test-e2e name="addClass" page="addClass.html">
+    <script type="module" test>
+      window.testAddClass = async function(frame) {
+        const divs = frame.document().querySelectorAll("div");
+        return [...divs].map(div => div.className);
+      }
+    </script>
+    <script expected>["i have a class banana","i have a class banana"]</script>
+  </test-e2e>
+  <test-e2e name="removeClass" page="removeClass.html">
+    <script type="module" test>
+      window.testRemoveClass = async function(frame) {
+        const divs = frame.document().querySelectorAll("div");
+        return [...divs].map(div => div.className);
+      }
+    </script>
+    <script expected>["class is removed","class is removed"]</script>
+  </test-e2e>
+  <test-e2e name="toggleClass" page="toggleClass.html">
+    <script type="module" test>
+      window.testToggleClass = async function(frame) {
+        const divs = frame.document().querySelectorAll("div");
+        return [...divs].map(div => div.className);
+      }
+    </script>
+    <script expected>["i am not","i am not active"]</script>
+  </test-e2e>
+  <script type="module" src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@25.06.09.09/TestE2E.js"></script>
+</body>
+
+</html>
