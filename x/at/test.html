@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+
+  <test-e2e name="getAttribute" page="getAttribute.html">
+    <script type="module" test>
+      window.testGetAttribute = async function(frame) {
+        return frame.document().querySelector("p").textContent;
+      }
+    </script>
+    <script expected>
+      My name is Peter
+    </script>
+  </test-e2e>
+  <test-e2e name="setAttribute" page="setAttribute.html">
+    <script type="module" test>
+      window.testSetAttribute = async function(frame) {
+        const doc = frame.document();
+        if (!doc.querySelector("input").getAttribute("type"))
+          throw "type attribute expected to be set in the input!";
+        if (!doc.querySelector("div").attributes[0].value)
+          throw "this div attribute expected to have a value";
+        return "okay";
+      }
+    </script>
+    <script expected>
+      okay
+    </script>
+  </test-e2e>
+  <test-e2e name="removeAttribute" page="removeAttribute.html">
+    <script type="module" test>
+      window.testRemoveAttribute = async function(frame) {
+        return frame.document().querySelector("button").hasAttribute("disabled") || "okay";
+      }
+    </script>
+    <script expected>
+      okay
+    </script>
+  </test-e2e>
+  <test-e2e name="toggleAttribute" page="toggleAttribute.html">
+    <script type="module" test>
+      window.testToggleAttribute = async function(frame) {
+        return [...frame.document().querySelectorAll("input[type=button]")].map(button => button.hasAttribute("disabled"));
+      }
+    </script>
+    <script expected>
+      [true,false,false]
+    </script>
+  </test-e2e>
+  <script type="module" src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@25.06.09.09/TestE2E.js"></script>
+</body>
+
+</html>
