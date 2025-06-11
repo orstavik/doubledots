@@ -136,7 +136,7 @@ class AttrListener extends AttrCustom {
 
   remove() {
     listenerReg[this.type] -= 1;
-    removeEventListenerOG(this.target, this.type, this.__l, this.options);
+    removeEventListenerOG.call(this.target, this.type, this.__l, this.options);
     super.remove();
   }
 
