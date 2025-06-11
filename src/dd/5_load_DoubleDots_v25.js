@@ -36,11 +36,6 @@
     return res;
   }
 
-  function removeAttribute_DD(og, name) {
-    this.getAttributeNode(name)?.remove?.();
-    return og.call(this, name);
-  }
-
   function upgradeables(parent, ...args) {
     if (dGrade.has(parent.getRootNode({ composed: true })))
       throw new Error("Downgraded objects cannot get new objects. Is pointless.");
@@ -226,7 +221,6 @@
 
   const map = [
     [Element.prototype, "setAttribute", setAttribute_DD],
-    [Element.prototype, "removeAttribute", removeAttribute_DD],
 
     [Element.prototype, "append", insertArgs],
     [Element.prototype, "prepend", insertArgs],

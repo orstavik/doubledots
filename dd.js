@@ -220,6 +220,21 @@ window.DoubleDots = {
   miniQuerySelector
 };
 
+// Attr.prototype.remove()
+(function () {
+  const writable = true, configurable = true, enumerable = true;
+
+  const removeAttribute_OG = Element.prototype.removeAttribute;
+  function Attr_remove() { removeAttribute_OG.call(this.ownerElement, this.name); }
+  Object.defineProperty(Attr.prototype, "remove", { value: Attr_remove, writable, configurable, enumerable });
+
+  function removeAttribute_DD(name) { return this.getAttributeNode(name)?.remove(); }
+  Object.defineProperty(Element.prototype, "removeAttribute", { value: removeAttribute_DD, writable, configurable, enumerable });
+
+  function removeAttributeNode_DD(at) { return at?.remove(), at; }
+  Object.defineProperty(Element.prototype, "removeAttributeNode", { value: removeAttributeNode_DD, writable, configurable, enumerable });
+})();
+
 let AttrCustom$1 = class AttrCustom extends Attr {
 
   // Interface
@@ -257,10 +272,6 @@ let AttrCustom$1 = class AttrCustom extends Attr {
     return this.ownerElement?.getRootNode(...args);
   }
 
-  remove() {
-    return this.ownerElement.removeAttribute(this.name);
-  }
-
   //todo remove this and only use eventLoop.dispatchBatch(e, attrs);
   dispatchEvent(e) {
     if (!this.isConnected)
@@ -282,7 +293,7 @@ let AttrCustom$1 = class AttrCustom extends Attr {
   static upgradeElementRoot(el) {
     for (let at of el.attributes)
       // if (at.name.includes(":"))
-        AttrCustom.upgrade(at);
+      AttrCustom.upgrade(at);
     for (let c of el.children)
       this.upgradeElementRoot(c);
     // for (let desc of el.querySelectorAll("*"))
@@ -507,9 +518,9 @@ class AttrIntersection extends AttrCustom$1 {
 }
 
 Object.assign(window, {
+  AttrCustom: AttrCustom$1,
   AttrListener,
   AttrListenerGlobal,
-  AttrCustom: AttrCustom$1,
   AttrImmutable,
   AttrUnknown,
   AttrEmpty: AttrEmpty$1,
@@ -1127,11 +1138,6 @@ window.EventLoop = EventLoop;
     return res;
   }
 
-  function removeAttribute_DD(og, name) {
-    this.getAttributeNode(name)?.remove?.();
-    return og.call(this, name);
-  }
-
   function upgradeables(parent, ...args) {
     if (dGrade.has(parent.getRootNode({ composed: true })))
       throw new Error("Downgraded objects cannot get new objects. Is pointless.");
@@ -1317,7 +1323,6 @@ window.EventLoop = EventLoop;
 
   const map = [
     [Element.prototype, "setAttribute", setAttribute_DD],
-    [Element.prototype, "removeAttribute", removeAttribute_DD],
 
     [Element.prototype, "append", insertArgs],
     [Element.prototype, "prepend", insertArgs],
