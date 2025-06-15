@@ -140,99 +140,34 @@ class DefinitionsMap {
   }
 }
 
-/**
- * Whenever you request an unknown definition, 
- * you get an UnknownDefinition Promise.
- * When later a matching definition is added,
- * this promise will resolve with the new definition.
- * If this promise is rejected from the outside,
- * The UnknownDefinitionsMap will automatically clean
- * itself up.
- * 
- * To avoid memory leaks with !isConnected attributes,
- * a 10sec loop checks the UnknownDefinitions and removes 
- * any disconnected Promises.
- */
-class UnknownDefinition extends Promise {
-  static make(attr) {
-    let resolve, reject;
-    const promise = new UnknownDefinition((a, b) => {
-      resolve = a;
-      reject = b;
-    });
-    return Object.assign(promise, { resolve, reject, attr });
-  }
-}
-
-const setTimeoutOG = setTimeout;
-class PromiseMap {
-  unknowns = {};
-  #interval;
-
-  make(fullname, attr) {
-    const p = UnknownDefinition.make(attr);
-    (this.unknowns[fullname] ??= []).push(p);
-    p.catch(_ => this.remove(fullname, p));
-    this.#interval || this.#cleanLoop();
-    return p;
-  }
-
-  async #cleanLoop() {
-    this.#interval = true;
-    while (true) {
-      await new Promise(r => setTimeoutOG(r, 10000));
-      const all = Object.entries(this.unknowns);
-      if (!all.length)
-        return this.#interval = false;
-      for (let [fullname, promises] of all)
-        for (let p of promises.filter(p => !p.attr.isConnected))
-          this.remove(fullname, p);
-    }
-  }
-
-  remove(fullname, p) {
-    const promises = this.unknowns[fullname];
-    if (!promises)
-      return;
-    const i = promises.indexOf(p);
-    if (i < 0)
-      return;
-    promises.splice(i, 1);
-    !promises.length && delete this.unknowns[fullname];
-  }
-
-  complete(fullname) {
-    const promises = this.unknowns[fullname];
-    delete this.unknowns[fullname];
-    for (let p of promises || [])
-      try { p.resolve(); } catch (_) { } //Att!! handle errors outside
-  }
-  completeRule(rule) {
-    for (let fullname in this.unknowns)
-      if (fullname.startsWith(rule))
-        this.complete(fullname);
-  }
-}
-
 class UnknownDefinitionsMap extends DefinitionsMap {
-  #unknowns = new PromiseMap();
+  #unknowns = {};
+  #resolvers = {};
+
   define(fullname, Def) {
     super.define(fullname, Def);
-    this.#unknowns.complete(fullname);
+    this.#resolvers[fullname]?.(Def);
+    delete this.#unknowns[fullname];
+    delete this.#resolvers[fullname];
   }
 
   defineRule(rule, FunClass) {
     super.defineRule(rule, FunClass);
-    this.#unknowns.completeRule(rule);
+    for (let fullname in this.#unknowns)
+      if (fullname.startsWith(rule)) {
+        const Def = FunClass(fullname);
+        this.#resolvers[fullname]?.(Def);
+        delete this.#unknowns[fullname];
+        delete this.#resolvers[fullname];
+      }
   }
 
-  //todo add attr
-  get(fullname, attr) {
-    return super.get(fullname) ?? this.#unknowns.make(fullname, attr);
+  get(fullname) {
+    return super.get(fullname) ?? (this.#unknowns[fullname] ??= new Promise(r => this.#resolvers[fullname] = r));
   }
 }
 
-class DefinitionsMapLock extends DefinitionsMap {
+class DefinitionsMapLock extends UnknownDefinitionsMap {
   #lock;
   defineRule(rule, FunFun) {
     if (this.#lock)
