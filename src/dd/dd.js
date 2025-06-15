@@ -13,8 +13,7 @@ document.Triggers.define("template", Template);
 // document.Reactions.define("template", template);
 document.Reactions.define("define", define);
 document.Reactions.defineRule("wait_", wait_);
-document.Reactions.define("prevent-default",
-  i => (eventLoop.event.preventDefault(), i));
+document.Reactions.define("prevent-default", i => (eventLoop.event.preventDefault(), i));
 document.Reactions.define("log", function (...i) { console.log(this, ...i); return i[0]; });
 document.Reactions.define("debugger", function (...i) { console.log(this, ...i); debugger; return i[0]; });
 
