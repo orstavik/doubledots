@@ -165,7 +165,7 @@ function makeIterator(attrs, state, pathString) {
     return attrs[Symbol.iterator]();
   const matches = [];
   for (let at of attrs) {
-    if(!at.constructor.paths)
+    if (!at.constructor.paths)
       matches.push(at);
     else if (matchesPath(at.constructor.branches, pathString))
       if (pathsAllSet(at.constructor.paths, state))

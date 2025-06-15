@@ -44,7 +44,7 @@ class AttrWeakSet extends Set {
     let active, l;                            //todo we should also have an iterator here i think. the current iterator doesn't deref?
     for (let wr of AttrWeakSet.#bigSet) {
       if (l = wr.deref())
-        for (let a of l)  
+        for (let a of l)
           a.isConnected ? (active = true) : (l.delete(a), a.remove());
       else
         AttrWeakSet.#bigSet.delete(wr);
@@ -193,6 +193,17 @@ class ThisArrowFunctionError extends DoubleDotsError {
   }
 }
 
+function* walkAttributes(root) {
+  if (root.attributes)
+    yield* Array.from(root.attributes);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+  for (let n; n = walker.nextNode();) {
+    yield* Array.from(n.attributes);
+    if (n.shadowRoot)
+      yield* walkAttributes(n.shadowRoot);
+  }
+}
+
 window.DoubleDots = {
   nativeMethods,
   monkeyPatch,
@@ -210,6 +221,7 @@ window.DoubleDots = {
 
   },
   AttrWeakSet,
+  walkAttributes,
   nextTick,
   sleep,
   nativeEvents,
@@ -265,7 +277,7 @@ let AttrCustom$1 = class AttrCustom extends Attr {
   }
 
   isConnected() {
-    return this.ownerElement.isConnected();
+    return this.ownerElement?.isConnected();
   }
 
   getRootNode(...args) {
@@ -280,26 +292,9 @@ let AttrCustom$1 = class AttrCustom extends Attr {
   }
 
   static upgradeBranch(...els) {
-    for (let el of els) {
-      if (el instanceof Element)
-        this.upgradeElementRoot(el);
-      else if (el instanceof DocumentFragment)
-        for (let c of el.children)
-          this.upgradeElementRoot(c);
-    }
-    //todo we don't want to run the eventLoop until all the attr are upgraded.
-  }
-
-  static upgradeElementRoot(el) {
-    for (let at of el.attributes)
-      // if (at.name.includes(":"))
-      AttrCustom.upgrade(at);
-    for (let c of el.children)
-      this.upgradeElementRoot(c);
-    // for (let desc of el.querySelectorAll("*"))
-    //   for (let at of desc.attributes)
-    //     if (at.name.includes(":"))
-    //       AttrCustom.upgrade(at);
+    for (let el of els) 
+      for (const at of DoubleDots.walkAttributes(el))
+        AttrCustom.upgrade(at);
   }
 
   static #ids = 0;
@@ -671,99 +666,34 @@ class DefinitionsMap {
   }
 }
 
-/**
- * Whenever you request an unknown definition, 
- * you get an UnknownDefinition Promise.
- * When later a matching definition is added,
- * this promise will resolve with the new definition.
- * If this promise is rejected from the outside,
- * The UnknownDefinitionsMap will automatically clean
- * itself up.
- * 
- * To avoid memory leaks with !isConnected attributes,
- * a 10sec loop checks the UnknownDefinitions and removes 
- * any disconnected Promises.
- */
-class UnknownDefinition extends Promise {
-  static make(attr) {
-    let resolve, reject;
-    const promise = new UnknownDefinition((a, b) => {
-      resolve = a;
-      reject = b;
-    });
-    return Object.assign(promise, { resolve, reject, attr });
-  }
-}
-
-const setTimeoutOG = setTimeout;
-class PromiseMap {
-  unknowns = {};
-  #interval;
-
-  make(fullname, attr) {
-    const p = UnknownDefinition.make(attr);
-    (this.unknowns[fullname] ??= []).push(p);
-    p.catch(_ => this.remove(fullname, p));
-    this.#interval || this.#cleanLoop();
-    return p;
-  }
-
-  async #cleanLoop() {
-    this.#interval = true;
-    while (true) {
-      await new Promise(r => setTimeoutOG(r, 10000));
-      const all = Object.entries(this.unknowns);
-      if (!all.length)
-        return this.#interval = false;
-      for (let [fullname, promises] of all)
-        for (let p of promises.filter(p => !p.attr.isConnected))
-          this.remove(fullname, p);
-    }
-  }
-
-  remove(fullname, p) {
-    const promises = this.unknowns[fullname];
-    if (!promises)
-      return;
-    const i = promises.indexOf(p);
-    if (i < 0)
-      return;
-    promises.splice(i, 1);
-    !promises.length && delete this.unknowns[fullname];
-  }
-
-  complete(fullname) {
-    const promises = this.unknowns[fullname];
-    delete this.unknowns[fullname];
-    for (let p of promises || [])
-      try { p.resolve(); } catch (_) { } //Att!! handle errors outside
-  }
-  completeRule(rule) {
-    for (let fullname in this.unknowns)
-      if (fullname.startsWith(rule))
-        this.complete(fullname);
-  }
-}
-
 class UnknownDefinitionsMap extends DefinitionsMap {
-  #unknowns = new PromiseMap();
+  #unknowns = {};
+  #resolvers = {};
+
   define(fullname, Def) {
     super.define(fullname, Def);
-    this.#unknowns.complete(fullname);
+    this.#resolvers[fullname]?.(Def);
+    delete this.#unknowns[fullname];
+    delete this.#resolvers[fullname];
   }
 
   defineRule(rule, FunClass) {
     super.defineRule(rule, FunClass);
-    this.#unknowns.completeRule(rule);
+    for (let fullname in this.#unknowns)
+      if (fullname.startsWith(rule)) {
+        const Def = FunClass(fullname);
+        this.#resolvers[fullname]?.(Def);
+        delete this.#unknowns[fullname];
+        delete this.#resolvers[fullname];
+      }
   }
 
-  //todo add attr
-  get(fullname, attr) {
-    return super.get(fullname) ?? this.#unknowns.make(fullname, attr);
+  get(fullname) {
+    return super.get(fullname) ?? (this.#unknowns[fullname] ??= new Promise(r => this.#resolvers[fullname] = r));
   }
 }
 
-class DefinitionsMapLock extends DefinitionsMap {
+class DefinitionsMapLock extends UnknownDefinitionsMap {
   #lock;
   defineRule(rule, FunFun) {
     if (this.#lock)
@@ -1100,6 +1030,58 @@ Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
 DoubleDots.EventLoopError = EventLoopError;
 window.EventLoop = EventLoop;
 
+//shim requestIdleCallback
+(function () {
+  window.requestIdleCallback ??= function (cb, { timeout = Infinity } = {}) {
+    const callTime = performance.now();
+    return setTimeout(_ => {
+      const start = performance.now();
+      cb({
+        didTimeout: (performance.now() - callTime) >= timeout,
+        timeRemaining: () => Math.max(0, 50 - (performance.now() - start))
+      });
+    }, 16);
+  };
+  window.cancelIdleCallback ??= clearTimeout;
+})();
+
+//gc of downgraded elements
+const dGrade = (function () {
+
+  function idleCallback(options = {}) {
+    return new Promise(r => { requestIdleCallback(deadline => r(deadline), options); });
+  }
+
+  function removeAttr(el) {
+    for (const at of DoubleDots.walkAttributes(el)) {
+      try {
+        at.remove?.();
+      } catch (e) {
+        console.warn(`Error during garbagecollection: ${Object.getPrototypeOf(n.attributes[0]).name}.remove()`, e);
+      }
+    }
+  }
+
+  const dGrade = new Set();
+
+  (async function () {
+    while (true) {
+      const deadline = await idleCallback();
+      const ns = Array.from(dGrade);
+      for (let i = 0; i < ns.length && (dGrade.size > 99 || deadline.timeRemaining() > 33); i++)
+        removeAttr(ns[i]), dGrade.delete(ns[i]);
+      await new Promise(r => setTimeout(r, 3000 / (dGrade.size + 1))); // i:100 => 30ms  /  i:1 => 3000ms
+    }
+  })();
+  return dGrade;
+})();
+
+function upgradeBranch(...els) {
+  for (let el of els)
+    for (const at of DoubleDots.walkAttributes(el))
+      AttrCustom.upgrade(at);
+}
+
 (function () {
 
   const Deprecations = [
@@ -1122,8 +1104,6 @@ window.EventLoop = EventLoop;
     });
     Object.defineProperty(Element.prototype, prop, desc);
   }
-
-  const dGrade = new WeakSet();
 
   function setAttribute_DD(og, name, value) {
     if (name.startsWith("override-"))
@@ -1172,7 +1152,7 @@ window.EventLoop = EventLoop;
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     const toBeUpgraded = upgradeables(this, ...args);
     const res = og.call(this, ...args);
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function insertArgs0(og, ...args) {
@@ -1180,7 +1160,7 @@ window.EventLoop = EventLoop;
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     const toBeUpgraded = upgradeables(this, args[0]);
     const res = og.call(this, ...args);
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function insertArgs1(og, ...args) {
@@ -1188,7 +1168,7 @@ window.EventLoop = EventLoop;
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     const toBeUpgraded = upgradeables(this, args[1]);
     const res = og.call(this, ...args);
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function removesArgs0(og, ...args) {
@@ -1218,7 +1198,7 @@ window.EventLoop = EventLoop;
     const removables = args[0].children.length && [...args[0].children];
     const res = og.call(this, ...args);
     removables && dGrade.add(...removables.filter(n => !n.isConnected));
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function removeThis(og, ...args) {
@@ -1246,7 +1226,7 @@ window.EventLoop = EventLoop;
     const res = og.call(this, ...args);
     if (wasConnected) {
       dGrade.add(this);
-      AttrCustom.upgradeBranch(...toBeUpgraded);
+      upgradeBranch(...toBeUpgraded);
     }
     return res;
   }
@@ -1257,7 +1237,7 @@ window.EventLoop = EventLoop;
     const removables = this.isConnected && this.children.length && [...this.children];
     const res = og.call(this, ...args);
     removables && dGrade.add(...removables.filter(n => !n.isConnected));
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function innerHTMLsetter(og, ...args) {
@@ -1267,7 +1247,7 @@ window.EventLoop = EventLoop;
     const removables = this.children?.length && [...this.children];
     const res = og.call(this, ...args);
     removables && dGrade.add(...removables);
-    AttrCustom.upgradeBranch(...this.children);
+    upgradeBranch(...this.children);
     return res;
   }
   function outerHTMLsetter(og, ...args) {
@@ -1278,7 +1258,7 @@ window.EventLoop = EventLoop;
     const res = og.call(this, ...args);
     dGrade.add(this);
     const sibs2 = [...this.parentNode.children].filter(n => !sibs.includes(n));
-    AttrCustom.upgradeBranch(...sibs2);
+    upgradeBranch(...sibs2);
     return res;
   }
   function innerTextSetter(og, ...args) {
@@ -1317,7 +1297,7 @@ window.EventLoop = EventLoop;
     const res = og.call(this, position, ...args);
     const addCount = root.children.length - childCount;
     const newRoots = Array.from(root.children).slice(index, index + addCount);
-    AttrCustom.upgradeBranch(...newRoots);
+    upgradeBranch(...newRoots);
     return res;
   }
 
@@ -1375,8 +1355,8 @@ window.EventLoop = EventLoop;
 
 function loadDoubleDots(aelOG) {
   if (document.readyState !== "loading")
-    return AttrCustom.upgradeBranch(document.htmlElement);
-  aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));
+    return upgradeBranch(document.htmlElement);
+  aelOG.call(document, "DOMContentLoaded", _ => upgradeBranch(document.documentElement));
 }
 
 async function loadDef(url, lookup) {
@@ -1544,8 +1524,7 @@ document.Triggers.define("template", Template);
 // document.Reactions.define("template", template);
 document.Reactions.define("define", define);
 document.Reactions.defineRule("wait_", wait_);
-document.Reactions.define("prevent-default",
-  i => (eventLoop.event.preventDefault(), i));
+document.Reactions.define("prevent-default", i => (eventLoop.event.preventDefault(), i));
 document.Reactions.define("log", function (...i) { console.log(this, ...i); return i[0]; });
 document.Reactions.define("debugger", function (...i) { console.log(this, ...i); debugger; return i[0]; });
 

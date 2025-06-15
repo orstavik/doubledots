@@ -44,6 +44,12 @@ const dGrade = (function () {
   return dGrade;
 })();
 
+function upgradeBranch(...els) {
+  for (let el of els)
+    for (const at of DoubleDots.walkAttributes(el))
+      AttrCustom.upgrade(at);
+}
+
 (function () {
 
   const Deprecations = [
@@ -114,7 +120,7 @@ const dGrade = (function () {
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     const toBeUpgraded = upgradeables(this, ...args);
     const res = og.call(this, ...args);
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function insertArgs0(og, ...args) {
@@ -122,7 +128,7 @@ const dGrade = (function () {
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     const toBeUpgraded = upgradeables(this, args[0]);
     const res = og.call(this, ...args);
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function insertArgs1(og, ...args) {
@@ -130,7 +136,7 @@ const dGrade = (function () {
       throw new Error("Downgraded objects cannot be changed. Is pointless.");
     const toBeUpgraded = upgradeables(this, args[1]);
     const res = og.call(this, ...args);
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function removesArgs0(og, ...args) {
@@ -160,7 +166,7 @@ const dGrade = (function () {
     const removables = args[0].children.length && [...args[0].children];
     const res = og.call(this, ...args);
     removables && dGrade.add(...removables.filter(n => !n.isConnected));
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function removeThis(og, ...args) {
@@ -188,7 +194,7 @@ const dGrade = (function () {
     const res = og.call(this, ...args);
     if (wasConnected) {
       dGrade.add(this);
-      AttrCustom.upgradeBranch(...toBeUpgraded);
+      upgradeBranch(...toBeUpgraded);
     }
     return res;
   }
@@ -199,7 +205,7 @@ const dGrade = (function () {
     const removables = this.isConnected && this.children.length && [...this.children];
     const res = og.call(this, ...args);
     removables && dGrade.add(...removables.filter(n => !n.isConnected));
-    AttrCustom.upgradeBranch(...toBeUpgraded);
+    upgradeBranch(...toBeUpgraded);
     return res;
   }
   function innerHTMLsetter(og, ...args) {
@@ -209,7 +215,7 @@ const dGrade = (function () {
     const removables = this.children?.length && [...this.children];
     const res = og.call(this, ...args);
     removables && dGrade.add(...removables);
-    AttrCustom.upgradeBranch(...this.children);
+    upgradeBranch(...this.children);
     return res;
   }
   function outerHTMLsetter(og, ...args) {
@@ -220,7 +226,7 @@ const dGrade = (function () {
     const res = og.call(this, ...args);
     dGrade.add(this);
     const sibs2 = [...this.parentNode.children].filter(n => !sibs.includes(n));
-    AttrCustom.upgradeBranch(...sibs2);
+    upgradeBranch(...sibs2);
     return res;
   }
   function innerTextSetter(og, ...args) {
@@ -259,7 +265,7 @@ const dGrade = (function () {
     const res = og.call(this, position, ...args);
     const addCount = root.children.length - childCount;
     const newRoots = Array.from(root.children).slice(index, index + addCount);
-    AttrCustom.upgradeBranch(...newRoots);
+    upgradeBranch(...newRoots);
     return res;
   }
 
@@ -317,6 +323,6 @@ const dGrade = (function () {
 
 export function loadDoubleDots(aelOG) {
   if (document.readyState !== "loading")
-    return AttrCustom.upgradeBranch(document.htmlElement);
-  aelOG.call(document, "DOMContentLoaded", _ => AttrCustom.upgradeBranch(document.documentElement));
+    return upgradeBranch(document.htmlElement);
+  aelOG.call(document, "DOMContentLoaded", _ => upgradeBranch(document.documentElement));
 }
