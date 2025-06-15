@@ -43,7 +43,7 @@ class AttrCustom extends Attr {
   }
 
   isConnected() {
-    return this.ownerElement.isConnected();
+    return this.ownerElement?.isConnected();
   }
 
   getRootNode(...args) {
