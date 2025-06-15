@@ -22,6 +22,9 @@
   }
 
   const dGrade = new WeakSet();
+  //todo run a low priority task to remove dGraded elements.
+  //todo if we do this, then we don't need to cleanup elsewhere. Then we can just call .remove() on the custom attributes.
+  //todo this 
 
   function setAttribute_DD(og, name, value) {
     if (name.startsWith("override-"))
