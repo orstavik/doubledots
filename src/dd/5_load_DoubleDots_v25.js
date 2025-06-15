@@ -21,18 +21,13 @@ const dGrade = (function () {
   }
 
   function removeAttr(el) {
-    const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
-    for (let n = el; n; n = walker.nextNode()) {
-      while (n.attributes?.length) {
-        try {
-          n.attributes[0].remove?.();
-        } catch (e) {
-          console.warn(`Error during garbagecollection: ${Object.getPrototypeOf(n.attributes[0]).name}.remove()`, e);
-        }
+    for (const at of DoubleDots.walkAttributes(el)) {
+      try {
+        at.remove?.();
+      } catch (e) {
+        console.warn(`Error during garbagecollection: ${Object.getPrototypeOf(n.attributes[0]).name}.remove()`, e);
       }
-      n.shadowRoot && removeAttr(n.shadowRoot);
     }
-    return n;
   }
 
   const dGrade = new Set();

@@ -44,7 +44,7 @@ class AttrWeakSet extends Set {
     let active, l;                            //todo we should also have an iterator here i think. the current iterator doesn't deref?
     for (let wr of AttrWeakSet.#bigSet) {
       if (l = wr.deref())
-        for (let a of l)  
+        for (let a of l)
           a.isConnected ? (active = true) : (l.delete(a), a.remove());
       else
         AttrWeakSet.#bigSet.delete(wr);
@@ -193,6 +193,17 @@ class ThisArrowFunctionError extends DoubleDotsError {
   }
 }
 
+function* walkAttributes(root) {
+  if (root.attributes)
+    yield* Array.from(root.attributes);
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+  for (let n; n = walker.nextNode();) {
+    yield* Array.from(n.attributes);
+    if (n.shadowRoot)
+      yield* walkAttributes(n.shadowRoot);
+  }
+}
+
 window.DoubleDots = {
   nativeMethods,
   monkeyPatch,
@@ -210,6 +221,7 @@ window.DoubleDots = {
 
   },
   AttrWeakSet,
+  walkAttributes,
   nextTick,
   sleep,
   nativeEvents,
