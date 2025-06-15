@@ -1,3 +1,54 @@
+//shim requestIdleCallback
+(function () {
+  window.requestIdleCallback ??= function (cb, { timeout = Infinity } = {}) {
+    const callTime = performance.now();
+    return setTimeout(_ => {
+      const start = performance.now();
+      cb({
+        didTimeout: (performance.now() - callTime) >= timeout,
+        timeRemaining: () => Math.max(0, 50 - (performance.now() - start))
+      });
+    }, 16);
+  };
+  window.cancelIdleCallback ??= clearTimeout;
+})();
+
+//gc of downgraded elements
+const dGrade = (function () {
+
+  function idleCallback(options = {}) {
+    return new Promise(r => { requestIdleCallback(deadline => r(deadline), options); });
+  }
+
+  function removeAttr(el) {
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_ELEMENT);
+    for (let n = el; n; n = walker.nextNode()) {
+      while (n.attributes?.length) {
+        try {
+          n.attributes[0].remove?.();
+        } catch (e) {
+          console.warn(`Error during garbagecollection: ${Object.getPrototypeOf(n.attributes[0]).name}.remove()`, e);
+        }
+      }
+      n.shadowRoot && removeAttr(n.shadowRoot);
+    }
+    return n;
+  }
+
+  const dGrade = new Set();
+
+  (async function () {
+    while (true) {
+      const deadline = await idleCallback();
+      const ns = Array.from(dGrade);
+      for (let i = 0; i < ns.length && (dGrade.size > 99 || deadline.timeRemaining() > 33); i++)
+        removeAttr(ns[i]), dGrade.delete(ns[i]);
+      await new Promise(r => setTimeout(r, 3000 / (dGrade.size + 1))); // i:100 => 30ms  /  i:1 => 3000ms
+    }
+  })();
+  return dGrade;
+})();
+
 (function () {
 
   const Deprecations = [
@@ -20,11 +71,6 @@
     });
     Object.defineProperty(Element.prototype, prop, desc);
   }
-
-  const dGrade = new WeakSet();
-  //todo run a low priority task to remove dGraded elements.
-  //todo if we do this, then we don't need to cleanup elsewhere. Then we can just call .remove() on the custom attributes.
-  //todo this 
 
   function setAttribute_DD(og, name, value) {
     if (name.startsWith("override-"))
