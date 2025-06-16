@@ -53,28 +53,6 @@ function upgradeBranch(...els) {
 
 (function () {
 
-  //todo this is done in dd_dev.js!
-  // const Deprecations = [
-  // "hasAttributeNS",
-  // "getAttributeNS",
-  // "setAttributeNS",
-  // "removeAttributeNS",
-  // "getAttributeNodeNS",
-  // "setAttributeNodeNS",
-  // "setAttributeNode",
-  // "removeAttributeNode",
-  // ];
-
-  // for (const prop of Deprecations) {
-  //   const og = Object.getOwnPropertyDescriptor(Element.prototype, prop);
-  //   const desc = Object.assign({}, og, {
-  //     value: function () {
-  //       throw new Error(`Element.prototype.${prop} is deprecated in DoubleDots strict. setAttribute(name,str)/getAttribute(name) instead.`);
-  //     }
-  //   });
-  //   Object.defineProperty(Element.prototype, prop, desc);
-  // }
-
   function setAttribute_DD(og, name, value) {
     if (name.startsWith("override-"))
       throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
