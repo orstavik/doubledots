@@ -140,6 +140,7 @@ class DefinitionsMap {
   }
 }
 
+//todo but can we and should we allow this? Should we not always have the definitions declared before they are queried?
 class UnknownDefinitionsMap extends DefinitionsMap {
   #unknowns = {};
   #resolvers = {};
@@ -151,11 +152,11 @@ class UnknownDefinitionsMap extends DefinitionsMap {
     delete this.#resolvers[fullname];
   }
 
-  defineRule(rule, FunClass) {
-    super.defineRule(rule, FunClass);
+  defineRule(prefix, FunFun) {
+    super.defineRule(prefix, FunFun);
     for (let fullname in this.#unknowns)
-      if (fullname.startsWith(rule)) {
-        const Def = FunClass(fullname);
+      if (fullname.startsWith(prefix)) {
+        const Def = FunFun(fullname); //todo if FunFun is an obj, then FunFun.defs[fullname] || FunFun.rule(fullname);
         this.#resolvers[fullname]?.(Def);
         delete this.#unknowns[fullname];
         delete this.#resolvers[fullname];
@@ -167,12 +168,12 @@ class UnknownDefinitionsMap extends DefinitionsMap {
   }
 }
 
-class DefinitionsMapLock extends UnknownDefinitionsMap {
+class DefinitionsMapLock extends DefinitionsMap {  //these can never be unknown, right? because the shadowRoot can never start running upgrade inside before the defintions above are loaded?
   #lock;
-  defineRule(rule, FunFun) {
+  defineRule(prefix, FunFun) {
     if (this.#lock)
-      throw new DefinitionError("ShadowRoot too-late definition error for rule: " + rule);
-    return super.defineRule(rule, FunFun);
+      throw new DefinitionError("ShadowRoot too-late definition error for rule: " + prefix);
+    return super.defineRule(prefix, FunFun);
   }
 
   define(name, Def) {
