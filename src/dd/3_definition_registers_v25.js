@@ -63,9 +63,21 @@ class DefinitionsMap {
   #definitions = {};
   #rules = {};
 
+  /**
+   * @param {*} name 
+   * @param {Promise => {HOFunction => {Promise => {Attr, Function}} } || {rule, defs }} Def
+   */
   #setRule(name, Def) {
     DoubleDots.cube?.("defineRule", { type: this.#type, root: this.#root, name, Def });
-    return this.#rules[name] = Def;
+    this.#rules[name] = Def.rule ?? Def;
+    if (!Def.defs)
+      return;
+    const defs = Object.entries(Def.defs);
+    for (let [fullname] of defs)
+      if (!fullname.startsWith(name))
+        throw new DefinitionError(`defineRule(name, {defs}) naming mismatch: !"${fullname}".startsWith("${name}")`);
+    for (let [fullname, def] of defs)
+      this.#setDef(fullname, def);
   }
 
   #setDef(name, Def) {
@@ -74,8 +86,6 @@ class DefinitionsMap {
   }
 
   defineRule(prefix, FunFun) {
-    //FunFun can be either a Function that given the prefix will produce either a class or a Function.
-    //FunFun can also be a Promise.
     DefinitionNameError.check(prefix);
     for (let r of Object.keys(this.#rules))
       if (r.startsWith(prefix) || prefix.startsWith(r))
@@ -91,8 +101,7 @@ class DefinitionsMap {
   }
 
   define(fullname, Def) {
-    //Def can be either a class or a Function.
-    //Def can also be a Promise.
+    //Def can be either a class Attr, Function, or Promise.
     DefinitionNameError.check(fullname);
     if (fullname in this.#definitions)
       throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
@@ -127,9 +136,6 @@ class DefinitionsMap {
   }
 
   #checkViaRule(fullname) {
-    // alternative logic using a regex to match the name. Not sure this is better
-    // for (let [_, prefix] of fullname.matchAll(this.#ruleRE))
-    //   return this.#definitions[fullname] = this.#rules[prefix](fullname);
     for (let [rule, FunFun] of Object.entries(this.#rules))
       if (fullname.startsWith(rule))
         return this.#processRule(fullname, rule, FunFun);
@@ -140,33 +146,40 @@ class DefinitionsMap {
   }
 }
 
-//todo but can we and should we allow this? Should we not always have the definitions declared before they are queried?
-class UnknownDefinitionsMap extends DefinitionsMap {
-  #unknowns = {};
-  #resolvers = {};
-
-  define(fullname, Def) {
-    super.define(fullname, Def);
-    this.#resolvers[fullname]?.(Def);
-    delete this.#unknowns[fullname];
-    delete this.#resolvers[fullname];
-  }
-
-  defineRule(prefix, FunFun) {
-    super.defineRule(prefix, FunFun);
-    for (let fullname in this.#unknowns)
-      if (fullname.startsWith(prefix)) {
-        const Def = FunFun(fullname); //todo if FunFun is an obj, then FunFun.defs[fullname] || FunFun.rule(fullname);
-        this.#resolvers[fullname]?.(Def);
-        delete this.#unknowns[fullname];
-        delete this.#resolvers[fullname];
-      }
-  }
-
-  get(fullname) {
-    return super.get(fullname) ?? (this.#unknowns[fullname] ??= new Promise(r => this.#resolvers[fullname] = r));
-  }
-}
+//No longer in use as we are shifting to declaration-before-use, always.
+//Best practice is to have "static definitions" at the head of the document, for all things.
+//These can be checked compile-time, by tooling.
+//However, you can also dynamically define and load definitiions at run-time.
+//The limitation is that the call to define them *must* come before the first call to use them.
+// >> Note! The definition loaded can be async! Just make sure that you don't await before you pass the
+// definition name,promise to the register(s).
+// class UnknownDefinitionsMap extends DefinitionsMap {
+//   #unknowns = {};
+//   #resolvers = {};
+//
+//   define(fullname, Def) {
+//     super.define(fullname, Def);
+//     this.#resolvers[fullname]?.(Def);
+//     delete this.#unknowns[fullname];
+//     delete this.#resolvers[fullname];
+//   }
+//
+//   defineRule(prefix, FunFun) {
+//     //todo at this time, we don't know if this is a batch or not?
+//     super.defineRule(prefix, FunFun);
+//     for (let fullname in this.#unknowns)
+//       if (fullname.startsWith(prefix)) {
+//         const Def = FunFun.defs?.[fullname] ?? (FunFun.rule??FunFun)(fullname);
+//         this.#resolvers[fullname]?.(Def);
+//         delete this.#unknowns[fullname];
+//         delete this.#resolvers[fullname];
+//       }
+//   }
+//
+//   get(fullname) {
+//     return super.get(fullname) ?? (this.#unknowns[fullname] ??= new Promise(r => this.#resolvers[fullname] = r));
+//   }
+// }
 
 class DefinitionsMapLock extends DefinitionsMap {  //these can never be unknown, right? because the shadowRoot can never start running upgrade inside before the defintions above are loaded?
   #lock;
@@ -261,7 +274,7 @@ function ReactionThisInArrowCheck(DefMap) { //todo add this to Reaction maps?
 Object.defineProperties(Document.prototype, {
   Reactions: {
     get: function () {
-      const map = new UnknownDefinitionsMap(this, "Reactions");
+      const map = new DefinitionsMap(this, "Reactions");
       Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
       return map;
     }
@@ -269,7 +282,7 @@ Object.defineProperties(Document.prototype, {
   Triggers: {
     configurable: true,
     get: function () {
-      const TriggerMap = TriggerSyntaxCheck(UnknownDefinitionsMap);
+      const TriggerMap = TriggerSyntaxCheck(DefinitionsMap);
       const map = new TriggerMap(this, "Triggers");
       Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
       return map;
@@ -303,6 +316,6 @@ Object.assign(DoubleDots, {
   DefinitionsMapLock,
   DefinitionsMapDOM,
   DefinitionsMapDOMOverride,
-  UnknownDefinitionsMap,
-  UnknownDefinition,
+  // UnknownDefinitionsMap,
+  // UnknownDefinition,
 });
