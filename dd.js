@@ -679,33 +679,33 @@ class DefinitionsMap {
 //The limitation is that the call to define them *must* come before the first call to use them.
 // >> Note! The definition loaded can be async! Just make sure that you don't await before you pass the
 // definition name,promise to the register(s).
-// class UnknownDefinitionsMap extends DefinitionsMap {
-//   #unknowns = {};
-//   #resolvers = {};
-//
-//   define(fullname, Def) {
-//     super.define(fullname, Def);
-//     this.#resolvers[fullname]?.(Def);
-//     delete this.#unknowns[fullname];
-//     delete this.#resolvers[fullname];
-//   }
-//
-//   defineRule(prefix, FunFun) {
-//     //todo at this time, we don't know if this is a batch or not?
-//     super.defineRule(prefix, FunFun);
-//     for (let fullname in this.#unknowns)
-//       if (fullname.startsWith(prefix)) {
-//         const Def = FunFun.defs?.[fullname] ?? (FunFun.rule??FunFun)(fullname);
-//         this.#resolvers[fullname]?.(Def);
-//         delete this.#unknowns[fullname];
-//         delete this.#resolvers[fullname];
-//       }
-//   }
-//
-//   get(fullname) {
-//     return super.get(fullname) ?? (this.#unknowns[fullname] ??= new Promise(r => this.#resolvers[fullname] = r));
-//   }
-// }
+class UnknownDefinitionsMap extends DefinitionsMap {
+  #unknowns = {};
+  #resolvers = {};
+
+  define(fullname, Def) {
+    super.define(fullname, Def);
+    this.#resolvers[fullname]?.(Def);
+    delete this.#unknowns[fullname];
+    delete this.#resolvers[fullname];
+  }
+
+  defineRule(prefix, FunFun) {
+    //todo at this time, we don't know if this is a batch or not?
+    super.defineRule(prefix, FunFun);
+    for (let fullname in this.#unknowns)
+      if (fullname.startsWith(prefix)) {
+        const Def = FunFun.defs?.[fullname] ?? (FunFun.rule??FunFun)(fullname);
+        this.#resolvers[fullname]?.(Def);
+        delete this.#unknowns[fullname];
+        delete this.#resolvers[fullname];
+      }
+  }
+
+  get(fullname) {
+    return super.get(fullname) ?? (this.#unknowns[fullname] ??= new Promise(r => this.#resolvers[fullname] = r));
+  }
+}
 
 class DefinitionsMapLock extends DefinitionsMap {  //these can never be unknown, right? because the shadowRoot can never start running upgrade inside before the defintions above are loaded?
   #lock;
@@ -800,7 +800,7 @@ function ReactionThisInArrowCheck(DefMap) { //todo add this to Reaction maps?
 Object.defineProperties(Document.prototype, {
   Reactions: {
     get: function () {
-      const map = new DefinitionsMap(this, "Reactions");
+      const map = new UnknownDefinitionsMap(this, "Reactions");
       Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
       return map;
     }
@@ -808,7 +808,7 @@ Object.defineProperties(Document.prototype, {
   Triggers: {
     configurable: true,
     get: function () {
-      const TriggerMap = TriggerSyntaxCheck(DefinitionsMap);
+      const TriggerMap = TriggerSyntaxCheck(UnknownDefinitionsMap);
       const map = new TriggerMap(this, "Triggers");
       Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
       return map;
@@ -842,7 +842,7 @@ Object.assign(DoubleDots, {
   DefinitionsMapLock,
   DefinitionsMapDOM,
   DefinitionsMapDOMOverride,
-  // UnknownDefinitionsMap,
+  UnknownDefinitionsMap,
   // UnknownDefinition,
 });
 
@@ -1422,53 +1422,57 @@ async function loadDef(src, name) {
 const camelCase = str => str.replace(/-[a-z]/g, c => c[1].toUpperCase());
 const PascalCase = str => str.replace(/^(_*[a-z])|-([a-z])/g, (_, a, c = a) => c.toUpperCase());
 
-function defineReaction(name, module) {
+function define(register, name, Def) {
   if (!name.match(/^_*[a-z]([a-z0-9_.-]*[a-z])?$/))
     throw new SyntaxError(`Invalid definition name: "${name}". name.match(/^_*[a-z]([a-z0-9_.-]*[a-z])?$/)`);
+  register.define(name, Def);
+}
+
+function defineRule(register, name, Def) {
+  if (!name.match(/^_*[a-z][a-z0-9_.-]*[_.-]$/))
+    throw new SyntaxError(`Invalid rule name: "${name}". name.match(/^_*[a-z][a-z0-9_.-]*[_.-]$/)`);
+  register.defineRule(name, Def);
+}
+
+function defineReaction(name, module) {
   const { src, params } = srcAndParams(this, name, module);
   for (let [name, value] of params.entries())
-    this.getRootNode().Reactions.define(name, loadDef(src, value || camelCase(name)));
+    define(this.getRootNode().Reactions, name, loadDef(src, value || camelCase(name)));
 }
 
 function defineTrigger(name, module) {
-  if (!name.match(/^_*[a-z]([a-z0-9_.-]*[a-z])?$/))
-    throw new SyntaxError(`Invalid definition name: "${name}". name.match(/^_*[a-z]([a-z0-9_.-]*[a-z])?$/)`);
   const { src, params } = srcAndParams(this, name, module);
   for (let [name, value] of params.entries())
-    this.getRootNode().Triggers.define(name, loadDef(src, value || PascalCase(name)));
+    define(this.getRootNode().Triggers, name, loadDef(src, value || PascalCase(name)));
 }
 
 function defineReactionRule(name, module) {
-  if (!name.match(/^_*[a-z][a-z0-9_.-]*[_.-]$/))
-    throw new SyntaxError(`Invalid rule name: "${name}". name.match(/^_*[a-z][a-z0-9_.-]*[_.-]$/)`);
   const { src, params } = srcAndParams(this, name, module);
   for (let [name, value] of params.entries())
-    this.getRootNode().Reactions.defineRule(name, loadRuleDefs(src, value || camelCase(name)));
+    defineRule(this.getRootNode().Reactions, name, loadRuleDefs(src, value || camelCase(name)));
 }
 
 function defineTriggerRule(name, module) {
-  if (!name.match(/^_*[a-z][a-z0-9_.-]*[_.-]$/))
-    throw new SyntaxError(`Invalid rule name: "${name}". name.match(/^_*[a-z][a-z0-9_.-]*[_.-]$/)`);
   const { src, params } = srcAndParams(this, name, module);
   for (let [name, value] of params.entries())
-    this.getRootNode().Triggers.defineRule(name, loadRuleDefs(src, value || PascalCase(name)));
+    defineRule(this.getRootNode().Triggers, name, loadRuleDefs(src, value || PascalCase(name)));
 }
 
 function definePortal(name, module) {
-  if (!name.match(/^_*[a-z]([a-z0-9_.-]*[a-z])?$/))
-    throw new SyntaxError(`Invalid portal name: "${name}". name.match(/^_*[a-z]([a-z0-9_.-]*[a-z])?$/)`);
   const { src, params } = srcAndParams(this, name, module);
   for (let [name, value] of params.entries()) {
     const reaction = value || camelCase(name);
     const trigger = reaction.replace(/^_*[a-z]/, c => c.toUpperCase());
-    this.getRootNode().Reactions.define(name, loadDef(src, reaction));
-    this.getRootNode().Triggers.define(name, loadDef(src, trigger));
-    this.getRootNode().Reactions.defineRule(name + "_", loadRuleDefs(src, reaction));
-    this.getRootNode().Reactions.defineRule(name + ".", loadRuleDefs(src, reaction));
-    this.getRootNode().Reactions.defineRule(name + "_", loadRuleDefs(src, reaction));
-    this.getRootNode().Triggers.defineRule(name + "_", loadRuleDefs(src, trigger));
-    this.getRootNode().Triggers.defineRule(name + ".", loadRuleDefs(src, trigger));
-    this.getRootNode().Triggers.defineRule(name + "_", loadRuleDefs(src, trigger));
+    const REACTIONS = this.getRootNode().Reactions;
+    const TRIGGERS = this.getRootNode().Triggers;
+    define(REACTIONS, name, loadDef(src, reaction));
+    define(TRIGGERS, name, loadDef(src, trigger));
+    defineRule(REACTIONS, name + "_", loadRuleDefs(src, reaction));
+    defineRule(REACTIONS, name + ".", loadRuleDefs(src, reaction));
+    defineRule(REACTIONS, name + "_", loadRuleDefs(src, reaction));
+    defineRule(TRIGGERS, name + "_", loadRuleDefs(src, trigger));
+    defineRule(TRIGGERS, name + ".", loadRuleDefs(src, trigger));
+    defineRule(TRIGGERS, name + "_", loadRuleDefs(src, trigger));
   }
 }
 
