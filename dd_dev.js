@@ -1044,11 +1044,12 @@ Object.defineProperty(window, "eventLoop", { value: new EventLoop() });
 DoubleDots.EventLoopError = EventLoopError;
 window.EventLoop = EventLoop;
 
+const setTimeoutOG = window.setTimeout;
 //shim requestIdleCallback
 (function () {
   window.requestIdleCallback ??= function (cb, { timeout = Infinity } = {}) {
     const callTime = performance.now();
-    return setTimeout(_ => {
+    return setTimeoutOG(_ => {
       const start = performance.now();
       cb({
         didTimeout: (performance.now() - callTime) >= timeout,
@@ -1084,7 +1085,7 @@ const dGrade = (function () {
       const ns = Array.from(dGrade);
       for (let i = 0; i < ns.length && (dGrade.size > 99 || deadline.timeRemaining() > 33); i++)
         removeAttr(ns[i]), dGrade.delete(ns[i]);
-      await new Promise(r => setTimeout(r, 3000 / (dGrade.size + 1))); // i:100 => 30ms  /  i:1 => 3000ms
+      await new Promise(r => setTimeoutOG(r, 3000 / (dGrade.size + 1))); // i:100 => 30ms  /  i:1 => 3000ms
     }
   })();
   return dGrade;
@@ -1098,26 +1099,27 @@ function upgradeBranch(...els) {
 
 (function () {
 
-  const Deprecations = [
-    "hasAttributeNS",
-    "getAttributeNS",
-    "setAttributeNS",
-    "removeAttributeNS",
-    "getAttributeNodeNS",
-    "setAttributeNodeNS",
-    "setAttributeNode",
-    "removeAttributeNode",
-  ];
+  //todo this is done in dd_dev.js!
+  // const Deprecations = [
+  // "hasAttributeNS",
+  // "getAttributeNS",
+  // "setAttributeNS",
+  // "removeAttributeNS",
+  // "getAttributeNodeNS",
+  // "setAttributeNodeNS",
+  // "setAttributeNode",
+  // "removeAttributeNode",
+  // ];
 
-  for (const prop of Deprecations) {
-    const og = Object.getOwnPropertyDescriptor(Element.prototype, prop);
-    const desc = Object.assign({}, og, {
-      value: function () {
-        throw new Error(`Element.prototype.${prop} is deprecated in DoubleDots strict. setAttribute(name,str)/getAttribute(name) instead.`);
-      }
-    });
-    Object.defineProperty(Element.prototype, prop, desc);
-  }
+  // for (const prop of Deprecations) {
+  //   const og = Object.getOwnPropertyDescriptor(Element.prototype, prop);
+  //   const desc = Object.assign({}, og, {
+  //     value: function () {
+  //       throw new Error(`Element.prototype.${prop} is deprecated in DoubleDots strict. setAttribute(name,str)/getAttribute(name) instead.`);
+  //     }
+  //   });
+  //   Object.defineProperty(Element.prototype, prop, desc);
+  // }
 
   function setAttribute_DD(og, name, value) {
     if (name.startsWith("override-"))
@@ -1467,10 +1469,10 @@ function definePortal(name, module) {
     const TRIGGERS = this.getRootNode().Triggers;
     define(REACTIONS, name, loadDef(src, reaction));
     define(TRIGGERS, name, loadDef(src, trigger));
-    defineRule(REACTIONS, name + "_", loadRuleDefs(src, reaction));
+    defineRule(REACTIONS, name + "-", loadRuleDefs(src, reaction));
     defineRule(REACTIONS, name + ".", loadRuleDefs(src, reaction));
     defineRule(REACTIONS, name + "_", loadRuleDefs(src, reaction));
-    defineRule(TRIGGERS, name + "_", loadRuleDefs(src, trigger));
+    defineRule(TRIGGERS, name + "-", loadRuleDefs(src, trigger));
     defineRule(TRIGGERS, name + ".", loadRuleDefs(src, trigger));
     defineRule(TRIGGERS, name + "_", loadRuleDefs(src, trigger));
   }
@@ -1655,16 +1657,16 @@ const DoubleDotDeprecated = {
   //MutationObserver
   //ResizeObserver
   //IntersectionObserver
-  "Document.prototype.createAttribute": d,
-  "Document.prototype.createComment": d,
-  "Document.prototype.createDocumentFragment": d,
+  // "Document.prototype.createAttribute": d,
+  // "Document.prototype.createComment": d,
+  // "Document.prototype.createDocumentFragment": d,
   // "Document.prototype.createElement": d, //maybe allow this, now that we can take elements in and out of a document, but not adopt it.
-  "Document.prototype.createTextNode": d,
+  // "Document.prototype.createTextNode": d,
   "Document.prototype.importNode": d,
   "Document.prototype.currentScript": d,
   "Document.prototype.write": d,
   // "createRange" //todo research
-  "Node.prototype.cloneNode": d
+  // "Node.prototype.cloneNode": d
 };
 /*
 "HTMLElement.prototype": {

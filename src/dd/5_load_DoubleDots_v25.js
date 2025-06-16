@@ -1,8 +1,9 @@
+const setTimeoutOG = window.setTimeout;
 //shim requestIdleCallback
 (function () {
   window.requestIdleCallback ??= function (cb, { timeout = Infinity } = {}) {
     const callTime = performance.now();
-    return setTimeout(_ => {
+    return setTimeoutOG(_ => {
       const start = performance.now();
       cb({
         didTimeout: (performance.now() - callTime) >= timeout,
@@ -38,7 +39,7 @@ const dGrade = (function () {
       const ns = Array.from(dGrade);
       for (let i = 0; i < ns.length && (dGrade.size > 99 || deadline.timeRemaining() > 33); i++)
         removeAttr(ns[i]), dGrade.delete(ns[i]);
-      await new Promise(r => setTimeout(r, 3000 / (dGrade.size + 1))); // i:100 => 30ms  /  i:1 => 3000ms
+      await new Promise(r => setTimeoutOG(r, 3000 / (dGrade.size + 1))); // i:100 => 30ms  /  i:1 => 3000ms
     }
   })();
   return dGrade;
@@ -52,26 +53,27 @@ function upgradeBranch(...els) {
 
 (function () {
 
-  const Deprecations = [
-    "hasAttributeNS",
-    "getAttributeNS",
-    "setAttributeNS",
-    "removeAttributeNS",
-    "getAttributeNodeNS",
-    "setAttributeNodeNS",
-    "setAttributeNode",
-    "removeAttributeNode",
-  ];
+  //todo this is done in dd_dev.js!
+  // const Deprecations = [
+  // "hasAttributeNS",
+  // "getAttributeNS",
+  // "setAttributeNS",
+  // "removeAttributeNS",
+  // "getAttributeNodeNS",
+  // "setAttributeNodeNS",
+  // "setAttributeNode",
+  // "removeAttributeNode",
+  // ];
 
-  for (const prop of Deprecations) {
-    const og = Object.getOwnPropertyDescriptor(Element.prototype, prop);
-    const desc = Object.assign({}, og, {
-      value: function () {
-        throw new Error(`Element.prototype.${prop} is deprecated in DoubleDots strict. setAttribute(name,str)/getAttribute(name) instead.`);
-      }
-    });
-    Object.defineProperty(Element.prototype, prop, desc);
-  }
+  // for (const prop of Deprecations) {
+  //   const og = Object.getOwnPropertyDescriptor(Element.prototype, prop);
+  //   const desc = Object.assign({}, og, {
+  //     value: function () {
+  //       throw new Error(`Element.prototype.${prop} is deprecated in DoubleDots strict. setAttribute(name,str)/getAttribute(name) instead.`);
+  //     }
+  //   });
+  //   Object.defineProperty(Element.prototype, prop, desc);
+  // }
 
   function setAttribute_DD(og, name, value) {
     if (name.startsWith("override-"))

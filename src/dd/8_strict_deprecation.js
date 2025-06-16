@@ -56,16 +56,16 @@ export const DoubleDotDeprecated = {
   //MutationObserver
   //ResizeObserver
   //IntersectionObserver
-  "Document.prototype.createAttribute": d,
-  "Document.prototype.createComment": d,
-  "Document.prototype.createDocumentFragment": d,
+  // "Document.prototype.createAttribute": d,
+  // "Document.prototype.createComment": d,
+  // "Document.prototype.createDocumentFragment": d,
   // "Document.prototype.createElement": d, //maybe allow this, now that we can take elements in and out of a document, but not adopt it.
-  "Document.prototype.createTextNode": d,
+  // "Document.prototype.createTextNode": d,
   "Document.prototype.importNode": d,
   "Document.prototype.currentScript": d,
   "Document.prototype.write": d,
   // "createRange" //todo research
-  "Node.prototype.cloneNode": d
+  // "Node.prototype.cloneNode": d
 };
 /*
 "HTMLElement.prototype": {
