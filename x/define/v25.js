@@ -26,15 +26,18 @@ function srcAndParams(at, name, src) {
   };
 }
 
+function RestrictedTriggerDefinition(src, name) {
+  const msg = `"${src}" does not export a rule with prefix: "${name}" and therefore cannot create trigger: `;
+  return class RestrictedTriggerDefinition extends AttrCustom {
+    upgrade() { throw new ReferenceError(msg + this.trigger); }
+  };
+}
+
 async function loadRuleDefs(src, name) {
   const module = await getModuleFunctions(src);
-  const rule = module[name];
-  const defs = Object.entries(module).filter(([k, v]) => k.startsWith(name));
-  if (!rule && !defs.length)
-    throw new ReferenceError(`"${src}" does not export rule "${name}".`);
-  if (rule && !defs.length)
-    return rule;
-  return { rule, defs: Object.fromEntries(defs) };
+  const rule = module[name] ?? RestrictedTriggerDefinition(src, name);
+  const defs = Object.entries(module).filter(([k]) => k.startsWith(name));
+  return !defs.length ? rule : { rule, defs: Object.fromEntries(defs) };
 }
 
 async function loadDef(src, name) {

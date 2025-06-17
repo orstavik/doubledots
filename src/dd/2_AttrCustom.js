@@ -110,6 +110,7 @@ Object.defineProperty(Event, "activeListeners", {
   }
 });
 
+//todo this should be done in a custom repo. The listeners are portals. And we need to have managed propagation.
 class AttrListener extends AttrCustom {
   upgrade() {
     Object.defineProperty(this, "__l", { value: this.run.bind(this) });
@@ -181,6 +182,7 @@ class AttrListenerGlobal extends AttrListener {
     eventLoop.dispatchBatch(e, this.register);
   }
 }
+// end of AttrListener
 
 class AttrEmpty extends AttrCustom {
   upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
@@ -280,8 +282,8 @@ class AttrIntersection extends AttrCustom {
 
 Object.assign(window, {
   AttrCustom,
-  AttrListener,
-  AttrListenerGlobal,
+  AttrListener,           //todo remove these from the basic package.
+  AttrListenerGlobal,     //todo remove these from the basic package.
   AttrImmutable,
   AttrUnknown,
   AttrEmpty,

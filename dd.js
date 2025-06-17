@@ -344,6 +344,7 @@ Object.defineProperty(Event, "activeListeners", {
   }
 });
 
+//todo this should be done in a custom repo. The listeners are portals. And we need to have managed propagation.
 class AttrListener extends AttrCustom$1 {
   upgrade() {
     Object.defineProperty(this, "__l", { value: this.run.bind(this) });
@@ -415,6 +416,7 @@ class AttrListenerGlobal extends AttrListener {
     eventLoop.dispatchBatch(e, this.register);
   }
 }
+// end of AttrListener
 
 let AttrEmpty$1 = class AttrEmpty extends AttrCustom$1 {
   upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
@@ -514,8 +516,8 @@ class AttrIntersection extends AttrCustom$1 {
 
 Object.assign(window, {
   AttrCustom: AttrCustom$1,
-  AttrListener,
-  AttrListenerGlobal,
+  AttrListener,           //todo remove these from the basic package.
+  AttrListenerGlobal,     //todo remove these from the basic package.
   AttrImmutable,
   AttrUnknown,
   AttrEmpty: AttrEmpty$1,
@@ -1099,28 +1101,6 @@ function upgradeBranch(...els) {
 
 (function () {
 
-  //todo this is done in dd_dev.js!
-  // const Deprecations = [
-  // "hasAttributeNS",
-  // "getAttributeNS",
-  // "setAttributeNS",
-  // "removeAttributeNS",
-  // "getAttributeNodeNS",
-  // "setAttributeNodeNS",
-  // "setAttributeNode",
-  // "removeAttributeNode",
-  // ];
-
-  // for (const prop of Deprecations) {
-  //   const og = Object.getOwnPropertyDescriptor(Element.prototype, prop);
-  //   const desc = Object.assign({}, og, {
-  //     value: function () {
-  //       throw new Error(`Element.prototype.${prop} is deprecated in DoubleDots strict. setAttribute(name,str)/getAttribute(name) instead.`);
-  //     }
-  //   });
-  //   Object.defineProperty(Element.prototype, prop, desc);
-  // }
-
   function setAttribute_DD(og, name, value) {
     if (name.startsWith("override-"))
       throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
@@ -1403,15 +1383,18 @@ function srcAndParams(at, name, src) {
   };
 }
 
+function RestrictedTriggerDefinition(src, name) {
+  const msg = `"${src}" does not export a rule with prefix: "${name}" and therefore cannot create trigger: `;
+  return class RestrictedTriggerDefinition extends AttrCustom {
+    upgrade() { throw new ReferenceError(msg + this.trigger); }
+  };
+}
+
 async function loadRuleDefs(src, name) {
   const module = await getModuleFunctions(src);
-  const rule = module[name];
-  const defs = Object.entries(module).filter(([k, v]) => k.startsWith(name));
-  if (!rule && !defs.length)
-    throw new ReferenceError(`"${src}" does not export rule "${name}".`);
-  if (rule && !defs.length)
-    return rule;
-  return { rule, defs: Object.fromEntries(defs) };
+  const rule = module[name] ?? RestrictedTriggerDefinition(src, name);
+  const defs = Object.entries(module).filter(([k]) => k.startsWith(name));
+  return !defs.length ? rule : { rule, defs: Object.fromEntries(defs) };
 }
 
 async function loadDef(src, name) {

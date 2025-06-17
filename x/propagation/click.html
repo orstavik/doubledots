@@ -1,0 +1,8 @@
+<script src="/dd.js"></script>
+<script type="module" src="/ddx.js?Click" _:define></script>
+
+<div click:log>hello sunshine</div>
+<script>
+  document.Reactions.define("log", _ => console.log("click"));
+  setTimeout(() =>   document.querySelector("div").click(), 500);  
+</script>

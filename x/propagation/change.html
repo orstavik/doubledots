@@ -1,0 +1,11 @@
+<script src="/dd.js"></script>
+<script type="module" src="/ddx.js?change" _:define-trigger></script>
+
+<select change:log>
+  <option id="one">hello</option>
+  <option id="two">sunshine</option>
+</select>
+<script>
+  // document.Reactions.define("log", _ => console.log("change"));
+  setTimeout(() => document.querySelector("select").dispatchEvent(new Event("change")), 500);  
+</script>
