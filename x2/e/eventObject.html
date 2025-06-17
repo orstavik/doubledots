@@ -1,0 +1,15 @@
+<head>
+  <script src="/dd.js"></script>
+  <script type="module" src="/ddx.js?Click&Submit" _:define></script>
+  <script type="module" src="v1.js?e.~" _:define></script>
+  <script>
+    document.Reactions.define("set-prevsib-text", function(input) {
+      this.ownerElement.previousElementSibling.textContent = input;
+    });
+  </script>
+</head>
+
+<body>
+  You've clicked the target: <span></span>
+  <button id="ordinaryButton" click:e.target.id:set-prevsib-text>Click Me</button>
+</body>
