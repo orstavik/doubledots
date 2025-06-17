@@ -8,6 +8,6 @@ export * from "./embrace/v25.js";
 export * from "./dotRule/dot.js";
 export * from "./er/ErAnalysis.js";
 export * from "./fetch/v2.js";
-export * from "./PropagationSimple/prop.js";
+export * from "./propagation/v25.js";
 export * from "./formdata/v1.js";
 export * from "./css/v1.js";

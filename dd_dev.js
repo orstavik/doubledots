@@ -1427,6 +1427,7 @@ function defineReaction(name, module) {
 
 function defineTrigger(name, module) {
   const { src, params } = srcAndParams(this, name, module);
+  debugger
   for (let [name, value] of params.entries())
     define(this.getRootNode().Triggers, name, loadDef(src, value || PascalCase(name)));
 }
