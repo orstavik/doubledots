@@ -28,19 +28,19 @@ class DefinitionNameError extends DefinitionError {
   }
 }
 
-class AsyncDefinitionError extends DefinitionError {
-  constructor(msg, fullname, rule, RuleFun) {
-    super(msg, fullname, rule, RuleFun);
-    //side-effect in constructor!!
-    document.documentElement.dispatchEvent(new ErrorEvent(this));
-  }
-}
+// class AsyncDefinitionError extends DefinitionError {
+//   constructor(msg, fullname, rule, RuleFun) {
+//     super(msg, fullname, rule, RuleFun);
+//     //side-effect in constructor!!
+//     document.documentElement.dispatchEvent(new ErrorEvent(this));
+//   }
+// }
 
 Object.assign(DoubleDots, {
   DefinitionError,
   TriggerNameError,
   DefinitionNameError,
-  AsyncDefinitionError
+  // AsyncDefinitionError
 });
 
 class DefinitionsMap {
@@ -93,15 +93,15 @@ class DefinitionsMap {
     for (let fullname of Object.keys(this.#definitions))
       if (fullname.startsWith(prefix))
         throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname}' exists.`);
-    // this.#ruleRE = new RegExp(`^(${Object.keys(this.#rules).join("|")}).*`, "g");
     this.#setRule(prefix, FunFun);
     FunFun instanceof Promise && FunFun
       .then(newFunFun => this.#setRule(prefix, newFunFun))
-      .catch(err => this.#setRule(prefix, new AsyncDefinitionError(err, null, prefix)));
+      .catch(err => this.#setRule(prefix, err));
+    //todo should we throw here inside the catch?
   }
 
+  //Def can be either a class Attr, Function, or Promise.
   define(fullname, Def) {
-    //Def can be either a class Attr, Function, or Promise.
     DefinitionNameError.check(fullname);
     if (fullname in this.#definitions)
       throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
@@ -111,38 +111,27 @@ class DefinitionsMap {
     this.#setDef(fullname, Def);
     Def instanceof Promise && Def
       .then(newDef => this.#setDef(fullname, newDef))
-      .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname)));
-  }
-
-  #processRule(fullname, rule, FunFun) {
-    if (FunFun instanceof Promise)
-      return this.#definitions[fullname] = FunFun
-        .then(newFunFun => (FunFun = newFunFun)(fullname))
-        .catch(err => new AsyncDefinitionError(err, null, rule, null))
-        .then(newDef => this.#setDef(fullname, newDef))
-        .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname, rule, FunFun)));
-
-    try {
-      if (FunFun instanceof Error)
-        throw FunFun;
-      const Def = this.#setDef(fullname, FunFun(fullname));
-      Def instanceof Promise && Def
-        .then(newDef => this.#setDef(fullname, newDef))
-        .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname, rule, FunFun)));
-      return Def;
-    } catch (err) {
-      throw this.#setDef(fullname, new DefinitionError(err, fullname, rule, FunFun));
-    }
+      .catch(err => this.#setDef(fullname, err));
+    //todo should we throw here inside the catch?
   }
 
   #checkViaRule(fullname) {
     for (let [rule, FunFun] of Object.entries(this.#rules))
-      if (fullname.startsWith(rule))
-        return this.#processRule(fullname, rule, FunFun);
+      if (fullname.startsWith(rule)) {
+        return FunFun instanceof Error ? FunFun :
+          typeof FunFun == "function" ? FunFun(fullname) :
+            (async _ => (await FunFun)(fullname))();
+      }
   }
 
   get(fullname) {
-    return this.#definitions[fullname] || this.#checkViaRule(fullname);
+    if (fullname in this.#definitions)
+      return this.#definitions[fullname];
+    const Def = this.#definitions[fullname] = this.#checkViaRule(fullname);
+    if (Def instanceof Promise)
+      Def.then(newDef => this.#setDef(fullname, newDef))
+        .catch(err => this.#setDef(fullname, err));
+    return Def;
   }
 }
 
@@ -169,7 +158,7 @@ class UnknownDefinitionsMap extends DefinitionsMap {
     super.defineRule(prefix, FunFun);
     for (let fullname in this.#unknowns)
       if (fullname.startsWith(prefix)) {
-        const Def = FunFun.defs?.[fullname] ?? (FunFun.rule??FunFun)(fullname);
+        const Def = FunFun.defs?.[fullname] ?? (FunFun.rule ?? FunFun)(fullname);
         this.#resolvers[fullname]?.(Def);
         delete this.#unknowns[fullname];
         delete this.#resolvers[fullname];

@@ -53,20 +53,31 @@ class MicroFrame {
 
         const func = this.at.initDocument.Reactions.get(re, this.at);
         if (func instanceof Promise) {
+          // if (threadMode) {
+          //   func.then(_ => __eventLoop.asyncContinue(this))
+          //     .catch(error => this.#runError(error));
+          //   return; //continue outside loop
+          // } else if (func instanceof DoubleDots.UnknownDefinition) {
+          //   return this.#runError(new EventLoopError("Reaction not defined: " + re));
+          //   //RulePromise, DefinitionPromise
+          // } else {
+          //   func.then(_ => __eventLoop.syncContinue());
+          //   //todo these sync delays needs to have a max timeout.
+          //   //todo thus, we need to have some max timers
+          //   return this; //halt outside loop
+          // }
           if (threadMode) {
-            func.then(_ => __eventLoop.asyncContinue(this))
-              .catch(error => this.#runError(error));
-            return; //continue outside loop
-          } else if (func instanceof DoubleDots.UnknownDefinition) {
-            return this.#runError(new EventLoopError("Reaction not defined: " + re));
-            //RulePromise, DefinitionPromise
+            func.finally(_ => __eventLoop.asyncContinue(this));
+            return;
           } else {
-            func.then(_ => __eventLoop.syncContinue());
-            //todo these sync delays needs to have a max timeout.
-            //todo thus, we need to have some max timers
-            return this; //halt outside loop
+            func.finally(_ => __eventLoop.syncContinue());
+            return this;
           }
         }
+
+        if (func instanceof Error)
+          throw func;
+
         const res = func.apply(this.at, this.#inputs);
         this.#inputs.unshift(res);
         if (res instanceof Promise) {

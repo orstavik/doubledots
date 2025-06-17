@@ -58,7 +58,7 @@ class AttrCustom extends Attr {
   }
 
   static upgradeBranch(...els) {
-    for (let el of els) 
+    for (let el of els)
       for (const at of DoubleDots.walkAttributes(el))
         AttrCustom.upgrade(at);
   }
@@ -66,27 +66,33 @@ class AttrCustom extends Attr {
   static #ids = 0;
   static errorMap = new Map();
   static upgrade(at, Def) {
-    //the single place to catch trigger errors.
-    //when triggers error, we add the error in the dom, so that it is trace
-    try {
-      Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
-      if (Def instanceof Promise) {
-        Object.setPrototypeOf(at, AttrUnknown.prototype);
-        Def.then(Def => AttrCustom.upgrade(at, Def))
-          .catch(err => { AttrCustom.errorMap.set(at, err); throw err; });
-        return;
+    //the registers getters can never throw.
+    Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
+    if (Def.prototype instanceof Attr) {
+      try {
+        Object.setPrototypeOf(at, Def.prototype);
+        Object.defineProperties(at, {
+          "id": { value: this.#ids++, enumerable: true, configurable: false, writable: false },
+          "initDocument": { value: at.getRootNode(), enumerable: true, configurable: false, writable: false }
+        });
+        DoubleDots.cube?.("attr", at);
+        at.upgrade?.();
+        at.value && (at.value = at.value);
+      } catch (err) {
+        AttrCustom.errorMap.set(at, err);
+        throw err;
       }
-      Object.setPrototypeOf(at, Def.prototype);
-      Object.defineProperties(at, {
-        "id": { value: this.#ids++, enumerable: true },
-        "initDocument": { value: at.getRootNode(), enumerable: true }
-      });
-      DoubleDots.cube?.("attr", at);
-      at.upgrade?.();
-      at.value && (at.value = at.value);
-    } catch (err) {
-      AttrCustom.errorMap.set(at, err);
-      throw err;
+    } else if (!Def) {
+      // // todo i don't think this can ever happen??
+      debugger
+      //   Object.setPrototypeOf(at, AttrError.prototype);
+      //   throw new ReferenceError(`Trigger "${at.name}" is not defined in the document.`);
+    } else if (Def instanceof Error) {
+      throw Def;
+    } else if (Def instanceof Promise) {
+      Object.setPrototypeOf(at, AttrUnknown.prototype);
+      Def.then(Def => AttrCustom.upgrade(at, Def))
+        .catch(err => AttrCustom.upgrade(at, err));
     }
   }
 }
@@ -97,6 +103,9 @@ class AttrImmutable extends AttrCustom {
 }
 
 class AttrUnknown extends AttrCustom { }
+
+const AttrError = error =>
+  (class AttrError extends AttrCustom { upgrade() { this.error = error; } });
 
 const stopProp = Event.prototype.stopImmediatePropagation;
 const addEventListenerOG = EventTarget.prototype.addEventListener;
@@ -111,77 +120,77 @@ Object.defineProperty(Event, "activeListeners", {
 });
 
 //todo this should be done in a custom repo. The listeners are portals. And we need to have managed propagation.
-class AttrListener extends AttrCustom {
-  upgrade() {
-    Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-    addEventListenerOG.call(this.target, this.type, this.__l, this.options);
-    listenerReg[this.type] = (listenerReg[this.type] || 0) + 1;
-  }
+// class AttrListener extends AttrCustom {
+//   upgrade() {
+//     Object.defineProperty(this, "__l", { value: this.run.bind(this) });
+//     addEventListenerOG.call(this.target, this.type, this.__l, this.options);
+//     listenerReg[this.type] = (listenerReg[this.type] || 0) + 1;
+//   }
 
-  remove() {
-    listenerReg[this.type] -= 1;
-    removeEventListenerOG.call(this.target, this.type, this.__l, this.options);
-    super.remove();
-  }
+//   remove() {
+//     listenerReg[this.type] -= 1;
+//     removeEventListenerOG.call(this.target, this.type, this.__l, this.options);
+//     super.remove();
+//   }
 
-  get target() {
-    return this.ownerElement;
-  }
+//   get target() {
+//     return this.ownerElement;
+//   }
 
-  get type() {
-    return this.trigger;
-  }
+//   get type() {
+//     return this.trigger;
+//   }
 
-  // get options(){ 
-  //   return undefined; this is redundant to implement
-  // }
+//   // get options(){ 
+//   //   return undefined; this is redundant to implement
+//   // }
 
-  run(e) {
-    // !this.isConnected && this.remove();
-    eventLoop.dispatch(e, this);
-  }
-}
+//   run(e) {
+//     // !this.isConnected && this.remove();
+//     eventLoop.dispatch(e, this);
+//   }
+// }
 
-class AttrListenerGlobal extends AttrListener {
+// class AttrListenerGlobal extends AttrListener {
 
-  // We can hide the triggers in JS space. But this makes later steps much worse.
-  //
-  // static #triggers = new WeakMap();
-  // get register() {
-  //   let dict = AttrListenerGlobal.#triggers.get(this.target);
-  //   !dict && AttrListenerGlobal.#triggers.set(this.target, dict = {});
-  //   return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
-  // }
+//   // We can hide the triggers in JS space. But this makes later steps much worse.
+//   //
+//   // static #triggers = new WeakMap();
+//   // get register() {
+//   //   let dict = AttrListenerGlobal.#triggers.get(this.target);
+//   //   !dict && AttrListenerGlobal.#triggers.set(this.target, dict = {});
+//   //   return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
+//   // }
 
-  get register() {
-    let dict = this.target.triggers;
-    if (!dict)
-      Object.defineProperty(this.target, "triggers", { value: dict = {} });
-    return dict[this.trigger] ??= new DoubleDots.AttrWeakSet();
-  }
+//   get register() {
+//     let dict = this.target.triggers;
+//     if (!dict)
+//       Object.defineProperty(this.target, "triggers", { value: dict = {} });
+//     return dict[this.trigger] ??= new DoubleDots.AttrWeakSet();
+//   }
 
-  get target() {
-    return window;
-  }
+//   get target() {
+//     return window;
+//   }
 
-  upgrade() {
-    super.upgrade();
-    this.register.add(this);
-  }
+//   upgrade() {
+//     super.upgrade();
+//     this.register.add(this);
+//   }
 
-  remove() {
-    this.register.delete(this);
-    super.remove();
-  }
+//   remove() {
+//     this.register.delete(this);
+//     super.remove();
+//   }
 
-  run(e) {
-    // if (!this.isConnected)
-    //   return this.remove();
-    stopProp.call(e);
-    // eventLoop.dispatch(e, ...this.register);
-    eventLoop.dispatchBatch(e, this.register);
-  }
-}
+//   run(e) {
+//     // if (!this.isConnected)
+//     //   return this.remove();
+//     stopProp.call(e);
+//     // eventLoop.dispatch(e, ...this.register);
+//     eventLoop.dispatchBatch(e, this.register);
+//   }
+// }
 // end of AttrListener
 
 class AttrEmpty extends AttrCustom {
@@ -282,8 +291,8 @@ class AttrIntersection extends AttrCustom {
 
 Object.assign(window, {
   AttrCustom,
-  AttrListener,           //todo remove these from the basic package.
-  AttrListenerGlobal,     //todo remove these from the basic package.
+  // AttrListener,           //todo remove these from the basic package.
+  // AttrListenerGlobal,     //todo remove these from the basic package.
   AttrImmutable,
   AttrUnknown,
   AttrEmpty,

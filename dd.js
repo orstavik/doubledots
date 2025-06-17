@@ -292,7 +292,7 @@ let AttrCustom$1 = class AttrCustom extends Attr {
   }
 
   static upgradeBranch(...els) {
-    for (let el of els) 
+    for (let el of els)
       for (const at of DoubleDots.walkAttributes(el))
         AttrCustom.upgrade(at);
   }
@@ -300,27 +300,33 @@ let AttrCustom$1 = class AttrCustom extends Attr {
   static #ids = 0;
   static errorMap = new Map();
   static upgrade(at, Def) {
-    //the single place to catch trigger errors.
-    //when triggers error, we add the error in the dom, so that it is trace
-    try {
-      Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
-      if (Def instanceof Promise) {
-        Object.setPrototypeOf(at, AttrUnknown.prototype);
-        Def.then(Def => AttrCustom.upgrade(at, Def))
-          .catch(err => { AttrCustom.errorMap.set(at, err); throw err; });
-        return;
+    //the registers getters can never throw.
+    Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
+    if (Def.prototype instanceof Attr) {
+      try {
+        Object.setPrototypeOf(at, Def.prototype);
+        Object.defineProperties(at, {
+          "id": { value: this.#ids++, enumerable: true, configurable: false, writable: false },
+          "initDocument": { value: at.getRootNode(), enumerable: true, configurable: false, writable: false }
+        });
+        DoubleDots.cube?.("attr", at);
+        at.upgrade?.();
+        at.value && (at.value = at.value);
+      } catch (err) {
+        AttrCustom.errorMap.set(at, err);
+        throw err;
       }
-      Object.setPrototypeOf(at, Def.prototype);
-      Object.defineProperties(at, {
-        "id": { value: this.#ids++, enumerable: true },
-        "initDocument": { value: at.getRootNode(), enumerable: true }
-      });
-      DoubleDots.cube?.("attr", at);
-      at.upgrade?.();
-      at.value && (at.value = at.value);
-    } catch (err) {
-      AttrCustom.errorMap.set(at, err);
-      throw err;
+    } else if (!Def) {
+      // // todo i don't think this can ever happen??
+      debugger
+      //   Object.setPrototypeOf(at, AttrError.prototype);
+      //   throw new ReferenceError(`Trigger "${at.name}" is not defined in the document.`);
+    } else if (Def instanceof Error) {
+      throw Def;
+    } else if (Def instanceof Promise) {
+      Object.setPrototypeOf(at, AttrUnknown.prototype);
+      Def.then(Def => AttrCustom.upgrade(at, Def))
+        .catch(err => AttrCustom.upgrade(at, err));
     }
   }
 };
@@ -331,6 +337,9 @@ class AttrImmutable extends AttrCustom$1 {
 }
 
 class AttrUnknown extends AttrCustom$1 { }
+
+const AttrError = error =>
+  (class AttrError extends AttrCustom$1 { upgrade() { this.error = error; } });
 
 const stopProp = Event.prototype.stopImmediatePropagation;
 const addEventListenerOG = EventTarget.prototype.addEventListener;
@@ -345,77 +354,77 @@ Object.defineProperty(Event, "activeListeners", {
 });
 
 //todo this should be done in a custom repo. The listeners are portals. And we need to have managed propagation.
-class AttrListener extends AttrCustom$1 {
-  upgrade() {
-    Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-    addEventListenerOG.call(this.target, this.type, this.__l, this.options);
-    listenerReg[this.type] = (listenerReg[this.type] || 0) + 1;
-  }
+// class AttrListener extends AttrCustom {
+//   upgrade() {
+//     Object.defineProperty(this, "__l", { value: this.run.bind(this) });
+//     addEventListenerOG.call(this.target, this.type, this.__l, this.options);
+//     listenerReg[this.type] = (listenerReg[this.type] || 0) + 1;
+//   }
 
-  remove() {
-    listenerReg[this.type] -= 1;
-    removeEventListenerOG.call(this.target, this.type, this.__l, this.options);
-    super.remove();
-  }
+//   remove() {
+//     listenerReg[this.type] -= 1;
+//     removeEventListenerOG.call(this.target, this.type, this.__l, this.options);
+//     super.remove();
+//   }
 
-  get target() {
-    return this.ownerElement;
-  }
+//   get target() {
+//     return this.ownerElement;
+//   }
 
-  get type() {
-    return this.trigger;
-  }
+//   get type() {
+//     return this.trigger;
+//   }
 
-  // get options(){ 
-  //   return undefined; this is redundant to implement
-  // }
+//   // get options(){ 
+//   //   return undefined; this is redundant to implement
+//   // }
 
-  run(e) {
-    // !this.isConnected && this.remove();
-    eventLoop.dispatch(e, this);
-  }
-}
+//   run(e) {
+//     // !this.isConnected && this.remove();
+//     eventLoop.dispatch(e, this);
+//   }
+// }
 
-class AttrListenerGlobal extends AttrListener {
+// class AttrListenerGlobal extends AttrListener {
 
-  // We can hide the triggers in JS space. But this makes later steps much worse.
-  //
-  // static #triggers = new WeakMap();
-  // get register() {
-  //   let dict = AttrListenerGlobal.#triggers.get(this.target);
-  //   !dict && AttrListenerGlobal.#triggers.set(this.target, dict = {});
-  //   return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
-  // }
+//   // We can hide the triggers in JS space. But this makes later steps much worse.
+//   //
+//   // static #triggers = new WeakMap();
+//   // get register() {
+//   //   let dict = AttrListenerGlobal.#triggers.get(this.target);
+//   //   !dict && AttrListenerGlobal.#triggers.set(this.target, dict = {});
+//   //   return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
+//   // }
 
-  get register() {
-    let dict = this.target.triggers;
-    if (!dict)
-      Object.defineProperty(this.target, "triggers", { value: dict = {} });
-    return dict[this.trigger] ??= new DoubleDots.AttrWeakSet();
-  }
+//   get register() {
+//     let dict = this.target.triggers;
+//     if (!dict)
+//       Object.defineProperty(this.target, "triggers", { value: dict = {} });
+//     return dict[this.trigger] ??= new DoubleDots.AttrWeakSet();
+//   }
 
-  get target() {
-    return window;
-  }
+//   get target() {
+//     return window;
+//   }
 
-  upgrade() {
-    super.upgrade();
-    this.register.add(this);
-  }
+//   upgrade() {
+//     super.upgrade();
+//     this.register.add(this);
+//   }
 
-  remove() {
-    this.register.delete(this);
-    super.remove();
-  }
+//   remove() {
+//     this.register.delete(this);
+//     super.remove();
+//   }
 
-  run(e) {
-    // if (!this.isConnected)
-    //   return this.remove();
-    stopProp.call(e);
-    // eventLoop.dispatch(e, ...this.register);
-    eventLoop.dispatchBatch(e, this.register);
-  }
-}
+//   run(e) {
+//     // if (!this.isConnected)
+//     //   return this.remove();
+//     stopProp.call(e);
+//     // eventLoop.dispatch(e, ...this.register);
+//     eventLoop.dispatchBatch(e, this.register);
+//   }
+// }
 // end of AttrListener
 
 let AttrEmpty$1 = class AttrEmpty extends AttrCustom$1 {
@@ -516,8 +525,8 @@ class AttrIntersection extends AttrCustom$1 {
 
 Object.assign(window, {
   AttrCustom: AttrCustom$1,
-  AttrListener,           //todo remove these from the basic package.
-  AttrListenerGlobal,     //todo remove these from the basic package.
+  // AttrListener,           //todo remove these from the basic package.
+  // AttrListenerGlobal,     //todo remove these from the basic package.
   AttrImmutable,
   AttrUnknown,
   AttrEmpty: AttrEmpty$1,
@@ -556,19 +565,19 @@ class DefinitionNameError extends DefinitionError {
   }
 }
 
-class AsyncDefinitionError extends DefinitionError {
-  constructor(msg, fullname, rule, RuleFun) {
-    super(msg, fullname, rule, RuleFun);
-    //side-effect in constructor!!
-    document.documentElement.dispatchEvent(new ErrorEvent(this));
-  }
-}
+// class AsyncDefinitionError extends DefinitionError {
+//   constructor(msg, fullname, rule, RuleFun) {
+//     super(msg, fullname, rule, RuleFun);
+//     //side-effect in constructor!!
+//     document.documentElement.dispatchEvent(new ErrorEvent(this));
+//   }
+// }
 
 Object.assign(DoubleDots, {
   DefinitionError,
   TriggerNameError,
   DefinitionNameError,
-  AsyncDefinitionError
+  // AsyncDefinitionError
 });
 
 class DefinitionsMap {
@@ -621,15 +630,15 @@ class DefinitionsMap {
     for (let fullname of Object.keys(this.#definitions))
       if (fullname.startsWith(prefix))
         throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname}' exists.`);
-    // this.#ruleRE = new RegExp(`^(${Object.keys(this.#rules).join("|")}).*`, "g");
     this.#setRule(prefix, FunFun);
     FunFun instanceof Promise && FunFun
       .then(newFunFun => this.#setRule(prefix, newFunFun))
-      .catch(err => this.#setRule(prefix, new AsyncDefinitionError(err, null, prefix)));
+      .catch(err => this.#setRule(prefix, err));
+    //todo should we throw here inside the catch?
   }
 
+  //Def can be either a class Attr, Function, or Promise.
   define(fullname, Def) {
-    //Def can be either a class Attr, Function, or Promise.
     DefinitionNameError.check(fullname);
     if (fullname in this.#definitions)
       throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
@@ -639,38 +648,27 @@ class DefinitionsMap {
     this.#setDef(fullname, Def);
     Def instanceof Promise && Def
       .then(newDef => this.#setDef(fullname, newDef))
-      .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname)));
-  }
-
-  #processRule(fullname, rule, FunFun) {
-    if (FunFun instanceof Promise)
-      return this.#definitions[fullname] = FunFun
-        .then(newFunFun => (FunFun = newFunFun)(fullname))
-        .catch(err => new AsyncDefinitionError(err, null, rule, null))
-        .then(newDef => this.#setDef(fullname, newDef))
-        .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname, rule, FunFun)));
-
-    try {
-      if (FunFun instanceof Error)
-        throw FunFun;
-      const Def = this.#setDef(fullname, FunFun(fullname));
-      Def instanceof Promise && Def
-        .then(newDef => this.#setDef(fullname, newDef))
-        .catch(err => this.#setDef(fullname, new AsyncDefinitionError(err, fullname, rule, FunFun)));
-      return Def;
-    } catch (err) {
-      throw this.#setDef(fullname, new DefinitionError(err, fullname, rule, FunFun));
-    }
+      .catch(err => this.#setDef(fullname, err));
+    //todo should we throw here inside the catch?
   }
 
   #checkViaRule(fullname) {
     for (let [rule, FunFun] of Object.entries(this.#rules))
-      if (fullname.startsWith(rule))
-        return this.#processRule(fullname, rule, FunFun);
+      if (fullname.startsWith(rule)) {
+        return FunFun instanceof Error ? FunFun :
+          typeof FunFun == "function" ? FunFun(fullname) :
+            (async _ => (await FunFun)(fullname))();
+      }
   }
 
   get(fullname) {
-    return this.#definitions[fullname] || this.#checkViaRule(fullname);
+    if (fullname in this.#definitions)
+      return this.#definitions[fullname];
+    const Def = this.#definitions[fullname] = this.#checkViaRule(fullname);
+    if (Def instanceof Promise)
+      Def.then(newDef => this.#setDef(fullname, newDef))
+        .catch(err => this.#setDef(fullname, err));
+    return Def;
   }
 }
 
@@ -697,7 +695,7 @@ class UnknownDefinitionsMap extends DefinitionsMap {
     super.defineRule(prefix, FunFun);
     for (let fullname in this.#unknowns)
       if (fullname.startsWith(prefix)) {
-        const Def = FunFun.defs?.[fullname] ?? (FunFun.rule??FunFun)(fullname);
+        const Def = FunFun.defs?.[fullname] ?? (FunFun.rule ?? FunFun)(fullname);
         this.#resolvers[fullname]?.(Def);
         delete this.#unknowns[fullname];
         delete this.#resolvers[fullname];
@@ -903,20 +901,31 @@ class MicroFrame {
 
         const func = this.at.initDocument.Reactions.get(re, this.at);
         if (func instanceof Promise) {
+          // if (threadMode) {
+          //   func.then(_ => __eventLoop.asyncContinue(this))
+          //     .catch(error => this.#runError(error));
+          //   return; //continue outside loop
+          // } else if (func instanceof DoubleDots.UnknownDefinition) {
+          //   return this.#runError(new EventLoopError("Reaction not defined: " + re));
+          //   //RulePromise, DefinitionPromise
+          // } else {
+          //   func.then(_ => __eventLoop.syncContinue());
+          //   //todo these sync delays needs to have a max timeout.
+          //   //todo thus, we need to have some max timers
+          //   return this; //halt outside loop
+          // }
           if (threadMode) {
-            func.then(_ => __eventLoop.asyncContinue(this))
-              .catch(error => this.#runError(error));
-            return; //continue outside loop
-          } else if (func instanceof DoubleDots.UnknownDefinition) {
-            return this.#runError(new EventLoopError("Reaction not defined: " + re));
-            //RulePromise, DefinitionPromise
+            func.finally(_ => __eventLoop.asyncContinue(this));
+            return;
           } else {
-            func.then(_ => __eventLoop.syncContinue());
-            //todo these sync delays needs to have a max timeout.
-            //todo thus, we need to have some max timers
-            return this; //halt outside loop
+            func.finally(_ => __eventLoop.syncContinue());
+            return this;
           }
         }
+
+        if (func instanceof Error)
+          throw func;
+
         const res = func.apply(this.at, this.#inputs);
         this.#inputs.unshift(res);
         if (res instanceof Promise) {
@@ -1383,25 +1392,17 @@ function srcAndParams(at, name, src) {
   };
 }
 
-function RestrictedTriggerDefinition(src, name) {
-  const msg = `"${src}" does not export a rule with prefix: "${name}" and therefore cannot create trigger: `;
-  return class RestrictedTriggerDefinition extends AttrCustom {
-    upgrade() { throw new ReferenceError(msg + this.trigger); }
-  };
-}
-
 async function loadRuleDefs(src, name) {
   const module = await getModuleFunctions(src);
-  const rule = module[name] ?? RestrictedTriggerDefinition(src, name);
+  const rule = module[name] ?? 
+    new ReferenceError(`"${src}" does not export a rule with prefix: "${name}" and therefore cannot create trigger: `);
   const defs = Object.entries(module).filter(([k]) => k.startsWith(name));
   return !defs.length ? rule : { rule, defs: Object.fromEntries(defs) };
 }
 
 async function loadDef(src, name) {
   const module = await getModuleFunctions(src);
-  const def = module[name];
-  if (def) return def;
-  throw new ReferenceError(`"${src}" does not export "${name}".`);
+  return module[name] ?? new ReferenceError(`"${src}" does not export "${name}".`);
 }
 
 const camelCase = str => str.replace(/-[a-z]/g, c => c[1].toUpperCase());
