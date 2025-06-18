@@ -117,11 +117,10 @@ class DefinitionsMap {
 
   #checkViaRule(fullname) {
     for (let [rule, FunFun] of Object.entries(this.#rules))
-      if (fullname.startsWith(rule)) {
+      if (fullname.startsWith(rule))
         return FunFun instanceof Error ? FunFun :
           typeof FunFun == "function" ? FunFun(fullname) :
-            (async _ => (await FunFun)(fullname))();
-      }
+            (async _ => (await FunFun, this.get(fullname)))(); //Promise
   }
 
   get(fullname) {

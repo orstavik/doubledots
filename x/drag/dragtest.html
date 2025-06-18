@@ -1,0 +1,15 @@
+<script src="/dd.js"></script>
+<script type="module"
+  src="/ddx.js?pointerdown&pointerup&pointermove&pointerleave&pointerenter&pointercancel&pointerup_&pointerdown_&pointercancel_"
+  _:define-trigger></script>
+<script type="module" src="v25.js?drag" _:define></script>
+
+<!-- there is the implicit dependency between drag- portal and Pointerevents. This is bad. -->
+
+<span drag-down>drag me</span>
+
+<div drag-up:log>
+  drop here
+</div>
+
+</html>
