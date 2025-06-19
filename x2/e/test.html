@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<body>
+
+  <test-e2e name="preventDefault" page="preventDefault.html">
+    <script type="module" test>
+      window.testPreventDefault = async function(frame) {
+        const doc = frame.document();
+        let stopped = await frame.click("a","#stopped");
+        if (stopped.textContent === "none")
+          throw "the link default behavior (going to new url) should be prevented!";
+        stopped = await frame.click("button","#stopped");
+        if (!stopped.textContent || stopped.textContent === "none")
+          throw "the form default behavior (submitting to new url) should be prevented!";
+        return "okay";
+      }
+    </script>
+    <script expected>
+      okay 
+    </script>
+  </test-e2e>
+  <test-e2e name="eventObject" page="eventObject.html">
+    <script type="module" test>
+      window.testEventObject = async function(frame) {
+        const doc = frame.document();
+        const span = await frame.click("button","span");
+        return span.textContent;
+      }
+    </script>
+    <script expected>
+      ordinaryButton 
+    </script>
+  </test-e2e>
+
+
+  <script type="module" src="https://cdn.jsdelivr.net/gh/orstavik/TestHTML@25.06.09.09/TestE2E.js"></script>
+</body>
+
+</html>
