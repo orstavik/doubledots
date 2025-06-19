@@ -1,0 +1,34 @@
+<head>
+  <script src="/dd.js"></script>
+  <script type="module" src="/ddx.js" _:define-trigger="submit&click" _:define-reaction-rule="e_"></script>
+  <script type="module" src="v1.js" _:define-trigger="value"></script>
+  <script>
+    document.Reactions.define("add-random-fruit", function() {
+      const ul = this.ownerElement.previousElementSibling;
+      const li = document.createElement("li");
+      li.textContent = "random fruit";
+      li.setAttribute("value","random fruit");
+      ul.append(li);
+    }); 
+
+    document.Reactions.define("list-fruit-values", function() {
+      const ul = this.ownerElement.querySelector("ul");
+      this.ownerElement.children[0].textContent = ul.value;
+      this.ownerElement.children[1].textContent = ul.defaultValue;
+    });
+  </script>
+<body>
+  <form submit:e_:list-fruit-values>
+    <p></p>
+    <p></p>
+    <div>
+      <label>Fruit Items</label>
+      <ul value="apple,banana" name="fruits"> 
+        <li value="apple">apple</li>
+        <li value="banana">banana</li>
+      </ul>
+      <button click:add-random-fruit type="button">Add Random Fruit</button>
+    </div>
+    <button>Submit</button>
+  </form>
+</body>

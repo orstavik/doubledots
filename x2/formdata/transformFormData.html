@@ -1,0 +1,36 @@
+<head>
+  <script src="/dd.js"></script>
+  <script type="module" src="/ddx.js" _:define-trigger="submit" _:define-reaction-rule="e.&e_"></script>
+  <script type="module" src="v1.js" _:define-reaction-rule="formdata_"></script>
+  <script>
+    document.Reactions.define("display-data-type", function (input) {
+      const type = Object.prototype.toString.call(input).slice(8,-1); // strips "[object " and "]"
+      document.querySelector("span").textContent = type;
+    });
+  </script>
+<body>
+  You've submitted a: <span></span>
+  <form id="formJSON" submit:e_:e.target:formdata_json:display-data-type>
+    <h4>Create your object</h4>
+    name: <input type="text" name="name" value="Goliath" /> <br/>
+    age: <input type="number" name="age" value="32" /> <br/>
+    <button>submit</button>
+  </form>
+  <form id="formQuery" submit:e_:e.target:formdata_urlencoded:display-data-type>
+    <h4>Create your query</h4>
+    id: <input type="text" name="name" value="123abc" /> <br/>
+    page: <input type="number" name="age" value="1" /> <br/>
+    <button>submit</button>
+  </form>
+  <form id="formMultiPart" submit:e_:e.target:formdata_multipart:display-data-type>
+    <h4>Create your formdata</h4>
+    firstname: <input type="text" name="name" value="Mary" /> <br/>
+    lastname: <input type="text" name="name" value="Fe" /> <br/>
+    <button>submit</button>
+  </form>
+  <form id="formBlob" submit:e_:e.target:formdata_blob:display-data-type>
+    <h4>Create your blob</h4>
+    code: <input type="text" name="name" value="Iseeyou" /> <br/>
+    <button>submit</button>
+  </form>
+</body>
