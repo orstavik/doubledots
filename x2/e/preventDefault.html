@@ -1,0 +1,22 @@
+<head>
+  <script src="/dd.js"></script>
+  <script type="module" src="/ddx.js" _:define-trigger="click&submit"></script>
+  <script type="module" src="v1.js" _:define-reaction-rule="e_"></script>
+  <script>
+    document.Reactions.define("show-stopped", function() {
+      document.querySelector("#stopped").textContent = this.value;
+    }); 
+    
+    window.addEventListener("beforeunload", function(e) {
+      document.querySelector("#stopped").textContent = "none";
+    });
+  </script>
+</head>
+<body>
+  <p id="stopped"></p>
+  <a href="https://google.com" click:e_:show-stopped="link">This won't go anywhere</a>
+  <form submit:e_:show-stopped="form">
+    <input type="text" name="review" placeholder="I won't be submitted">
+    <button>submit</button>
+  </form>
+</body>
