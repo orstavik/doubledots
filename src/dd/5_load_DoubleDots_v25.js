@@ -54,8 +54,6 @@ function upgradeBranch(...els) {
 (function () {
 
   function setAttribute_DD(og, name, value) {
-    if (name.startsWith("override-"))
-      throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
     const at = this.getAttributeNode(name);
     if (at) {
       at.value !== value && (at.value = value);

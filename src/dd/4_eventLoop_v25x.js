@@ -47,7 +47,7 @@ class MicroFrame {
           throw new EventLoopError("Disconnected: " + this.at);
         //todo should this be an error??
 
-        const func = this.at.initDocument.Reactions.get(re, this.at);
+        const func = this.at.initDocument.getReaction(re, this.at);
         if (func instanceof Promise) {
           // if (threadMode) {
           //   func.then(_ => __eventLoop.asyncContinue(this))
@@ -146,8 +146,6 @@ class __EventLoop {
     while (!this.#syncTask && this.#stack[0]) {
       const { event, iterator } = this.#stack[0];
       for (let attr of iterator) {
-        if(!attr.isConnected) 
-          continue;
         this.task = new MicroFrame(event, attr);
         //if task.run() not emptied, abort to halt eventloop
         if (this.#syncTask = this.task.run())

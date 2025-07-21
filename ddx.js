@@ -5,7 +5,8 @@ function e_() {
   return e.preventDefault(), e;
 }
 
-function eDot(name) {
+function e$(name) {
+  name = DoubleDots.kebabToPascal(name);
   const [, ...props] = name.split(".");
   return function eDot() {
     return props.reduce((acc, prop) => acc[prop], window.eventLoop.event);
@@ -600,7 +601,7 @@ function embrace(dataObject) {
   let em = this.ownerElement.__embrace;
   if (em)
     return em.run(dotScope(dataObject), 0, this.ownerElement);
-  const id = this.ownerElement.id || "embrace";
+  const id = "embrace_" + this.ownerElement.id;
   const templ = this.ownerElement.firstElementChild;
   if (!(templ instanceof HTMLTemplateElement))
     throw new Error("This first element child of :embrace ownerElement must be a template");
@@ -615,6 +616,7 @@ function embrace(dataObject) {
     em.runFirst(this.ownerElement, dataObject, funcs);
   });
 }
+class Embrace extends AttrCustom { }
 
 const scopes = {
   ".": "this.",
@@ -947,7 +949,7 @@ async function basicFetch() {
   return await safeJsonResponse(await fetch(this.value));
 }
 
-function fetchDashRule(name) {
+function fetch$_(name) {
   const [head, type, tail] = name.split(/([._])/);
   const responder = parseResponseType(tail);
   const m = type === "." ? "GET" : "POST";
@@ -961,8 +963,7 @@ function fetchDashRule(name) {
     };
 }
 
-//fetch.
-function fetchDotRule(name) {
+function fetch$$(name) {
   const [, tail] = name.split(".");
   const responder = parseResponseType(tail);
   return async function fetchDash() {
@@ -970,8 +971,7 @@ function fetchDotRule(name) {
   }
 }
 
-//fetch_
-function fetch_Rule(name) {
+function fetch_(name) {
   const [, tail] = name.split("_");
   const responder = parseResponseType(tail);
   return async function fetch_(body) {
@@ -983,32 +983,34 @@ const stopPropOG = DoubleDots.nativeMethods("Event.prototype.stopImmediatePropag
 const addEventListenerOG = DoubleDots.nativeMethods("EventTarget.prototype.addEventListener");
 const removeEventListenerOG = DoubleDots.nativeMethods("EventTarget.prototype.removeEventListener");
 
-function* bubble(e) {
-  const path = e.composedPath();
-  for (let i = path.indexOf(e.currentTarget); i < path.length; i++)
-    if (path[i].attributes)
-      for (let at of path[i].attributes)
-        if (at.trigger === e.type)
-          yield at;
-  for (let at of GLOBALS[e.type] ?? [])
-    yield at;
-}
-
-function* nonBubble(e) {
-  const path = e.composedPath();
-  let i = e.currentTarget == window ? 0 : path.indexOf(e.currentTarget);
+function* doProp(e, path, i) {
   for (; i < path.length; i++)
-    if (path[i].attributes)
+    if (path[i].isConnected && path[i].attributes)
       for (let at of path[i].attributes)
         if (at.trigger === e.type)
           yield at;
-  for (let at of GLOBALS[e.type] ?? [])
-    yield at;
+  if (GLOBALS[e.type])
+    yield* GLOBALS[e.type];
 }
 
-function propagateGlobal(e) { stopPropOG.call(e); eventLoop.dispatchBatch(e, GLOBALS[e.type]); }
-function propagateGlobalBubbleNo(e) { stopPropOG.call(e); eventLoop.dispatchBatch(e, nonBubble(e)); }
-function propagate(e) { stopPropOG.call(e); eventLoop.dispatchBatch(e, bubble(e)); }
+function propagateGlobal(e) {
+  stopPropOG.call(e);
+  eventLoop.dispatchBatch(e, GLOBALS[e.type]);
+}
+
+function propagateGlobalBubbleNo(e) {
+  stopPropOG.call(e);
+  const path = e.composedPath();
+  const i = e.currentTarget === window ? 0 : path.indexOf(e.currentTarget);
+  eventLoop.dispatchBatch(e, doProp(e, path, i));
+}
+
+function propagate(e) {
+  stopPropOG.call(e);
+  const path = e.composedPath();
+  const i = path.indexOf(e.currentTarget);
+  eventLoop.dispatchBatch(e, doProp(e, path, i));
+}
 
 const GLOBALS = {};
 function addFrosenProp(thiz, name, value) {
@@ -1017,7 +1019,7 @@ function addFrosenProp(thiz, name, value) {
 
 class AttrEventBubble extends AttrCustom {
   upgrade() {
-    addFrosenProp(this, "_type", this.trigger.replace(/_/g, ""));
+    addFrosenProp(this, "_type", this.trigger.replace("-", ""));
     addFrosenProp(this, "_listener", propagate.bind(this));
     addEventListenerOG.call(this.ownerElement, this._type, this._listener);
   }
@@ -1026,7 +1028,7 @@ class AttrEventBubble extends AttrCustom {
 
 class AttrEventWindowBubbleNo extends AttrCustom {
   upgrade() {
-    addFrosenProp(this, "_type", this.trigger.replace(/_/g, ""));
+    addFrosenProp(this, "_type", this.trigger.replace("-g", "").replace("-", ""));
     addFrosenProp(this, "_listener", propagateGlobalBubbleNo.bind(this));
     (GLOBALS[this._type] ??= new Set()).add(this);
     addEventListenerOG.call(document, this._type, this._listener);
@@ -1039,7 +1041,7 @@ class AttrEventWindowBubbleNo extends AttrCustom {
 
 class AttrEventWindow extends AttrCustom {
   upgrade() {
-    addFrosenProp(this, "_type", this.trigger.replace(/_/g, ""));
+    addFrosenProp(this, "_type", this.trigger.replace("-g", "").replace("-", ""));
     addFrosenProp(this, "_listener", propagateGlobal.bind(this));
     (GLOBALS[this._type] ??= new Set()).add(this);
     addEventListenerOG.call(window, this._type, this._listener);
@@ -1051,15 +1053,14 @@ class AttrEventWindow extends AttrCustom {
 }
 
 class AttrEventDocument extends AttrCustom {
-  get #type() { return this.trigger.replace(/_/g, ""); }
   upgrade() {
-    addFrosenProp(this, "_type", this.trigger.replace(/_/g, ""));
+    addFrosenProp(this, "_type", this.trigger.replace("-", ""));
     addFrosenProp(this, "_listener", propagateGlobal.bind(this));
-    (GLOBALS[this.#type] ??= new Set()).add(this);
+    (GLOBALS[this._type] ??= new Set()).add(this);
     addEventListenerOG.call(document, this._type, this._listener);
   }
   remove() {
-    GLOBALS[this.#type]?.delete(this);
+    GLOBALS[this._type]?.delete(this);
     removeEventListenerOG.call(document, this._type, this._listener);
   }
 }
@@ -1144,5 +1145,5 @@ class Class extends AttrCustom {
   get value() { return super.value; }
 }
 
-export { AttrEventBubble as Abort, AttrEventWindowBubbleNo as Abort_, AttrEventWindow as Afterprint, AttrEventBubble as Animationend, AttrEventWindow as Animationend_, AttrEventBubble as Animationiteration, AttrEventWindow as Animationiteration_, AttrEventBubble as Animationstart, AttrEventWindow as Animationstart_, AttrEventWindow as Appinstalled, AttrEventBubble as Auxclick, AttrEventWindow as Auxclick_, AttrEventBubble as Beforecopy, AttrEventWindow as Beforecopy_, AttrEventBubble as Beforecut, AttrEventWindow as Beforecut_, AttrEventBubble as Beforeinput, AttrEventWindow as Beforeinput_, AttrEventWindow as Beforeinstallprompt, AttrEventBubble as Beforematch, AttrEventWindow as Beforematch_, AttrEventBubble as Beforepaste, AttrEventWindow as Beforepaste_, AttrEventWindow as Beforeprint, AttrEventBubble as Beforetoggle, AttrEventWindow as Beforetoggle_, AttrEventWindow as Beforeunload, AttrEventBubble as Beforexrselect, AttrEventWindow as Beforexrselect_, AttrEventBubble as Blur, AttrEventWindowBubbleNo as Blur_, Broadcast_, AttrEventBubble as Cancel, AttrEventWindow as Cancel_, AttrEventBubble as Canplay, AttrEventWindow as Canplay_, AttrEventBubble as Canplaythrough, AttrEventWindow as Canplaythrough_, AttrEventBubble as Change, AttrEventWindow as Change_, Class, AttrEventBubble as Click, AttrEventWindow as Click_, AttrEventBubble as Close, AttrEventWindow as Close_, AttrEventBubble as Command, AttrEventWindow as Command_, AttrEventBubble as Contentvisibilityautostatechange, AttrEventWindow as Contentvisibilityautostatechange_, AttrEventBubble as Contextlost, AttrEventWindow as Contextlost_, AttrEventBubble as Contextmenu, AttrEventWindow as Contextmenu_, AttrEventBubble as Contextrestored, AttrEventWindow as Contextrestored_, AttrEventBubble as Copy, AttrEventWindow as Copy_, AttrEventBubble as Cuechange, AttrEventWindow as Cuechange_, AttrEventBubble as Cut, AttrEventWindow as Cut_, AttrEventBubble as Dblclick, AttrEventWindow as Dblclick_, AttrEventWindow as Devicemotion, AttrEventWindow as Deviceorientation, AttrEventWindow as Deviceorientationabsolute, AttrEventDCL as Domcontentloaded, AttrEventBubble as Drag, AttrEventWindow as Drag_, AttrEventBubble as Dragend, AttrEventWindow as Dragend_, AttrEventBubble as Dragenter, AttrEventWindow as Dragenter_, AttrEventBubble as Dragleave, AttrEventWindow as Dragleave_, AttrEventBubble as Dragover, AttrEventWindow as Dragover_, AttrEventBubble as Dragstart, AttrEventWindow as Dragstart_, AttrEventBubble as Drop, AttrEventWindow as Drop_, AttrEventBubble as Durationchange, AttrEventWindow as Durationchange_, ER, AttrEventBubble as Emptied, AttrEventWindowBubbleNo as Emptied_, AttrEventBubble as Ended, AttrEventWindowBubbleNo as Ended_, ErAnalysis, AttrEventBubble as Error, AttrEventWindowBubbleNo as Error_, AttrEventBubble as Focus, AttrEventWindowBubbleNo as Focus_, AttrEventBubble as Formdata, AttrEventWindow as Formdata_, AttrEventDocument as Freeze, AttrEventBubble as Fullscreenchange, AttrEventWindow as Fullscreenchange_, AttrEventBubble as Fullscreenerror, AttrEventWindow as Fullscreenerror_, AttrEventBubble as Gotpointercapture, AttrEventWindow as Gotpointercapture_, AttrEventWindow as Hashchange, AttrEventBubble as Input, AttrEventWindow as Input_, AttrEventBubble as Invalid, AttrEventWindow as Invalid_, AttrEventBubble as Keydown, AttrEventWindow as Keydown_, AttrEventBubble as Keypress, AttrEventWindow as Keypress_, AttrEventBubble as Keyup, AttrEventWindow as Keyup_, AttrEventWindow as Languagechange, AttrEventBubble as Load, AttrEventWindowBubbleNo as Load_, AttrEventBubble as Loadeddata, AttrEventWindow as Loadeddata_, AttrEventBubble as Loadedmetadata, AttrEventWindow as Loadedmetadata_, AttrEventBubble as Loadstart, AttrEventWindow as Loadstart_, AttrEventBubble as Lostpointercapture, AttrEventWindow as Lostpointercapture_, AttrEventWindow as Message, AttrEventWindow as Messageerror, AttrEventBubble as Mousedown, AttrEventWindow as Mousedown_, AttrEventBubble as Mouseenter, AttrEventWindowBubbleNo as Mouseenter_, AttrEventBubble as Mouseleave, AttrEventWindowBubbleNo as Mouseleave_, AttrEventBubble as Mousemove, AttrEventWindow as Mousemove_, AttrEventBubble as Mouseout, AttrEventWindow as Mouseout_, AttrEventBubble as Mouseover, AttrEventWindow as Mouseover_, AttrEventBubble as Mouseup, AttrEventWindow as Mouseup_, AttrEventBubble as Mousewheel, AttrEventWindow as Mousewheel_, Nav, AttrEventWindow as Offline, AttrEventWindow as Online, AttrEventWindow as Pagehide, AttrEventWindow as Pagereveal, AttrEventWindow as Pageshow, AttrEventWindow as Pageswap, AttrEventBubble as Paste, AttrEventWindow as Paste_, AttrEventBubble as Pause, AttrEventWindowBubbleNo as Pause_, AttrEventBubble as Play, AttrEventWindowBubbleNo as Play_, AttrEventBubble as Playing, AttrEventWindowBubbleNo as Playing_, AttrEventBubble as Pointercancel, AttrEventWindow as Pointercancel_, AttrEventBubble as Pointerdown, AttrEventWindow as Pointerdown_, AttrEventBubble as Pointerenter, AttrEventWindowBubbleNo as Pointerenter_, AttrEventBubble as Pointerleave, AttrEventWindowBubbleNo as Pointerleave_, AttrEventDocument as Pointerlockchange, AttrEventDocument as Pointerlockerror, AttrEventBubble as Pointermove, AttrEventWindow as Pointermove_, AttrEventBubble as Pointerout, AttrEventWindow as Pointerout_, AttrEventBubble as Pointerover, AttrEventWindow as Pointerover_, AttrEventBubble as Pointerrawupdate, AttrEventWindow as Pointerrawupdate_, AttrEventBubble as Pointerup, AttrEventWindow as Pointerup_, AttrEventWindow as Popstate, AttrEventDocument as Prerenderingchange, AttrEventBubble as Progress, AttrEventWindow as Progress_, AttrEventBubble as Ratechange, AttrEventWindow as Ratechange_, AttrEventDocument as Readystatechange, AttrEventWindow as Rejectionhandled, AttrEventBubble as Reset, AttrEventWindow as Reset_, AttrEventBubble as Resize, AttrEventWindow as Resize_, AttrEventDocument as Resume, AttrEventBubble as Scroll, AttrEventWindow as Scroll_, AttrEventBubble as Scrollend, AttrEventWindow as Scrollend_, AttrEventBubble as Scrollsnapchange, AttrEventWindow as Scrollsnapchange_, AttrEventBubble as Scrollsnapchanging, AttrEventWindow as Scrollsnapchanging_, AttrEventBubble as Search, AttrEventWindow as Search_, AttrEventBubble as Securitypolicyviolation, AttrEventWindow as Securitypolicyviolation_, AttrEventBubble as Seeked, AttrEventWindow as Seeked_, AttrEventBubble as Seeking, AttrEventWindow as Seeking_, AttrEventBubble as Select, AttrEventWindow as Select_, AttrEventBubble as Selectionchange, AttrEventWindow as Selectionchange_, AttrEventBubble as Selectstart, AttrEventWindow as Selectstart_, AttrEventBubble as Slotchange, AttrEventWindow as Slotchange_, AttrEventBubble as Stalled, AttrEventWindowBubbleNo as Stalled_, State, State_, AttrEventWindow as Storage, AttrEventBubble as Submit, AttrEventWindow as Submit_, AttrEventBubble as Suspend, AttrEventWindowBubbleNo as Suspend_, AttrEventBubble as Timeupdate, AttrEventWindow as Timeupdate_, AttrEventBubble as Toggle, AttrEventWindow as Toggle_, AttrEventBubble as Touchcancel, AttrEventWindow as Touchcancel_, AttrEventBubble as Touchend, AttrEventWindow as Touchend_, AttrEventBubble as Touchmove, AttrEventWindow as Touchmove_, AttrEventBubble as Touchstart, AttrEventWindow as Touchstart_, AttrEventBubble as Transitioncancel, AttrEventWindow as Transitioncancel_, AttrEventBubble as Transitionend, AttrEventWindow as Transitionend_, AttrEventBubble as Transitionrun, AttrEventWindow as Transitionrun_, AttrEventBubble as Transitionstart, AttrEventWindow as Transitionstart_, AttrEventWindow as Unhandledrejection, AttrEventWindow as Unload, AttrEventDocument as Visibilitychange, AttrEventBubble as Volumechange, AttrEventWindow as Volumechange_, AttrEventBubble as Waiting, AttrEventWindow as Waiting_, AttrEventBubble as Webkitanimationend, AttrEventWindow as Webkitanimationend_, AttrEventBubble as Webkitanimationiteration, AttrEventWindow as Webkitanimationiteration_, AttrEventBubble as Webkitanimationstart, AttrEventWindow as Webkitanimationstart_, AttrEventBubble as Webkitfullscreenchange, AttrEventWindow as Webkitfullscreenchange_, AttrEventBubble as Webkitfullscreenerror, AttrEventWindow as Webkitfullscreenerror_, AttrEventBubble as Webkittransitionend, AttrEventWindow as Webkittransitionend_, AttrEventBubble as Wheel, AttrEventWindow as Wheel_, broadcast_, classDot, class_, clazz, dynamicDots as dynamicsDots, eDot, e_, embrace, basicFetch as fetch, fetchDashRule as "fetch-", fetchDotRule as "fetch.", fetch_Rule as fetch_, formdata_, gatRule as "gat.", nav, rat_Rule as rat_, sat_Rule as sat_, state, state_, tat_Rule as tat_ };
+export { AttrEventBubble as Abort, AttrEventWindowBubbleNo as AbortG, AttrEventWindow as Afterprint, AttrEventBubble as Animationend, AttrEventWindow as AnimationendG, AttrEventBubble as Animationiteration, AttrEventWindow as AnimationiterationG, AttrEventBubble as Animationstart, AttrEventWindow as AnimationstartG, AttrEventWindow as Appinstalled, AttrEventBubble as Auxclick, AttrEventWindow as AuxclickG, AttrEventBubble as Beforecopy, AttrEventWindow as BeforecopyG, AttrEventBubble as Beforecut, AttrEventWindow as BeforecutG, AttrEventBubble as Beforeinput, AttrEventWindow as BeforeinputG, AttrEventWindow as Beforeinstallprompt, AttrEventBubble as Beforematch, AttrEventWindow as BeforematchG, AttrEventBubble as Beforepaste, AttrEventWindow as BeforepasteG, AttrEventWindow as Beforeprint, AttrEventBubble as Beforetoggle, AttrEventWindow as BeforetoggleG, AttrEventWindow as Beforeunload, AttrEventBubble as Beforexrselect, AttrEventWindow as BeforexrselectG, AttrEventBubble as Blur, AttrEventWindowBubbleNo as BlurG, Broadcast_, AttrEventBubble as Cancel, AttrEventWindow as CancelG, AttrEventBubble as Canplay, AttrEventWindow as CanplayG, AttrEventBubble as Canplaythrough, AttrEventWindow as CanplaythroughG, AttrEventBubble as Change, AttrEventWindow as ChangeG, Class, AttrEventBubble as Click, AttrEventWindow as ClickG, AttrEventBubble as Close, AttrEventWindow as CloseG, AttrEventBubble as Command, AttrEventWindow as CommandG, AttrEventBubble as Contentvisibilityautostatechange, AttrEventWindow as ContentvisibilityautostatechangeG, AttrEventBubble as Contextlost, AttrEventWindow as ContextlostG, AttrEventBubble as Contextmenu, AttrEventWindow as ContextmenuG, AttrEventBubble as Contextrestored, AttrEventWindow as ContextrestoredG, AttrEventBubble as Copy, AttrEventWindow as CopyG, AttrEventBubble as Cuechange, AttrEventWindow as CuechangeG, AttrEventBubble as Cut, AttrEventWindow as CutG, AttrEventBubble as Dblclick, AttrEventWindow as DblclickG, AttrEventDCL as Dcl, AttrEventWindow as Devicemotion, AttrEventWindow as Deviceorientation, AttrEventWindow as Deviceorientationabsolute, AttrEventDCL as Domcontentloaded, AttrEventBubble as Drag, AttrEventWindow as DragG, AttrEventBubble as Dragend, AttrEventWindow as DragendG, AttrEventBubble as Dragenter, AttrEventWindow as DragenterG, AttrEventBubble as Dragleave, AttrEventWindow as DragleaveG, AttrEventBubble as Dragover, AttrEventWindow as DragoverG, AttrEventBubble as Dragstart, AttrEventWindow as DragstartG, AttrEventBubble as Drop, AttrEventWindow as DropG, AttrEventBubble as Durationchange, AttrEventWindow as DurationchangeG, ER, Embrace, AttrEventBubble as Emptied, AttrEventWindowBubbleNo as EmptiedG, AttrEventBubble as Ended, AttrEventWindowBubbleNo as EndedG, ErAnalysis, AttrEventBubble as Error, AttrEventWindowBubbleNo as ErrorG, AttrEventBubble as Focus, AttrEventWindowBubbleNo as FocusG, AttrEventBubble as Formdata, AttrEventWindow as FormdataG, AttrEventDocument as Freeze, AttrEventBubble as Fullscreenchange, AttrEventWindow as FullscreenchangeG, AttrEventBubble as Fullscreenerror, AttrEventWindow as FullscreenerrorG, AttrEventBubble as Gotpointercapture, AttrEventWindow as GotpointercaptureG, AttrEventWindow as Hashchange, AttrEventBubble as Input, AttrEventWindow as InputG, AttrEventBubble as Invalid, AttrEventWindow as InvalidG, AttrEventBubble as Keydown, AttrEventWindow as KeydownG, AttrEventBubble as Keypress, AttrEventWindow as KeypressG, AttrEventBubble as Keyup, AttrEventWindow as KeyupG, AttrEventWindow as Languagechange, AttrEventBubble as Load, AttrEventWindowBubbleNo as LoadG, AttrEventBubble as Loadeddata, AttrEventWindow as LoadeddataG, AttrEventBubble as Loadedmetadata, AttrEventWindow as LoadedmetadataG, AttrEventBubble as Loadstart, AttrEventWindow as LoadstartG, AttrEventBubble as Lostpointercapture, AttrEventWindow as LostpointercaptureG, AttrEventWindow as Message, AttrEventWindow as Messageerror, AttrEventBubble as MouseDown, AttrEventWindow as MouseDownG, AttrEventBubble as MouseEnter, AttrEventWindowBubbleNo as MouseEnterG, AttrEventBubble as MouseLeave, AttrEventWindowBubbleNo as MouseLeaveG, AttrEventBubble as MouseMove, AttrEventWindow as MouseMoveG, AttrEventBubble as MouseOut, AttrEventWindow as MouseOutG, AttrEventBubble as MouseOver, AttrEventWindow as MouseOverG, AttrEventBubble as MouseUp, AttrEventWindow as MouseUpG, AttrEventBubble as MouseWheel, AttrEventWindow as MouseWheelG, Nav, AttrEventWindow as Offline, AttrEventWindow as Online, AttrEventWindow as Pagehide, AttrEventWindow as Pagereveal, AttrEventWindow as Pageshow, AttrEventWindow as Pageswap, AttrEventBubble as Paste, AttrEventWindow as PasteG, AttrEventBubble as Pause, AttrEventWindowBubbleNo as PauseG, AttrEventBubble as Play, AttrEventWindowBubbleNo as PlayG, AttrEventBubble as Playing, AttrEventWindowBubbleNo as PlayingG, AttrEventBubble as PointerCancel, AttrEventWindow as PointerCancelG, AttrEventBubble as PointerDown, AttrEventWindow as PointerDownG, AttrEventBubble as PointerEnter, AttrEventWindowBubbleNo as PointerEnterG, AttrEventBubble as PointerLeave, AttrEventWindowBubbleNo as PointerLeaveG, AttrEventBubble as PointerMove, AttrEventWindow as PointerMoveG, AttrEventBubble as PointerOut, AttrEventWindow as PointerOutG, AttrEventBubble as PointerOver, AttrEventWindow as PointerOverG, AttrEventBubble as PointerRawupdate, AttrEventWindow as PointerRawupdateG, AttrEventBubble as PointerUp, AttrEventWindow as PointerUpG, AttrEventDocument as PointerlockChange, AttrEventDocument as PointerlockError, AttrEventWindow as Popstate, AttrEventDocument as Prerenderingchange, AttrEventBubble as Progress, AttrEventWindow as ProgressG, AttrEventBubble as Ratechange, AttrEventWindow as RatechangeG, AttrEventDocument as Readystatechange, AttrEventWindow as Rejectionhandled, AttrEventBubble as Reset, AttrEventWindow as ResetG, AttrEventBubble as Resize, AttrEventWindow as ResizeG, AttrEventDocument as Resume, AttrEventBubble as Scroll, AttrEventWindow as ScrollG, AttrEventBubble as Scrollend, AttrEventWindow as ScrollendG, AttrEventBubble as Scrollsnapchange, AttrEventWindow as ScrollsnapchangeG, AttrEventBubble as Scrollsnapchanging, AttrEventWindow as ScrollsnapchangingG, AttrEventBubble as Search, AttrEventWindow as SearchG, AttrEventBubble as Securitypolicyviolation, AttrEventWindow as SecuritypolicyviolationG, AttrEventBubble as Seeked, AttrEventWindow as SeekedG, AttrEventBubble as Seeking, AttrEventWindow as SeekingG, AttrEventBubble as Select, AttrEventWindow as SelectG, AttrEventBubble as Selectionchange, AttrEventWindow as SelectionchangeG, AttrEventBubble as Selectstart, AttrEventWindow as SelectstartG, AttrEventBubble as Slotchange, AttrEventWindow as SlotchangeG, AttrEventBubble as Stalled, AttrEventWindowBubbleNo as StalledG, State, State_, AttrEventWindow as Storage, AttrEventBubble as Submit, AttrEventWindow as SubmitG, AttrEventBubble as Suspend, AttrEventWindowBubbleNo as SuspendG, AttrEventBubble as Timeupdate, AttrEventWindow as TimeupdateG, AttrEventBubble as Toggle, AttrEventWindow as ToggleG, AttrEventBubble as TouchCancel, AttrEventWindow as TouchCancelG, AttrEventBubble as TouchEnd, AttrEventWindow as TouchEndG, AttrEventBubble as TouchMove, AttrEventWindow as TouchMoveG, AttrEventBubble as TouchStart, AttrEventWindow as TouchStartG, AttrEventBubble as Transitioncancel, AttrEventWindow as TransitioncancelG, AttrEventBubble as Transitionend, AttrEventWindow as TransitionendG, AttrEventBubble as Transitionrun, AttrEventWindow as TransitionrunG, AttrEventBubble as Transitionstart, AttrEventWindow as TransitionstartG, AttrEventWindow as Unhandledrejection, AttrEventWindow as Unload, AttrEventDocument as Visibilitychange, AttrEventBubble as Volumechange, AttrEventWindow as VolumechangeG, AttrEventBubble as Waiting, AttrEventWindow as WaitingG, AttrEventBubble as Webkitanimationend, AttrEventWindow as WebkitanimationendG, AttrEventBubble as Webkitanimationiteration, AttrEventWindow as WebkitanimationiterationG, AttrEventBubble as Webkitanimationstart, AttrEventWindow as WebkitanimationstartG, AttrEventBubble as Webkitfullscreenchange, AttrEventWindow as WebkitfullscreenchangeG, AttrEventBubble as Webkitfullscreenerror, AttrEventWindow as WebkitfullscreenerrorG, AttrEventBubble as Webkittransitionend, AttrEventWindow as WebkittransitionendG, AttrEventBubble as Wheel, AttrEventWindow as WheelG, broadcast_, classDot, class_, clazz, dynamicDots as dynamicsDots, e$, e_, embrace, basicFetch as fetch, fetch$$, fetch$_, fetch_, formdata_, gatRule as "gat.", nav, rat_Rule as rat_, sat_Rule as sat_, state, state_, tat_Rule as tat_ };
 //# sourceMappingURL=ddx.js.map

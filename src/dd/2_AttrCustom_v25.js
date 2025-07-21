@@ -68,6 +68,10 @@ class AttrCustom extends Attr {
   static upgrade(at, Def) {
     //the registers getters can never throw.
     Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
+    if (!Def) //assumes this is a regular attribute.
+      return;
+    if (Def instanceof Error)
+      throw Def;
     if (Def.prototype instanceof Attr) {
       try {
         Object.setPrototypeOf(at, Def.prototype);
@@ -82,15 +86,8 @@ class AttrCustom extends Attr {
         AttrCustom.errorMap.set(at, err);
         throw err;
       }
-    } else if (!Def) {
-      // // todo i don't think this can ever happen??
-      debugger
-      //   Object.setPrototypeOf(at, AttrError.prototype);
-      //   throw new ReferenceError(`Trigger "${at.name}" is not defined in the document.`);
-    } else if (Def instanceof Error) {
-      throw Def;
     } else if (Def instanceof Promise) {
-      Object.setPrototypeOf(at, AttrUnknown.prototype);
+      Object.setPrototypeOf(at, AttrCustom.prototype);
       Def.then(Def => AttrCustom.upgrade(at, Def))
         .catch(err => AttrCustom.upgrade(at, err));
     }
@@ -101,101 +98,6 @@ class AttrImmutable extends AttrCustom {
   //set value() { /* cannot be changed */ }
   //get value() { return super.value; }
 }
-
-class AttrUnknown extends AttrCustom { }
-
-const AttrError = error =>
-  (class AttrError extends AttrCustom { upgrade() { this.error = error; } });
-
-const stopProp = Event.prototype.stopImmediatePropagation;
-const addEventListenerOG = EventTarget.prototype.addEventListener;
-const removeEventListenerOG = EventTarget.prototype.removeEventListener;
-
-const listenerReg = {};
-Object.defineProperty(Event, "activeListeners", {
-  enumerable: true,
-  value: function activeListeners(name) {
-    return listenerReg[name];
-  }
-});
-
-//todo this should be done in a custom repo. The listeners are portals. And we need to have managed propagation.
-// class AttrListener extends AttrCustom {
-//   upgrade() {
-//     Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-//     addEventListenerOG.call(this.target, this.type, this.__l, this.options);
-//     listenerReg[this.type] = (listenerReg[this.type] || 0) + 1;
-//   }
-
-//   remove() {
-//     listenerReg[this.type] -= 1;
-//     removeEventListenerOG.call(this.target, this.type, this.__l, this.options);
-//     super.remove();
-//   }
-
-//   get target() {
-//     return this.ownerElement;
-//   }
-
-//   get type() {
-//     return this.trigger;
-//   }
-
-//   // get options(){ 
-//   //   return undefined; this is redundant to implement
-//   // }
-
-//   run(e) {
-//     // !this.isConnected && this.remove();
-//     eventLoop.dispatch(e, this);
-//   }
-// }
-
-// class AttrListenerGlobal extends AttrListener {
-
-//   // We can hide the triggers in JS space. But this makes later steps much worse.
-//   //
-//   // static #triggers = new WeakMap();
-//   // get register() {
-//   //   let dict = AttrListenerGlobal.#triggers.get(this.target);
-//   //   !dict && AttrListenerGlobal.#triggers.set(this.target, dict = {});
-//   //   return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
-//   // }
-
-//   get register() {
-//     let dict = this.target.triggers;
-//     if (!dict)
-//       Object.defineProperty(this.target, "triggers", { value: dict = {} });
-//     return dict[this.trigger] ??= new DoubleDots.AttrWeakSet();
-//   }
-
-//   get target() {
-//     return window;
-//   }
-
-//   upgrade() {
-//     super.upgrade();
-//     this.register.add(this);
-//   }
-
-//   remove() {
-//     this.register.delete(this);
-//     super.remove();
-//   }
-
-//   run(e) {
-//     // if (!this.isConnected)
-//     //   return this.remove();
-//     stopProp.call(e);
-//     // eventLoop.dispatch(e, ...this.register);
-//     eventLoop.dispatchBatch(e, this.register);
-//   }
-// }
-// end of AttrListener
-
-class AttrEmpty extends AttrCustom {
-  upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
-};
 
 /**
  * AttrMutation is the only needed main base for MutationObserver.
@@ -291,11 +193,7 @@ class AttrIntersection extends AttrCustom {
 
 Object.assign(window, {
   AttrCustom,
-  // AttrListener,           //todo remove these from the basic package.
-  // AttrListenerGlobal,     //todo remove these from the basic package.
   AttrImmutable,
-  AttrUnknown,
-  AttrEmpty,
   AttrMutation,
   AttrIntersection,
   AttrResize

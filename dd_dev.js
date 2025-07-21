@@ -276,8 +276,8 @@ let AttrCustom$1 = class AttrCustom extends Attr {
     return AttrCustom.#makeRT(this), this.reactions;
   }
 
-  isConnected() {
-    return this.ownerElement?.isConnected();
+  get isConnected() {
+    return this.ownerElement?.isConnected;
   }
 
   getRootNode(...args) {
@@ -301,7 +301,11 @@ let AttrCustom$1 = class AttrCustom extends Attr {
   static errorMap = new Map();
   static upgrade(at, Def) {
     //the registers getters can never throw.
-    Def ??= at.ownerElement.getRootNode().Triggers?.get(at.name.split(":")[0], at);
+    Def ??= at.ownerElement.getRootNode().getTrigger(at.name.split(":")[0]);
+    if (!Def) //assumes this is a regular attribute.
+      return;
+    if (Def instanceof Error)
+      throw Def;
     if (Def.prototype instanceof Attr) {
       try {
         Object.setPrototypeOf(at, Def.prototype);
@@ -316,15 +320,8 @@ let AttrCustom$1 = class AttrCustom extends Attr {
         AttrCustom.errorMap.set(at, err);
         throw err;
       }
-    } else if (!Def) {
-      // // todo i don't think this can ever happen??
-      debugger
-      //   Object.setPrototypeOf(at, AttrError.prototype);
-      //   throw new ReferenceError(`Trigger "${at.name}" is not defined in the document.`);
-    } else if (Def instanceof Error) {
-      throw Def;
     } else if (Def instanceof Promise) {
-      Object.setPrototypeOf(at, AttrUnknown.prototype);
+      Object.setPrototypeOf(at, AttrCustom.prototype);
       Def.then(Def => AttrCustom.upgrade(at, Def))
         .catch(err => AttrCustom.upgrade(at, err));
     }
@@ -335,101 +332,6 @@ class AttrImmutable extends AttrCustom$1 {
   //set value() { /* cannot be changed */ }
   //get value() { return super.value; }
 }
-
-class AttrUnknown extends AttrCustom$1 { }
-
-const AttrError = error =>
-  (class AttrError extends AttrCustom$1 { upgrade() { this.error = error; } });
-
-const stopProp = Event.prototype.stopImmediatePropagation;
-const addEventListenerOG = EventTarget.prototype.addEventListener;
-const removeEventListenerOG = EventTarget.prototype.removeEventListener;
-
-const listenerReg = {};
-Object.defineProperty(Event, "activeListeners", {
-  enumerable: true,
-  value: function activeListeners(name) {
-    return listenerReg[name];
-  }
-});
-
-//todo this should be done in a custom repo. The listeners are portals. And we need to have managed propagation.
-// class AttrListener extends AttrCustom {
-//   upgrade() {
-//     Object.defineProperty(this, "__l", { value: this.run.bind(this) });
-//     addEventListenerOG.call(this.target, this.type, this.__l, this.options);
-//     listenerReg[this.type] = (listenerReg[this.type] || 0) + 1;
-//   }
-
-//   remove() {
-//     listenerReg[this.type] -= 1;
-//     removeEventListenerOG.call(this.target, this.type, this.__l, this.options);
-//     super.remove();
-//   }
-
-//   get target() {
-//     return this.ownerElement;
-//   }
-
-//   get type() {
-//     return this.trigger;
-//   }
-
-//   // get options(){ 
-//   //   return undefined; this is redundant to implement
-//   // }
-
-//   run(e) {
-//     // !this.isConnected && this.remove();
-//     eventLoop.dispatch(e, this);
-//   }
-// }
-
-// class AttrListenerGlobal extends AttrListener {
-
-//   // We can hide the triggers in JS space. But this makes later steps much worse.
-//   //
-//   // static #triggers = new WeakMap();
-//   // get register() {
-//   //   let dict = AttrListenerGlobal.#triggers.get(this.target);
-//   //   !dict && AttrListenerGlobal.#triggers.set(this.target, dict = {});
-//   //   return dict[this.trigger] ??= DoubleDots.AttrWeakSet();
-//   // }
-
-//   get register() {
-//     let dict = this.target.triggers;
-//     if (!dict)
-//       Object.defineProperty(this.target, "triggers", { value: dict = {} });
-//     return dict[this.trigger] ??= new DoubleDots.AttrWeakSet();
-//   }
-
-//   get target() {
-//     return window;
-//   }
-
-//   upgrade() {
-//     super.upgrade();
-//     this.register.add(this);
-//   }
-
-//   remove() {
-//     this.register.delete(this);
-//     super.remove();
-//   }
-
-//   run(e) {
-//     // if (!this.isConnected)
-//     //   return this.remove();
-//     stopProp.call(e);
-//     // eventLoop.dispatch(e, ...this.register);
-//     eventLoop.dispatchBatch(e, this.register);
-//   }
-// }
-// end of AttrListener
-
-let AttrEmpty$1 = class AttrEmpty extends AttrCustom$1 {
-  upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
-};;
 
 /**
  * AttrMutation is the only needed main base for MutationObserver.
@@ -525,265 +427,97 @@ class AttrIntersection extends AttrCustom$1 {
 
 Object.assign(window, {
   AttrCustom: AttrCustom$1,
-  // AttrListener,           //todo remove these from the basic package.
-  // AttrListenerGlobal,     //todo remove these from the basic package.
   AttrImmutable,
-  AttrUnknown,
-  AttrEmpty: AttrEmpty$1,
   AttrMutation,
   AttrIntersection,
   AttrResize
 });
 
-class DefinitionError extends DoubleDots.DoubleDotsError {
-  constructor(msg, fullname, rule, RuleFun) {
-    super(msg);
-    this.fullname = fullname;
-    this.rule = rule;
-    this.RuleFun = RuleFun;
-  }
+function ddToJs(n) {
+  return n.replace(/-[a-z]/g, m => m[1].toUpperCase()).replace(".", "$$").replace("-", "$_");
 }
-
-class TriggerNameError extends DefinitionError {
-  constructor(fullname) {
-    super(`Trigger name/prefix must begin with english letter or '_'.\n${fullname} begins with '${fullname[0]}'.`);
-  }
-
-  static check(name) {
-    if (!name.match(/[a-z_].*/))
-      throw new TriggerNameError(name);
-  }
-}
-
-class DefinitionNameError extends DefinitionError {
-  constructor(name) {
-    super(`DoubleDots definition names and rule prefixes can only contain /^[a-z0-9_\.-]*$/: ${name}`);
-  }
-  static check(name) {
-    if (!name.match(/^[a-z0-9_\.-]*$/))
-      throw new DefinitionNameError(name);
-  }
-}
-
-// class AsyncDefinitionError extends DefinitionError {
-//   constructor(msg, fullname, rule, RuleFun) {
-//     super(msg, fullname, rule, RuleFun);
-//     //side-effect in constructor!!
-//     document.documentElement.dispatchEvent(new ErrorEvent(this));
-//   }
-// }
-
-Object.assign(DoubleDots, {
-  DefinitionError,
-  TriggerNameError,
-  DefinitionNameError,
-  // AsyncDefinitionError
-});
 
 class DefinitionsMap {
 
-  #root;
-  #type;
-  constructor(root, type) {
-    this.#root = root;
-    this.#type = type;
+  static checkName(name) {
+    const portal = name.match(/^([a-z][a-z0-9]*)([a-z0-9_.-]*[^_.-])?$/);
+    if (!portal)
+      throw new SyntaxError(`Illegal reaction/trigger name: '${name}'.`);
+    return portal[1];
   }
 
-  get root() {
-    return this.#root;
-  }
-
-  get type() {
-    return this.#type;
-  }
-
-  #definitions = {};
-  #rules = {};
-
-  /**
-   * @param {*} name 
-   * @param {Promise => {HOFunction => {Promise => {Attr, Function}} } || {rule, defs }} Def
-   */
-  #setRule(name, Def) {
-    DoubleDots.cube?.("defineRule", { type: this.#type, root: this.#root, name, Def });
-    this.#rules[name] = Def.rule ?? Def;
-    if (!Def.defs)
-      return;
-    const defs = Object.entries(Def.defs);
-    for (let [fullname] of defs)
-      if (!fullname.startsWith(name))
-        throw new DefinitionError(`defineRule(name, {defs}) naming mismatch: !"${fullname}".startsWith("${name}")`);
-    for (let [fullname, def] of defs)
-      this.#setDef(fullname, def);
-  }
-
-  #setDef(name, Def) {
-    DoubleDots.cube?.("define", { type: this.#type, root: this.#root, name, Def });
-    return this.#definitions[name] = Def;
-  }
-
-  defineRule(prefix, FunFun) {
-    DefinitionNameError.check(prefix);
-    for (let r of Object.keys(this.#rules))
-      if (r.startsWith(prefix) || prefix.startsWith(r))
-        throw new DefinitionError(`rule/rule conflict: trying to add '${prefix}' when '${r}' exists.`);
-    for (let fullname of Object.keys(this.#definitions))
-      if (fullname.startsWith(prefix))
-        throw new DefinitionError(`rule/name conflict: trying to add '${prefix}' when '${fullname}' exists.`);
-    this.#setRule(prefix, FunFun);
-    FunFun instanceof Promise && FunFun
-      .then(newFunFun => this.#setRule(prefix, newFunFun))
-      .catch(err => this.#setRule(prefix, err));
-    //todo should we throw here inside the catch?
-  }
-
-  //Def can be either a class Attr, Function, or Promise.
-  define(fullname, Def) {
-    DefinitionNameError.check(fullname);
-    if (fullname in this.#definitions)
-      throw new DefinitionError(`name/name conflict: '${fullname}' already exists.`);
-    for (let r of Object.keys(this.#rules))
-      if (fullname.startsWith(r))
-        throw new DefinitionError(`name/rule conflict: trying to add '${fullname}' when rule '${r}' exists.`);
-    this.#setDef(fullname, Def);
-    Def instanceof Promise && Def
-      .then(newDef => this.#setDef(fullname, newDef))
-      .catch(err => this.#setDef(fullname, err));
-    //todo should we throw here inside the catch?
-  }
-
-  #checkViaRule(fullname) {
-    for (let [rule, FunFun] of Object.entries(this.#rules))
-      if (fullname.startsWith(rule))
-        return FunFun instanceof Error ? FunFun :
-          typeof FunFun == "function" ? FunFun(fullname) :
-            (async _ => (await FunFun, this.get(fullname)))(); //Promise
-  }
-
-  get(fullname) {
-    if (fullname in this.#definitions)
-      return this.#definitions[fullname];
-    const Def = this.#definitions[fullname] = this.#checkViaRule(fullname);
+  #portals = {};
+  #define(name, Def) {
+    this.#portals[name] = Def;
+    DoubleDots.cube?.("define", { name, Def });
     if (Def instanceof Promise)
-      Def.then(newDef => this.#setDef(fullname, newDef))
-        .catch(err => this.#setDef(fullname, err));
-    return Def;
-  }
-}
-
-//No longer in use as we are shifting to declaration-before-use, always.
-//Best practice is to have "static definitions" at the head of the document, for all things.
-//These can be checked compile-time, by tooling.
-//However, you can also dynamically define and load definitiions at run-time.
-//The limitation is that the call to define them *must* come before the first call to use them.
-// >> Note! The definition loaded can be async! Just make sure that you don't await before you pass the
-// definition name,promise to the register(s).
-class UnknownDefinitionsMap extends DefinitionsMap {
-  #unknowns = {};
-  #resolvers = {};
-
-  define(fullname, Def) {
-    super.define(fullname, Def);
-    this.#resolvers[fullname]?.(Def);
-    delete this.#unknowns[fullname];
-    delete this.#resolvers[fullname];
+      return Def.then(Def => this.#define(name, Def))
+        .catch(err => this.#define(name, err));
   }
 
-  defineRule(prefix, FunFun) {
-    //todo at this time, we don't know if this is a batch or not?
-    super.defineRule(prefix, FunFun);
-    for (let fullname in this.#unknowns)
-      if (fullname.startsWith(prefix)) {
-        const Def = FunFun.defs?.[fullname] ?? (FunFun.rule ?? FunFun)(fullname);
-        this.#resolvers[fullname]?.(Def);
-        delete this.#unknowns[fullname];
-        delete this.#resolvers[fullname];
-      }
+  define(name, Portal) {
+    if (name in this.#portals)
+      throw new ReferenceError(`Trying to redefine portal: ${name}.`);
+    this.#define(name, Portal);
   }
-
-  get(fullname) {
-    return super.get(fullname) ?? (this.#unknowns[fullname] ??= new Promise(r => this.#resolvers[fullname] = r));
-  }
-}
-
-class DefinitionsMapLock extends DefinitionsMap {  //these can never be unknown, right? because the shadowRoot can never start running upgrade inside before the defintions above are loaded?
-  #lock;
-  defineRule(prefix, FunFun) {
-    if (this.#lock)
-      throw new DefinitionError("ShadowRoot too-late definition error for rule: " + prefix);
-    return super.defineRule(prefix, FunFun);
-  }
-
-  define(name, Def) {
-    if (this.#lock)
-      throw new DefinitionError("ShadowRoot too-late definition error for definition: " + name);
-    return super.define(name, Def);
-  }
-
-  get(name, attr) {
-    this.#lock = true;
-    return super.get(name, attr);
-  }
-}
-
-//this map inherits
-class DefinitionsMapDOM extends DefinitionsMapLock {
-  get parentMap() {
-    return this.root.host?.getRootNode()?.[this.type];
-  }
-
-  get(name, attr) {
-    return super.get(name, attr) ?? this.parentMap.get(name, attr);
-  }
-}
-
-class DefinitionsMapDOMOverride extends DefinitionsMapDOM {
 
   #cache = {};
-  #rule;
+  #tryPortal(fullname, portalName) {
+    const Portal = this.#portals[portalName];
+    if (!Portal) //accessed before definition will set as blank.
+      return this.#cache[fullname] = this.#portals[portalName] = undefined;
+    if (Portal instanceof Error)
+      return this.#cache[fullname] = Portal;
+    if (Portal instanceof Promise)
+      return this.#cache[fullname] = (async _ => (await Portal, this.#tryPortal(fullname, portalName)))();
 
-  /**
-   * "name|prefix.*|another-name|prefix2_.*"
-   * and is simply wrapped in ^(...) to complete the regex query.
-   */
-  get rule() {
-    if (this.#rule !== undefined)
-      return this.#rule;
-    const rider = this.root.host.getAttribute("override-" + this.type.toLowerCase());
-    return this.#rule = rider && new RegExp(`^(${rider})$`);
-  }
+    //at this point we should have a working portal.
+    //First, direct definition
+    const jsName = ddToJs(fullname);
+    let Def = Portal[jsName];
+    if (Def instanceof Promise)
+      return this.#cache[fullname] = (async _ => (await Portal, this.#tryPortal(fullname, portalName)))();
+    if (Def)
+      return this.#cache[fullname] = Def;
 
-  /**
-   * @param {string} name 
-   * @returns {Definition} if the name has been overridden above.
-   */
-  overrides(name, attr) {
-    return this.#cache[name] ??= this.parentMap?.overrides?.(name, attr) || this.rule?.exec(name) && super.get(name, attr);
-  }
-
-  /**
-   * First, we check if there is an override root. If there is, we redirect the query directly to that root instead.
-   * Second, we try to use our own definitions, and then inherited definitions.
-   * @param {string} name 
-   * @returns DefinitionsMap from the document that overrides the definition name 
-   */
-  get(name, attr) {
-    return this.overrides(name, attr) || super.get(name, attr);
-  }
-}
-
-function TriggerSyntaxCheck(DefMap) {
-  return class TriggerMap extends DefMap {
-    defineRule(prefix, FunFun) {
-      TriggerNameError.check(prefix);
-      super.defineRule(prefix, FunFun);
+    //Second, try rule
+    let ruleName = jsName.match(/^[a-z0-9]+(_|$$|$_)/);
+    if (!ruleName)
+      throw new ReferenceError(`Reaction/trigger '${fullname}' has no matching definition.`);
+    ruleName = ruleName[0];
+    const Rule = Portal[ruleName];
+    if (!Rule)
+      throw new ReferenceError(`Reaction/trigger '${fullname}' has no matching definition.`);
+    if (Rule instanceof Error)
+      return this.#cache[fullname] = Rule;
+    if (Rule instanceof Promise)
+      return this.#cache[fullname] = (async _ => (await Rule, this.#tryPortal(fullname, portalName)))();
+    if (typeof Rule != "function")
+      return this.#cache[fullname] = new TypeError(`Rule '${ruleName}' did not produce a function/Attr. typeof Rule: ${typeof Rule}. Portal: ${portalName}.`);
+    try {
+      Def = Rule(fullname);
+      if (Def instanceof Promise)
+        return this.#cache[fullname] =
+          Def.then(Def => this.#cache[fullname] = Def)
+            .catch(err => this.#cache[fullname] = err);
+      return this.#cache[fullname] = Def;
+    } catch (err) {
+      return this.#cache[fullname] = err;
     }
+  }
 
-    define(fullname, Def) {
-      TriggerNameError.check(fullname);
-      super.define(fullname, Def);
-    }
-  };
+  getReaction(name) {
+    if (name in this.#cache) return this.#cache[name];
+    const portalName = DefinitionsMap.checkName(name);
+    return this.#tryPortal(name, portalName);
+  }
+
+  getTrigger(name) {
+    const trigger = "-" + name;
+    if (trigger in this.#cache) return this.#cache[trigger];
+    const portalName = DefinitionsMap.checkName(name);
+    return this.#tryPortal(trigger, portalName);
+  }
 }
 
 function ReactionThisInArrowCheck(DefMap) { //todo add this to Reaction maps?
@@ -795,55 +529,29 @@ function ReactionThisInArrowCheck(DefMap) { //todo add this to Reaction maps?
   };
 }
 
+const definitionsMap = new DefinitionsMap();
+const dp = definitionsMap.define.bind(definitionsMap);
+const gr = definitionsMap.getReaction.bind(definitionsMap);
+const gt = definitionsMap.getTrigger.bind(definitionsMap);
 
-Object.defineProperties(Document.prototype, {
-  Reactions: {
-    get: function () {
-      const map = new UnknownDefinitionsMap(this, "Reactions");
-      Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
-      return map;
-    }
-  },
-  Triggers: {
-    configurable: true,
-    get: function () {
-      const TriggerMap = TriggerSyntaxCheck(UnknownDefinitionsMap);
-      const map = new TriggerMap(this, "Triggers");
-      Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
-      return map;
-    }
-  }
-});
-Object.defineProperties(ShadowRoot.prototype, {
-  Reactions: {
-    configurable: true,
-    get: function () {
-      const map = new DefinitionsMapDOMOverride(this, "Reactions");
-      Object.defineProperty(this, "Reactions", { value: map, enumerable: true });
-      return map;
-    }
-  },
-  Triggers: {
-    configurable: true,
-    get: function () {
-      const TriggerMap = TriggerSyntaxCheck(DefinitionsMapDOMOverride);
-      const map = new TriggerMap(this, "Triggers");
-      Object.defineProperty(this, "Triggers", { value: map, enumerable: true });
-      return map;
-    }
-  }
-});
+Object.defineProperty(Document.prototype, "definePortal", { value: dp });
+Object.defineProperty(Document.prototype, "getReaction", { value: gr });
+Object.defineProperty(Document.prototype, "getTrigger", { value: gt });
+Object.defineProperty(ShadowRoot.prototype, "definePortal", { value: dp });
+Object.defineProperty(ShadowRoot.prototype, "getReaction", { value: gr });
+Object.defineProperty(ShadowRoot.prototype, "getTrigger", { value: gt });
 
-document.Triggers.define("_", AttrEmpty);
+DoubleDots.DefinitionsMap = DefinitionsMap;
 
-Object.assign(DoubleDots, {
-  DefinitionsMap,
-  DefinitionsMapLock,
-  DefinitionsMapDOM,
-  DefinitionsMapDOMOverride,
-  UnknownDefinitionsMap,
-  // UnknownDefinition,
-});
+//Best practice: define before use. The limitation is that the call to define them *must* come before the first call to use them.
+//1. For static defintions and use, just define all functions on top of the document, before use.
+//   This can be checked by tooling up front.
+//2. You can also dynamically define and use defintions and rules.
+//   You only need to define the dynamically created methods before you add them as triggers in the document, 
+//   or access them as reactions.
+//
+//* Note! Definitions can be loaded async! So you only need to specify from where you are going to get the definition,
+//   you don't need the ready definition for it to work.
 
 Event.data = Symbol("Event data");
 class EventLoopError extends DoubleDots.DoubleDotsError { }
@@ -860,10 +568,6 @@ class MicroFrame {
 
   toJSON() {
     return { at: this.at, event: this.event, inputs: this.#inputs, i: this.#i };
-  }
-
-  isConnected() {
-    return this.at.isConnected();
   }
 
   getReaction() {
@@ -898,7 +602,7 @@ class MicroFrame {
           throw new EventLoopError("Disconnected: " + this.at);
         //todo should this be an error??
 
-        const func = this.at.initDocument.Reactions.get(re, this.at);
+        const func = this.at.initDocument.getReaction(re, this.at);
         if (func instanceof Promise) {
           // if (threadMode) {
           //   func.then(_ => __eventLoop.asyncContinue(this))
@@ -1110,8 +814,6 @@ function upgradeBranch(...els) {
 (function () {
 
   function setAttribute_DD(og, name, value) {
-    if (name.startsWith("override-"))
-      throw new SyntaxError("You can only set [override-xyz] attributes on elements in HTML template: " + name);
     const at = this.getAttributeNode(name);
     if (at) {
       at.value !== value && (at.value = value);
@@ -1363,24 +1065,6 @@ function loadDoubleDots(aelOG) {
   aelOG.call(document, "DOMContentLoaded", _ => upgradeBranch(document.documentElement));
 }
 
-// jsName . => $ -a => A
-const jsName = str =>
-  str.replaceAll(/-[a-z]/g, c => c[1].toUpperCase()).replaceAll(".", "$");
-// const PascalCase = str => str.replaceAll(/^(_*[a-z])|-([a-z])/g, (_, a, c = a) => c.toUpperCase());
-const ddName = str =>
-  str.replace(/([A-Z])/g, (_, c, i) => (i ? "-" : "") + c.toLowerCase()).replaceAll("$", ".");
-
-async function getModuleFunctions(url) {
-  const module = await import(url);
-  if (!module || typeof module !== "object" && !(module instanceof Object))
-    throw new TypeError(`URL is not an es6 module: ${this.url}`);
-  const moduleFunctions = {};
-  for (let [k, v] of Object.entries(module))
-    if (typeof v === "function")
-      moduleFunctions[k] = v;
-  return moduleFunctions;
-}
-
 //definitions from the attr itself first, then from the src attribute searchParams, then from the filename.
 function srcAndParams(at, name, src) {
   name = typeof name === "string" ? name : at.value;
@@ -1398,75 +1082,56 @@ function srcAndParams(at, name, src) {
   };
 }
 
-async function loadRuleDefs(src, name) {
-  const module = await getModuleFunctions(src);
-  const rule = module[name] ??
-    new ReferenceError(`"${src}" does not export a rule with prefix: "${name}".`);
-  const regEx = new RegExp(`^${name.replace(/-$/, "[A-Z]")}`);
-  let defs = Object.entries(module).filter(([k]) => k.match(regEx));
-  if (!defs.length) return rule;
-  defs = Object.fromEntries(defs.map(([k, v]) => [ddName(k), v]));
-  return { rule, defs };
+function flipNV(dict, value, name) {
+  const res = {};
+  for (let [n, D] of Object.entries(dict))
+    if (n.startsWith(value))
+      res[name + value.slice(value.length)] = D;
+  return res;
 }
 
-async function loadDef(src, name) {
-  const module = await getModuleFunctions(src);
-  return module[name] ?? new ReferenceError(`"${src}" does not export "${name}".`);
+async function flipNameValue(module, name, value) {
+  const { reactions, triggers } = await module;
+  return {
+    reactions: flipNV(reactions, value, name),
+    triggers: flipNV(triggers, value, name)
+  };
 }
 
-function define(register, name, Def) {
-  if (!name.match(/^_*[a-z]([a-z0-9_.-]*[a-z])?$/))
-    throw new SyntaxError(`Invalid definition name: "${name}". name.match(/^_*[a-z]([a-z0-9_.-]*[a-z])?$/)`);
-  register.define(name, Def);
-}
-
-function defineRule(register, name, Def) {
-  if (!name.match(/^_*[a-z][a-z0-9_.-]*[_.-]$/))
-    throw new SyntaxError(`Invalid rule name: "${name}". name.match(/^_*[a-z][a-z0-9_.-]*[_.-]$/)`);
-  register.defineRule(name, Def);
-}
-
-function defineReaction(name, module) {
+function define(name, module) {
   const { src, params } = srcAndParams(this, name, module);
-  for (let [name, value] of params.entries())
-    define(this.getRootNode().Reactions, name, loadDef(src, value || jsName(name)));
-}
-
-function defineTrigger(name, module) {
-  const { src, params } = srcAndParams(this, name, module);
-  for (let [name, value] of params.entries())
-    define(this.getRootNode().Triggers, name, loadDef(src, value || jsName("-" + name)));
-}
-
-function defineReactionRule(name, module) {
-  const { src, params } = srcAndParams(this, name, module);
-  for (let [name, value] of params.entries())
-    defineRule(this.getRootNode().Reactions, name, loadRuleDefs(src, value || jsName(name)));
-}
-
-function defineTriggerRule(name, module) {
-  const { src, params } = srcAndParams(this, name, module);
-  for (let [name, value] of params.entries())
-    defineRule(this.getRootNode().Triggers, name, loadRuleDefs(src, value || jsName("-" + name)));
-}
-
-function definePortal(name, module) {
-  const { src, params } = srcAndParams(this, name, module);
+  module = import(src);
   for (let [name, value] of params.entries()) {
-    const reaction = value || jsName(name);
-    const trigger = value || jsName("-" + name);
-    const REACTIONS = this.getRootNode().Reactions;
-    const TRIGGERS = this.getRootNode().Triggers;
-    define(REACTIONS, name, loadDef(src, reaction));
-    define(TRIGGERS, name, loadDef(src, trigger));
-    defineRule(REACTIONS, name + "-", loadRuleDefs(src, reaction + "-"));
-    defineRule(REACTIONS, name + ".", loadRuleDefs(src, reaction + "$"));
-    defineRule(REACTIONS, name + "_", loadRuleDefs(src, reaction + "_"));
-    defineRule(TRIGGERS, name + "-", loadRuleDefs(src, trigger + "-"));
-    defineRule(TRIGGERS, name + ".", loadRuleDefs(src, trigger + "$"));
-    defineRule(TRIGGERS, name + "_", loadRuleDefs(src, trigger + "_"));
+    const m = value ? flipNameValue(name, value, module) : module;
+    try {
+      this.ownerElement.getRootNode().definePortal(name, m);
+    } catch (error) {
+      console.warn(error);
+    }
   }
 }
+
+async function makeRawModule(params, module) {
+  const { reactions, triggers } = await module;
+  const res = { reactions: {}, triggers: {} };
+  for (let [name, value] of params.entries())
+    name[0] === "~" ?
+      res.triggers[name.slice(1)] = triggers[value] :
+      res.reactions[name] = reactions[value];
+  return res;
+}
+
+function defineRaw(name, module) {
+  const { src, params } = srcAndParams(this, name, module);
+  module = import(src);
+  this.ownerElement.getRootNode().definePortal(name, makeRawModule(params, module));
+}
+
+var define$1 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  define: define,
+  defineRaw: defineRaw
+});
 
 function setAttributes(el, txt) {
   const pieces = txt.split(/([_a-zA-Z][a-zA-Z0-9.:_-]*="[^"]*")/);
@@ -1553,25 +1218,36 @@ class Template extends AttrCustom {
   }
 }
 
+var template$1 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  Template: Template
+});
+
 function wait_(rule) {
   const [_, ms] = rule.split("_");
   return arg => new Promise(r => setTimeout(_ => r(arg), ms));
 }
 
+var wait = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  wait_: wait_
+});
+
 //todo this should probably be Wait_ too
 //Wait_100:do-something:at.repeat //which would enable us to have a set timeout
 
-document.Triggers.define("template", Template);
-// document.Reactions.define("template", template);
-document.Reactions.define("define", definePortal);
-document.Reactions.define("define-reaction", defineReaction);
-document.Reactions.define("define-trigger", defineTrigger);
-document.Reactions.define("define-reaction-rule", defineReactionRule);
-document.Reactions.define("define-trigger-rule", defineTriggerRule);
-document.Reactions.defineRule("wait_", wait_);
-document.Reactions.define("prevent-default", i => (eventLoop.event.preventDefault(), i));
-document.Reactions.define("log", function (...i) { console.log(this, ...i); return i[0]; });
-document.Reactions.define("debugger", function (...i) { console.log(this, ...i); debugger; return i[0]; });
+document.definePortal("i", {
+  "I": class AttrEmpty extends AttrCustom {
+    upgrade() { eventLoop.dispatch(new Event(this.trigger), this); }
+  }
+});
+
+document.definePortal("template", template$1);
+document.definePortal("define", define$1);
+document.definePortal("wait", wait);
+// document.definePortal("prevent-default", { reactions: {i => (eventLoop.event.preventDefault(), i)] });
+document.definePortal("log", { log: function (...i) { console.log(this, ...i); return i[0]; } });
+document.definePortal("debugger", { debugger: function (...i) { console.log(this, ...i); debugger; return i[0]; } });
 
 loadDoubleDots(EventTarget.prototype.addEventListener);
 //adding colors
